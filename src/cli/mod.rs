@@ -1,22 +1,25 @@
 use std::io;
+mod parser;
 
 pub fn cli() {
     println!("Welcome to the MollyDB CLI");
+    let mut line_count = 1;
     
     loop {
-        print!("> ");
+        print!("({:03}) > ", line_count);
+        line_count += 1;
         
-        io::Write::flush(&mut io::stdout()).expect("Failed to flush stdout.");
+        io::Write::flush(&mut io::stdout()).unwrap();
         
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         let input = input.trim();
 
-        if input.eq_ignore_ascii_case("quit") {
+        if input.eq_ignore_ascii_case("quit") || input.eq_ignore_ascii_case("exit") {
             println!("Goodbye!");
             break;
         }
+        parser::parse(input);
 
-        println!("You said: {}", input);
     }
 }
