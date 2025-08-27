@@ -1,5 +1,5 @@
 use std::io;
-mod parser;
+mod tokenize;
 
 pub fn cli() {
     println!("Welcome to the MollyDB CLI");
@@ -19,7 +19,9 @@ pub fn cli() {
             println!("Goodbye!");
             break;
         }
-        parser::parse(input);
+
+        let tokens = tokenize::tokenize(input);
+        println!("{:?}", tokens);
 
     }
 }
