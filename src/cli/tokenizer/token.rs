@@ -22,7 +22,7 @@ pub enum TokenTypes {
     // Math Operators
     Plus, Minus, Divide, Modulo,       
     // Literals
-    String, Number, True, False,
+    String, IntLiteral, True, False, HexLiteral, RealLiteral,
     // Others
     Identifier,
     EOF, Error,

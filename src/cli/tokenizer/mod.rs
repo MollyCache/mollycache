@@ -64,7 +64,7 @@ mod tests {
             token(TokenTypes::Values, "VALUES", 20, 1),
             token(TokenTypes::Comma, ",", 26, 1),
             token(TokenTypes::LeftParen, "(", 28, 1),
-            token(TokenTypes::Number, "199", 29, 1),
+            token(TokenTypes::IntLiteral, "199", 29, 1),
             token(TokenTypes::RightParen, ")", 32, 1),
             token(TokenTypes::String, "\"Fletcher\"", 0, 2),
             token(TokenTypes::Error, "\";", 10, 2),
@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn all_tokens_are_implemented_correctly() {
+    fn tokens_are_implemented_correctly() {
         let statement = r#"
         CREATE SELECT INSERT TABLE FROM INTO VALUES WHERE
         UPDATE DELETE DROP INDEX
@@ -89,7 +89,7 @@ mod tests {
         COUNT SUM AVG MIN MAX
         * ; ( ) , .
         + - / %
-        "string" 123 TRUE FALSE
+        "string" TRUE FALSE
         fletchers_table
         "#;
         let result = tokenize(statement);
@@ -165,11 +165,39 @@ mod tests {
             token(TokenTypes::Divide, "/", 12, 14),
             token(TokenTypes::Modulo, "%", 14, 14),
             token(TokenTypes::String, "\"string\"", 8, 15),
-            token(TokenTypes::Number, "123", 17, 15),
-            token(TokenTypes::True, "TRUE", 21, 15),
-            token(TokenTypes::False, "FALSE", 26, 15),
+            token(TokenTypes::True, "TRUE", 17, 15),
+            token(TokenTypes::False, "FALSE", 22, 15),
             token(TokenTypes::Identifier, "fletchers_table", 8, 16),
             token(TokenTypes::EOF, "", 0, 0)
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn tokenizer_parses_int_and_real_literals() {
+        let result = tokenize("12 -12 12.12 -12.12 12e-12 -12e12");
+        let expected = vec![
+            token(TokenTypes::IntLiteral, "12", 0, 1),
+            token(TokenTypes::IntLiteral, "-12", 3, 1),
+            token(TokenTypes::RealLiteral, "12.12", 7, 1),
+            token(TokenTypes::RealLiteral, "-12.12", 13, 1),
+            token(TokenTypes::RealLiteral, "12e-12", 20, 1),
+            token(TokenTypes::RealLiteral, "-12e12", 27, 1),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn tokenizer_parses_hex_literals() {
+        let result = tokenize("X\'0A1A3F\' 12 X\'ZZZZZ\'");
+        let expected = vec![
+            token(TokenTypes::HexLiteral, "X\'0A1A3F\'" , 0, 1),
+            token(TokenTypes::IntLiteral, "12", 10, 1),
+            token(TokenTypes::Error, "X\'Z", 13, 1),
+            token(TokenTypes::Identifier, "ZZZZ", 16, 1),
+            token(TokenTypes::Error, "\'", 20, 1),
+            token(TokenTypes::EOF, "", 0, 0),
         ];
         assert_eq!(expected, result);
     }
