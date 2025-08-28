@@ -48,7 +48,7 @@ impl<'a> Interpreter<'a> {
                 Some(select_statement::build(&self))
             },
             _ => {
-                self.current += 1;
+                self.advance();
                 Some(Err(self.format_error()))
             }
         };
