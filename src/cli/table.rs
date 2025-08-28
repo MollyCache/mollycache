@@ -1,3 +1,5 @@
+
+#[derive(Debug, PartialEq)]
 pub enum DataType {
     Integer,
     Real,
@@ -13,12 +15,14 @@ pub struct Table {
     length: usize,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ColumnDefinition {
     pub name: String,
     pub data_type: DataType,
     pub constraints: Vec<ColumnConstraint>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ColumnConstraint {
     pub constraint_type: String,
 }
@@ -28,6 +32,7 @@ struct Row {
     values: Vec<Value>,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Value {
     Integer(i64),
     Real(f64),
