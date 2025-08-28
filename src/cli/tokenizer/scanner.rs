@@ -137,9 +137,27 @@ impl<'a> Scanner<'a> {
         };
     }
 
-    fn read_digit(&mut self) {
-        while self.peek_char().is_ascii_digit() {
+    fn read_digit(&mut self) -> TokenTypes {
+        let mut token_type = TokenTypes::IntLiteral;
+        while self.peek_char().is_ascii_digit() || self.peek_char() == '.' || self.peek_char() == 'e' || self.peek_char() == '-' {
+            if self.peek_char() == '.' || self.peek_char() == 'e' {
+                token_type = TokenTypes::RealLiteral;
+            }
             self.advance();
+        }
+        return token_type;
+    }
+
+    fn read_hex_literal(&mut self) -> TokenTypes {
+        self.advance();
+        self.advance();
+        while self.current_char().is_ascii_hexdigit() {
+            self.advance();
+        }
+        if self.current_char() == '\'' {
+            return TokenTypes::HexLiteral;
+        } else {
+            return TokenTypes::Error;
         }
     }
 
@@ -155,13 +173,17 @@ impl<'a> Scanner<'a> {
                 let token_type = self.read_string();
                 Some(self.build_token(start, token_type))
             }
+            c if c == 'X' && self.peek_char() == '\'' => {
+                let token_type = self.read_hex_literal();
+                Some(self.build_token(start, token_type))
+            }
             c if c.is_ascii_alphabetic() || c == '_' => {
                 let token_type = self.read_identifier(start);
                 Some(self.build_token(start, token_type))
             }
             c if c.is_ascii_digit() => {
-                self.read_digit();
-                Some(self.build_token(start, TokenTypes::Number))
+                let token_type = self.read_digit();
+                Some(self.build_token(start, token_type))
             }
             '*' => Some(self.build_token(start, TokenTypes::Asterisk)),
             ';' => Some(self.build_token(start, TokenTypes::SemiColon)),
@@ -170,7 +192,15 @@ impl<'a> Scanner<'a> {
             ',' => Some(self.build_token(start, TokenTypes::Comma)),
             '.' => Some(self.build_token(start, TokenTypes::Dot)),
             '+' => Some(self.build_token(start, TokenTypes::Plus)),
-            '-' => Some(self.build_token(start, TokenTypes::Minus)),
+            '-' => {
+                if self.peek_char().is_ascii_digit() {
+                    self.advance();
+                    let token_type = self.read_digit();
+                    Some(self.build_token(start, token_type))
+                } else {
+                    Some(self.build_token(start, TokenTypes::Minus))
+                }
+            }
             '/' => Some(self.build_token(start, TokenTypes::Divide)),
             '%' => Some(self.build_token(start, TokenTypes::Modulo)),
             '=' => Some(self.build_token(start, TokenTypes::Equals)),
