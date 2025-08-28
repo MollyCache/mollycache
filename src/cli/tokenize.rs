@@ -17,10 +17,10 @@ pub enum TokenTypes {
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub struct Token<'a> {
-    token_type: TokenTypes,
-    value: &'a str,
-    col_num: usize,
-    line_num: usize
+    pub token_type: TokenTypes,
+    pub value: &'a str,
+    pub col_num: usize,
+    pub line_num: usize
 }
 
 pub fn tokenize<'a>(line: &'a str) -> Vec<Token<'a>> {
