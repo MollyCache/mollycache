@@ -4,9 +4,9 @@ pub enum TokenTypes {
     Create, Select, Insert, Table, From, Into, Values, Where,
     Update, Delete, Drop, Index,
     // Data Types 
-    Integer, Text, Varchar, Char, Float, Boolean, Timestamp,
+    Integer, Real, Text, Blob, Null,
     // Constraints
-    Primary, Key, Not, Null, Unique, Default, AutoIncrement,
+    Primary, Key, Not, Unique, Default, AutoIncrement,
     // Clauses
     Order, By, Group, Having, Distinct, All, As,
     Inner, Left, Right, Full, Outer, Join, On, Union,
