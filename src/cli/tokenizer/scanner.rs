@@ -27,15 +27,19 @@ impl<'a> Scanner<'a> {
 
     fn handle_skips(&mut self) -> bool {
         if self.current_char() == ' ' {
-            self.current += 1;
+            self.advance();
             return true;
         } else if self.current_char() == '\n' {
-            self.current += 1;
+            self.advance();
             self.line_num += 1;
             self.col_num = self.current;
             return true;
         }
         return false;
+    }
+
+    fn advance(&mut self) {
+        self.current += 1;
     }
 
     fn current_char(&self) -> char {
@@ -47,7 +51,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn build_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
-        self.current += 1;
+        self.advance();
         return Token {
             token_type: token_type,
             value: &self.input[start..self.current],
@@ -57,9 +61,9 @@ impl<'a> Scanner<'a> {
     }
 
     fn read_string(&mut self) -> TokenTypes {
-        self.current += 1;
+        self.advance();
         while self.current_char() != '"' {
-            self.current += 1;
+            self.advance();
             if self.current >= self.input.len() {
                 self.current = self.input.len() - 1;
                 return TokenTypes::Error;
@@ -69,11 +73,9 @@ impl<'a> Scanner<'a> {
     }
 
     fn read_identifier(&mut self, start: usize) -> TokenTypes {
-        self.current += 1;
-        while self.current_char().is_alphanumeric() || self.current_char() == '_' {
-            self.current += 1;
+        while self.peek_char().is_alphanumeric() || self.peek_char() == '_' {
+            self.advance();
         }
-        self.current -= 1;
         return match &self.input[start..=self.current] {
             slice if slice.eq_ignore_ascii_case("CREATE") => TokenTypes::Create,
             slice if slice.eq_ignore_ascii_case("SELECT") => TokenTypes::Select,
@@ -139,10 +141,9 @@ impl<'a> Scanner<'a> {
     }
 
     fn read_digit(&mut self) {
-        while self.current_char().is_ascii_digit() {
-            self.current += 1;
+        while self.peek_char().is_ascii_digit() {
+            self.advance();
         }
-        self.current -= 1;
     }
 
     pub fn next_token(&mut self) -> Option<Token<'a>> {
@@ -178,7 +179,7 @@ impl<'a> Scanner<'a> {
             '=' => Some(self.build_token(start, TokenTypes::Equals)),
             '!' => {
                 if self.peek_char() == '=' {
-                    self.current += 1;
+                    self.advance();
                     Some(self.build_token(start, TokenTypes::NotEquals))
                 } else {
                     Some(self.build_token(start, TokenTypes::Error))
@@ -186,7 +187,7 @@ impl<'a> Scanner<'a> {
             },
             '<' => {
                 if self.peek_char() == '=' {
-                    self.current += 1;
+                    self.advance();
                     Some(self.build_token(start, TokenTypes::LessEquals))
                 } else {
                     Some(self.build_token(start, TokenTypes::LessThan))
@@ -194,7 +195,7 @@ impl<'a> Scanner<'a> {
             },
             '>' => {
                 if self.peek_char() == '=' {
-                    self.current += 1;
+                    self.advance();
                     Some(self.build_token(start, TokenTypes::GreaterEquals))
                 } else {
                     Some(self.build_token(start, TokenTypes::GreaterThan))
