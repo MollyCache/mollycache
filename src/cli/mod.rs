@@ -1,5 +1,7 @@
 use std::io;
 mod tokenize;
+mod ast;
+mod table;
 
 pub fn cli() {
     println!("Welcome to the MollyDB CLI");
@@ -22,6 +24,7 @@ pub fn cli() {
 
         let tokens = tokenize::tokenize(input);
         println!("{:?}", tokens);
+        ast::generate(tokens);
 
     }
 }
