@@ -24,7 +24,7 @@ impl<'a> Interpreter<'a> {
         self.current += 1;
     }
 
-    fn format_error(&self) -> String {
+    pub fn format_error(&self) -> String {
         if let Some(token) = self.current_token() {
             return format!(
                 "Error at line {:?}, column {:?}: Unexpected type: {:?}",
@@ -40,9 +40,9 @@ impl<'a> Interpreter<'a> {
             return Some(Err("No tokens to parse".to_string()));
         }
         return match self.current_token()?.token_type {
-            TokenTypes::Create => Some(create_statement::build(&self)),
-            TokenTypes::Insert => Some(insert_statement::build(&self)),
-            TokenTypes::Select => Some(select_statement::build(&self)),
+            TokenTypes::Create => Some(create_statement::build(self)),
+            TokenTypes::Insert => Some(insert_statement::build(self)),
+            TokenTypes::Select => Some(select_statement::build(self)),
             _ => {
                 self.advance();
                 Some(Err(self.format_error()))

@@ -78,8 +78,8 @@ mod tests {
         let statement = r#"
         CREATE SELECT INSERT TABLE FROM INTO VALUES WHERE
         UPDATE DELETE DROP INDEX
-        INTEGER TEXT VARCHAR CHAR FLOAT BOOLEAN TIMESTAMP
-        PRIMARY KEY NOT NULL UNIQUE DEFAULT AUTOINCREMENT
+        INTEGER REAL TEXT BLOB NULL
+        PRIMARY KEY NOT UNIQUE DEFAULT AUTOINCREMENT
         ORDER BY GROUP HAVING DISTINCT ALL AS
         INNER LEFT RIGHT FULL OUTER JOIN ON UNION
         LIMIT OFFSET
@@ -107,19 +107,16 @@ mod tests {
             token(TokenTypes::Drop, "DROP", 22, 3),
             token(TokenTypes::Index, "INDEX", 27, 3),
             token(TokenTypes::Integer, "INTEGER", 8, 4),
-            token(TokenTypes::Text, "TEXT", 16, 4),
-            token(TokenTypes::Varchar, "VARCHAR", 21, 4),
-            token(TokenTypes::Char, "CHAR", 29, 4),
-            token(TokenTypes::Float, "FLOAT", 34, 4),
-            token(TokenTypes::Boolean, "BOOLEAN", 40, 4),
-            token(TokenTypes::Timestamp, "TIMESTAMP", 48, 4),
+            token(TokenTypes::Real, "REAL", 16, 4),
+            token(TokenTypes::Text, "TEXT", 21, 4),
+            token(TokenTypes::Blob, "BLOB", 26, 4),
+            token(TokenTypes::Null, "NULL", 31, 4),
             token(TokenTypes::Primary, "PRIMARY", 8, 5),
             token(TokenTypes::Key, "KEY", 16, 5),
             token(TokenTypes::Not, "NOT", 20, 5),
-            token(TokenTypes::Null, "NULL", 24, 5),
-            token(TokenTypes::Unique, "UNIQUE", 29, 5),
-            token(TokenTypes::Default, "DEFAULT", 36, 5),
-            token(TokenTypes::AutoIncrement, "AUTOINCREMENT", 44, 5),
+            token(TokenTypes::Unique, "UNIQUE", 24, 5),
+            token(TokenTypes::Default, "DEFAULT", 31, 5),
+            token(TokenTypes::AutoIncrement, "AUTOINCREMENT", 39, 5),
             token(TokenTypes::Order, "ORDER", 8, 6),
             token(TokenTypes::By, "BY", 14, 6),
             token(TokenTypes::Group, "GROUP", 17, 6),

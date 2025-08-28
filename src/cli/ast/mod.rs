@@ -1,33 +1,38 @@
-use crate::cli::{self, tokenizer::scanner::Token};
+use crate::cli::{self, tokenizer::scanner::Token, table::Value};
 
 mod create_statement;
 mod insert_statement;
 mod interpreter;
 mod select_statement;
 
+#[derive(Debug, PartialEq)]
 pub enum SqlStatement {
     CreateTable(CreateTableStatement),
     Insert(InsertStatement),
     Select(SelectStatement),
 }
 
+#[derive(Debug, PartialEq)]
 pub struct CreateTableStatement {
     pub table_name: String,
     pub columns: Vec<cli::table::ColumnDefinition>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct InsertStatement {
     pub table_name: String,
     pub columns: Vec<String>,
-    pub values: Vec<cli::table::Value>,
+    pub values: Vec<Value>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct SelectStatement {
     pub table_name: String,
     pub columns: Vec<String>,
     pub where_clause: Option<WhereClause>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct WhereClause {
     pub column: String,
     pub value: cli::table::Value,
