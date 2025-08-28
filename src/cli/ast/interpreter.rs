@@ -1,13 +1,16 @@
-use crate::cli::{tokenize::Token, tokenize::TokenTypes, ast::SqlStatement, ast::create_statement, ast::insert_statement, ast::select_statement};
+use crate::cli::{
+    ast::SqlStatement, ast::create_statement, ast::insert_statement, ast::select_statement,
+    tokenizer::scanner::Token, tokenizer::token::TokenTypes,
+};
 
 pub struct Interpreter<'a> {
     tokens: Vec<Token<'a>>,
-    current: usize
+    current: usize,
 }
 
 impl<'a> Interpreter<'a> {
     pub fn new(tokens: Vec<Token<'a>>) -> Self {
-        return Self {tokens, current: 0};
+        return Self { tokens, current: 0 };
     }
 
     pub fn current_token(&self) -> Option<&Token<'a>> {
@@ -23,10 +26,9 @@ impl<'a> Interpreter<'a> {
 
     fn format_error(&self) -> String {
         if let Some(token) = self.current_token() {
-            return format!("Error at line {:?}, column {:?}: Unexpected type: {:?}", 
-                token.line_num, 
-                token.col_num,
-                token.token_type
+            return format!(
+                "Error at line {:?}, column {:?}: Unexpected type: {:?}",
+                token.line_num, token.col_num, token.token_type
             );
         } else {
             return "Error at end of input.".to_string();
@@ -38,19 +40,13 @@ impl<'a> Interpreter<'a> {
             return Some(Err("No tokens to parse".to_string()));
         }
         return match self.current_token()?.token_type {
-            TokenTypes::Create => {
-                Some(create_statement::build(&self))
-            },
-            TokenTypes::Insert => {
-                Some(insert_statement::build(&self))
-            },
-            TokenTypes::Select => {
-                Some(select_statement::build(&self))
-            },
+            TokenTypes::Create => Some(create_statement::build(&self)),
+            TokenTypes::Insert => Some(insert_statement::build(&self)),
+            TokenTypes::Select => Some(select_statement::build(&self)),
             _ => {
                 self.advance();
                 Some(Err(self.format_error()))
             }
         };
     }
-} 
+}
