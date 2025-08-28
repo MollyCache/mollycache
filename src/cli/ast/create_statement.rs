@@ -38,12 +38,13 @@ fn table_statement(interpreter: &mut Interpreter) -> Result<SqlStatement, String
             if token.token_type != TokenTypes::Identifier {
                 return Err(interpreter.format_error());
             }
-            let name = token.value.to_string();
-            interpreter.advance();
-            name
+            token.value.to_string()
+            
         },
         None => return Err(interpreter.format_error()),
     };
+    interpreter.advance();
+
     let column_definitions = column_definitions(interpreter)?;
     return Ok(CreateTable(CreateTableStatement {
         table_name,
