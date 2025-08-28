@@ -1,8 +1,9 @@
 pub enum DataType {
     Integer,
-    Float,
+    Real,
     Text,
-    Boolean,
+    Blob,
+    Null,
 }
 
 pub struct Table {
@@ -13,8 +14,13 @@ pub struct Table {
 }
 
 pub struct ColumnDefinition {
-    name: String,
-    data_type: DataType,
+    pub name: String,
+    pub data_type: DataType,
+    pub constraints: Vec<ColumnConstraint>,
+}
+
+pub struct ColumnConstraint {
+    pub constraint_type: String,
 }
 
 struct Row {
@@ -24,7 +30,8 @@ struct Row {
 
 pub enum Value {
     Integer(i64),
-    Float(f64),
+    Real(f64),
     Text(String),
-    Bool(bool),
+    Blob(Vec<u8>),
+    Null
 }
