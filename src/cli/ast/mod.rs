@@ -1,4 +1,4 @@
-use crate::cli::{self, tokenizer::scanner::Token, table::Value};
+use crate::cli::{self, tokenizer::scanner::Token, table::{Value, ColumnDefinition}};
 
 mod create_statement;
 mod insert_statement;
@@ -15,14 +15,14 @@ pub enum SqlStatement {
 #[derive(Debug, PartialEq)]
 pub struct CreateTableStatement {
     pub table_name: String,
-    pub columns: Vec<cli::table::ColumnDefinition>,
+    pub columns: Vec<ColumnDefinition>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct InsertStatement {
     pub table_name: String,
     pub columns: Vec<String>,
-    pub values: Vec<Value>,
+    pub values: Vec<Vec<Value>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,7 +35,7 @@ pub struct SelectStatement {
 #[derive(Debug, PartialEq)]
 pub struct WhereClause {
     pub column: String,
-    pub value: cli::table::Value,
+    pub value: Value,
 }
 
 pub fn generate(tokens: Vec<cli::tokenizer::scanner::Token>) -> Vec<Result<SqlStatement, String>> {
