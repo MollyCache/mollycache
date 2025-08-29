@@ -1,4 +1,4 @@
-use crate::cli::{ast::{interpreter::Interpreter, InsertIntoStatement, SqlStatement::{self, InsertInto}}, table::Value, tokenizer::{scanner::Token, token::TokenTypes}};
+use crate::cli::{ast::{interpreter::Interpreter, InsertIntoStatement, SqlStatement::{self, InsertInto}}, table::Value, tokenizer::token::TokenTypes};
 use hex::decode;
 
 pub fn build(interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
@@ -145,7 +145,7 @@ fn get_values(interpreter: &mut Interpreter) -> Result<Vec<Value>, String> {
     }
 }
 
-fn get_columns(interpreter: &mut Interpreter) -> Result<Vec<String>, String> {
+fn get_columns(_interpreter: &mut Interpreter) -> Result<Vec<String>, String> {
     todo!()
 }
 
@@ -159,28 +159,29 @@ mod tests {
     use super::*;
     use crate::cli::tokenizer::scanner::Token;
 
-    fn token(tt: TokenTypes, val: &'static str, col_num: usize) -> Token<'static> {
+    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
         Token {
             token_type: tt,
             value: val,
-            col_num: col_num,
+            col_num: 0,
             line_num: 1,
         }
     }
 
     #[test]
-    fn simple_insert_works() {
+    fn single_row_insert_statement_is_generated_correctly() {
+        // INSERT INTO users VALUES (1, "Alice");
         let tokens = vec![
-            token(TokenTypes::Insert, "INSERT", 1),
-            token(TokenTypes::Into, "INTO", 8),
-            token(TokenTypes::Identifier, "users", 13),
-            token(TokenTypes::Values, "VALUES", 19),
-            token(TokenTypes::LeftParen, "(", 26),
-            token(TokenTypes::IntLiteral, "1", 27),
-            token(TokenTypes::Comma, ",", 28),
-            token(TokenTypes::String, "\"Alice\"", 30),
-            token(TokenTypes::RightParen, ")", 37),
-            token(TokenTypes::SemiColon, ";", 38),
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
         ];
         let mut interpreter = Interpreter::new(tokens);
         let result = build(&mut interpreter);
@@ -193,6 +194,47 @@ mod tests {
                 vec![
                     Value::Integer(1),
                     Value::Text("Alice".to_string()),
+                ]
+            ],
+        }));
+    }
+
+    #[test]
+    fn multi_row_insert_statement_is_generated_correctly() {
+        // INSERT INTO users VALUES (1, "Alice"), (2, "Bob");
+        let tokens = vec![
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "guests"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "2"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Bob"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut interpreter = Interpreter::new(tokens);
+        let result = build(&mut interpreter);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        assert_eq!(statement, SqlStatement::InsertInto(InsertIntoStatement {
+            table_name: "guests".to_string(),
+            columns: None,
+            values: vec![
+                vec![
+                    Value::Integer(1),
+                    Value::Text("Alice".to_string()),
+                ],
+                vec![
+                    Value::Integer(2),
+                    Value::Text("Bob".to_string()),
                 ]
             ],
         }));
