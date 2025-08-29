@@ -1,4 +1,4 @@
-use crate::cli::tokenizer::token::TokenTypes;
+use crate::cli::tokenizer::token::{self, TokenTypes};
 
 #[derive(Debug, PartialEq)]
 pub struct Token<'a> {
@@ -57,6 +57,21 @@ impl<'a> Scanner<'a> {
             value: &self.input[start..self.current],
             col_num: start-self.col_num,
             line_num: self.line_num,
+        };
+    }
+
+    fn build_string_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
+        return match token_type {
+            TokenTypes::String => { 
+            self.advance();
+                Token {
+                    token_type: token_type,
+                    value: &self.input[start+1..self.current-1],
+                    col_num: start-self.col_num,
+                    line_num: self.line_num,
+                }
+            }
+            _ => self.build_token(start, token_type)
         };
     }
 
@@ -171,7 +186,7 @@ impl<'a> Scanner<'a> {
         return match self.current_char() {
             '"' => {
                 let token_type = self.read_string();
-                Some(self.build_token(start, token_type))
+                Some(self.build_string_token(start, token_type))
             }
             c if c == 'X' && self.peek_char() == '\'' => {
                 let token_type = self.read_hex_literal();
