@@ -1,4 +1,4 @@
-use crate::cli::{ast::{interpreter::Interpreter, InsertIntoStatement, SqlStatement::{self, InsertInto}}, table::Value, tokenizer::token::TokenTypes};
+use crate::cli::{ast::{interpreter::{self, Interpreter}, InsertIntoStatement, SqlStatement::{self, InsertInto}}, table::Value, tokenizer::token::TokenTypes};
 use hex::decode;
 
 pub fn build(interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
@@ -113,8 +113,7 @@ fn get_values(interpreter: &mut Interpreter) -> Result<Vec<Value>, String> {
                                 interpreter.advance();
                             },
                             TokenTypes::Blob => {
-                                let blob_str = &token.value[2..token.value.len()-1]; // Remove X' and '
-                                match decode(blob_str) {
+                                match decode(token.value) {
                                     Ok(bytes) => values.push(Value::Blob(bytes)),
                                     Err(_) => return Err(interpreter.format_error()),
                                 }
@@ -145,8 +144,44 @@ fn get_values(interpreter: &mut Interpreter) -> Result<Vec<Value>, String> {
     }
 }
 
-fn get_columns(_interpreter: &mut Interpreter) -> Result<Vec<String>, String> {
-    todo!()
+fn get_columns(interpreter: &mut Interpreter) -> Result<Vec<String>, String> {
+    interpreter.advance();
+    let mut columns: Vec<String> = vec![];
+    loop {
+        match interpreter.current_token() {
+            Some(token) => {
+                if token.token_type != TokenTypes::Identifier{
+                    return Err(interpreter.format_error());
+                }
+                columns.push(token.value.to_string());
+            }
+            None => {
+                return Err(interpreter.format_error())
+            }
+        }
+        interpreter.advance();
+        
+        match interpreter.current_token() {
+            Some(token) => {
+                match token.token_type {
+                    TokenTypes::Comma => {
+                        interpreter.advance();
+                    }
+                    TokenTypes::RightParen => {
+                        interpreter.advance();
+                        break;
+                    }
+                    _ => {
+                        return Err(interpreter.format_error())
+                    }
+                }
+            }
+            None => {
+                return Err(interpreter.format_error());
+            }
+        }
+    }
+    return Ok(columns);
 }
 
 fn or_statement(_interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
@@ -238,5 +273,50 @@ mod tests {
                 ]
             ],
         }));
+    }
+    
+    #[test]
+    fn single_row_insert_with_column_specifiers_is_generated_correctly() {
+        // INSERT INTO users (id, name, email) VALUES (1, "Fletcher", NULL);
+        let tokens = vec![
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "email"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::RealLiteral, "1.1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Blob, "AAB000"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Null, "NULL"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut interpreter = Interpreter::new(tokens);
+        let result = build(&mut interpreter);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        assert_eq!(statement, SqlStatement::InsertInto(InsertIntoStatement {
+            table_name: "users".to_string(),
+            columns: Some(vec![
+                "id".to_string(),
+                "name".to_string(),
+                "email".to_string(),
+            ]),
+            values: vec![
+                vec![
+                    Value::Real(1.1),
+                    Value::Blob(vec![0xAA, 0xB0, 0x00]),
+                    Value::Null,
+                ]
+            ],
+        }));       
     }
 }
