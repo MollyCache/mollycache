@@ -80,7 +80,7 @@ mod tests {
         UPDATE DELETE DROP INDEX
         INTEGER REAL TEXT BLOB NULL
         PRIMARY KEY NOT UNIQUE DEFAULT AUTOINCREMENT
-        ORDER BY GROUP HAVING DISTINCT ALL AS
+        ORDER BY GROUP HAVING DISTINCT ALL AS ASC DESC
         INNER LEFT RIGHT FULL OUTER JOIN ON UNION
         LIMIT OFFSET
         AND OR IN EXISTS
@@ -124,6 +124,8 @@ mod tests {
             token(TokenTypes::Distinct, "DISTINCT", 30, 6),
             token(TokenTypes::All, "ALL", 39, 6),
             token(TokenTypes::As, "AS", 43, 6),
+            token(TokenTypes::Asc, "ASC", 46, 6),
+            token(TokenTypes::Desc, "DESC", 50, 6),
             token(TokenTypes::Inner, "INNER", 8, 7),
             token(TokenTypes::Left, "LEFT", 14, 7),
             token(TokenTypes::Right, "RIGHT", 19, 7),

@@ -8,10 +8,10 @@ pub enum DataType {
     Null,
 }
 
-pub struct Table {
+pub struct _Table {
     name: String,
     columns: Vec<ColumnDefinition>,
-    rows: Vec<Row>,
+    rows: Vec<_Row>,
     length: usize,
 }
 
@@ -27,7 +27,7 @@ pub struct ColumnConstraint {
     pub constraint_type: String,
 }
 
-struct Row {
+struct _Row {
     primary_key: usize,
     values: Vec<Value>,
 }

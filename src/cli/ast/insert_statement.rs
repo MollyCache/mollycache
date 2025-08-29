@@ -1,5 +1,4 @@
-use crate::cli::{ast::{interpreter::{self, Interpreter}, InsertIntoStatement, SqlStatement::{self, InsertInto}}, table::Value, tokenizer::token::TokenTypes};
-use hex::decode;
+use crate::cli::{ast::{interpreter::Interpreter, common::token_to_value, InsertIntoStatement, SqlStatement::{self, InsertInto}}, table::Value, tokenizer::token::TokenTypes};
 
 pub fn build(interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
     interpreter.advance();
@@ -92,39 +91,9 @@ fn get_values(interpreter: &mut Interpreter) -> Result<Vec<Value>, String> {
             let mut values: Vec<Value> = vec![];
             loop {
                 match interpreter.current_token() {
-                    Some(token) => {
-                        match token.token_type { 
-                            TokenTypes::IntLiteral => {
-                                match token.value.parse::<i64>() {
-                                    Ok(num) => values.push(Value::Integer(num)),
-                                    Err(_) => return Err(interpreter.format_error()),
-                                }
-                                interpreter.advance();
-                            },
-                            TokenTypes::RealLiteral => {
-                                match token.value.parse::<f64>() {
-                                    Ok(num) => values.push(Value::Real(num)),
-                                    Err(_) => return Err(interpreter.format_error()),
-                                }
-                                interpreter.advance();
-                            },
-                            TokenTypes::String => {
-                                values.push(Value::Text(token.value.to_string()));
-                                interpreter.advance();
-                            },
-                            TokenTypes::Blob => {
-                                match decode(token.value) {
-                                    Ok(bytes) => values.push(Value::Blob(bytes)),
-                                    Err(_) => return Err(interpreter.format_error()),
-                                }
-                                interpreter.advance();
-                            },
-                            TokenTypes::Null => {
-                                values.push(Value::Null);
-                                interpreter.advance();
-                            },
-                            _ => return Err(interpreter.format_error()),
-                        }
+                    Some(_) => {
+                        values.push(token_to_value(interpreter)?);
+                        interpreter.advance();
                         match interpreter.current_token() {
                             Some(token) if token.token_type == TokenTypes::Comma => {
                                 interpreter.advance();
