@@ -43,6 +43,7 @@ impl<'a> Interpreter<'a> {
             TokenTypes::Create => Some(create_statement::build(self)),
             TokenTypes::Insert => Some(insert_statement::build(self)),
             TokenTypes::Select => Some(select_statement::build(self)),
+            TokenTypes::EOF => None,
             _ => {
                 self.advance();
                 Some(Err(self.format_error()))

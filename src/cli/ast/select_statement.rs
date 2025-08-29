@@ -14,7 +14,7 @@ pub fn build(interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
     if token.token_type != TokenTypes::SemiColon {
         return Err(interpreter.format_error());
     }
-
+    interpreter.advance(); // Move past the semicolon
     return Ok(SqlStatement::Select(SelectStatement {
         table_name: table_name,
         columns: columns,
@@ -315,7 +315,6 @@ mod tests {
         ];
         let mut interpreter = Interpreter::new(tokens);
         let result = build(&mut interpreter);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         assert_eq!(statement, SqlStatement::Select(SelectStatement {

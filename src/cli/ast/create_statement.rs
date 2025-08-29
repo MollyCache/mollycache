@@ -26,7 +26,7 @@ pub fn build(interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
         },
         None => return Err(interpreter.format_error()),
     }
-
+    interpreter.advance(); // Move past the semicolon
     return statement;
 }
 
