@@ -185,7 +185,7 @@ fn get_columns(interpreter: &mut Interpreter) -> Result<Vec<String>, String> {
 }
 
 fn or_statement(_interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
-    todo!()
+    return Err("INSERT OR ... not yet implemented".to_string());
 }
 
 
@@ -318,5 +318,40 @@ mod tests {
                 ]
             ],
         }));       
+    }
+
+    #[test]
+    fn insert_into_without_table_name_is_error() {
+        // INSERT INTO VALUES (1, "Alice");
+        let tokens = vec![
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut interpreter = Interpreter::new(tokens);
+        let result = build(&mut interpreter);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn insert_or_is_not_implemented_error() {
+        // INSERT OR users VALUES (1, "Alice");
+        let tokens = vec![
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Or, "OR"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+        ];
+        let mut interpreter = Interpreter::new(tokens);
+        let result = build(&mut interpreter);
+        assert!(result.is_err());
     }
 }
