@@ -348,4 +348,41 @@ mod tests {
             }),
         }));
     }
+
+    #[test]
+    fn select_statement_with_limit_clause_no_offset_is_generated_correctly() {
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "guests"),
+            token(TokenTypes::Where, "WHERE"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::GreaterThan, ">"),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Limit, "LIMIT"),
+            token(TokenTypes::IntLiteral, "10"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut interpreter = Interpreter::new(tokens);
+        let result = build(&mut interpreter);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        assert_eq!(statement, SqlStatement::Select(SelectStatement {
+            table_name: "guests".to_string(),
+            columns: SelectStatementColumns::Specific(vec![
+                "id".to_string(),
+            ]),
+            where_clause: Some(WhereClause {
+                column: "id".to_string(),
+                operator: Operator::GreaterThan,
+                value: Value::Integer(1),
+            }),
+            order_by_clause: None,
+            limit_clause: Some(LimitClause {
+                limit: Value::Integer(10),
+                offset: None,
+            }),
+        }));
+    }
 }
