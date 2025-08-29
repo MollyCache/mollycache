@@ -18,7 +18,6 @@ pub fn build(interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
         None => return Err(interpreter.format_error()),
     }
     // Ensure SemiColon
-    interpreter.advance();
     match interpreter.current_token() {
         Some(token) => {
             if token.token_type != TokenTypes::SemiColon {
@@ -94,6 +93,7 @@ fn column_definitions(interpreter: &mut Interpreter) -> Result<Vec<ColumnDefinit
                                 data_type: column_data_type,
                                 constraints: vec![] // TODO,
                             });
+                            interpreter.advance();
                             break;
                         },
                         _ => return Err(interpreter.format_error()),
