@@ -75,6 +75,21 @@ impl<'a> Scanner<'a> {
         };
     }
 
+    fn build_hex_literal_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
+        return match token_type {
+            TokenTypes::HexLiteral => {
+                self.advance();
+                Token {
+                    token_type: token_type,
+                    value: &self.input[start+2..self.current-1],
+                    col_num: start-self.col_num,
+                    line_num: self.line_num,
+                }
+            }
+            _ => self.build_token(start, token_type)
+        }
+    }
+
     fn read_string(&mut self) -> TokenTypes {
         self.advance();
         while self.current_char() != '"' {
@@ -190,7 +205,7 @@ impl<'a> Scanner<'a> {
             }
             c if c == 'X' && self.peek_char() == '\'' => {
                 let token_type = self.read_hex_literal();
-                Some(self.build_token(start, token_type))
+                Some(self.build_hex_literal_token(start, token_type))
             }
             c if c.is_ascii_alphabetic() || c == '_' => {
                 let token_type = self.read_identifier(start);
