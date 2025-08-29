@@ -1,4 +1,4 @@
-use crate::cli::tokenizer::token::{self, TokenTypes};
+use crate::cli::tokenizer::token::{TokenTypes};
 
 #[derive(Debug, PartialEq)]
 pub struct Token<'a> {
@@ -137,6 +137,8 @@ impl<'a> Scanner<'a> {
             slice if slice.eq_ignore_ascii_case("DISTINCT") => TokenTypes::Distinct,
             slice if slice.eq_ignore_ascii_case("ALL") => TokenTypes::All,
             slice if slice.eq_ignore_ascii_case("AS") => TokenTypes::As,
+            slice if slice.eq_ignore_ascii_case("ASC") => TokenTypes::Asc,
+            slice if slice.eq_ignore_ascii_case("DESC") => TokenTypes::Desc,
             slice if slice.eq_ignore_ascii_case("INNER") => TokenTypes::Inner,
             slice if slice.eq_ignore_ascii_case("LEFT") => TokenTypes::Left,
             slice if slice.eq_ignore_ascii_case("RIGHT") => TokenTypes::Right,

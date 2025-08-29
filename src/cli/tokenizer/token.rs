@@ -8,7 +8,7 @@ pub enum TokenTypes {
     // Constraints
     Primary, Key, Not, Unique, Default, AutoIncrement,
     // Clauses
-    Order, By, Group, Having, Distinct, All, As,
+    Order, By, Group, Having, Distinct, All, As, Asc, Desc,
     Inner, Left, Right, Full, Outer, Join, On, Union,
     Limit, Offset,
     // Logical Operators
