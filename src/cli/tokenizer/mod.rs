@@ -192,7 +192,7 @@ mod tests {
     fn tokenizer_parses_hex_literals() {
         let result = tokenize("X\'0A1A3F\' 12 X\'ZZZZZ\'");
         let expected = vec![
-            token(TokenTypes::HexLiteral, "X\'0A1A3F\'" , 0, 1),
+            token(TokenTypes::HexLiteral, "0A1A3F" , 0, 1),
             token(TokenTypes::IntLiteral, "12", 10, 1),
             token(TokenTypes::Error, "X\'Z", 13, 1),
             token(TokenTypes::Identifier, "ZZZZ", 16, 1),
