@@ -1,5 +1,6 @@
-use crate::cli::{self, tokenizer::scanner::Token, table::{Value, ColumnDefinition}};
+use crate::cli::{self, table::{Value, ColumnDefinition}};
 
+mod common;
 mod create_statement;
 mod insert_statement;
 mod interpreter;
@@ -28,14 +29,51 @@ pub struct InsertIntoStatement {
 #[derive(Debug, PartialEq)]
 pub struct SelectStatement {
     pub table_name: String,
-    pub columns: Vec<String>,
+    pub columns: SelectStatementColumns,
     pub where_clause: Option<WhereClause>,
+    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub limit_clause: Option<LimitClause>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SelectStatementColumns {
+    All,
+    Specific(Vec<String>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Operator {
+    Equals,
+    NotEquals,
+    LessThan,
+    GreaterThan,
+    LessEquals,
+    GreaterEquals,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct WhereClause {
     pub column: String,
+    pub operator: Operator,
     pub value: Value,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum OrderByDirection {
+    Asc,
+    Desc,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct OrderByClause {
+    pub column: String,
+    pub direction: OrderByDirection,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct LimitClause {
+    pub limit: Value,
+    pub offset: Option<Value>,
 }
 
 pub fn generate(tokens: Vec<cli::tokenizer::scanner::Token>) -> Vec<Result<SqlStatement, String>> {
