@@ -147,30 +147,31 @@ mod tests {
     use super::*;
     use crate::cli::tokenizer::scanner::Token;
 
-    fn token(tt: TokenTypes, val: &'static str, col_num: usize) -> Token<'static> {
+    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
         Token {
             token_type: tt,
             value: val,
-            col_num: col_num,
+            col_num: 0,
             line_num: 1,
         }
     }
 
     #[test]
     fn create_table_generates_proper_statement(){
+        // CREATE TABLE users (id INTEGER, name TEXT);
         let tokens = vec![
-            token(TokenTypes::Create, "CREATE", 0),
-            token(TokenTypes::Table, "TABLE", 7),
-            token(TokenTypes::Identifier, "users", 13),
-            token(TokenTypes::LeftParen, "(", 18),
-            token(TokenTypes::Identifier, "id", 19),
-            token(TokenTypes::Integer, "INTEGER", 22),
-            token(TokenTypes::Comma, ",", 29),
-            token(TokenTypes::Identifier, "name", 31),
-            token(TokenTypes::Text, "TEXT", 36),
-            token(TokenTypes::RightParen, ")", 40),
-            token(TokenTypes::SemiColon, ";", 41),
-            token(TokenTypes::EOF, "", 0),
+            token(TokenTypes::Create, "CREATE"),
+            token(TokenTypes::Table, "TABLE"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Integer, "INTEGER"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Text, "TEXT"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
         ];
         let mut interpreter = Interpreter::new(tokens);
         let result = build(&mut interpreter);
@@ -194,22 +195,23 @@ mod tests {
 
     #[test]
     fn create_table_statement_missing_semicolon() {
+        // CREATE TABLE users (num REAL, my_blob BLOB, my_null NULL)
         let tokens = vec![
-            token(TokenTypes::Create, "CREATE", 0),
-            token(TokenTypes::Table, "TABLE", 7),
-            token(TokenTypes::Identifier, "users", 13),
-            token(TokenTypes::LeftParen, "(", 18),
-            token(TokenTypes::Identifier, "num", 19),
-            token(TokenTypes::Integer, "REAL", 22),
-            token(TokenTypes::Comma, ",", 29),
-            token(TokenTypes::Identifier, "my_blob", 31),
-            token(TokenTypes::Blob, "BLOB", 36),
-            token(TokenTypes::Comma, ",", 29),
-            token(TokenTypes::Identifier, "my_null", 31),
-            token(TokenTypes::Null, "Null", 36),
-            token(TokenTypes::RightParen, ")", 40),
+            token(TokenTypes::Create, "CREATE"),
+            token(TokenTypes::Table, "TABLE"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "num"),
+            token(TokenTypes::Integer, "REAL"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "my_blob"),
+            token(TokenTypes::Blob, "BLOB"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "my_null"),
+            token(TokenTypes::Null, "Null"),
+            token(TokenTypes::RightParen, ")"),
             // Missing SemiColon
-            token(TokenTypes::EOF, "", 0),
+            token(TokenTypes::EOF, ""),
         ];
         let mut interpreter = Interpreter::new(tokens);
         let result = build(&mut interpreter);
@@ -218,19 +220,20 @@ mod tests {
 
     #[test]
     fn create_table_with_bad_data_type() {
+        // CREATE TABLE users (id *, name TEXT);
         let tokens = vec![
-            token(TokenTypes::Create, "CREATE", 0),
-            token(TokenTypes::Table, "TABLE", 7),
-            token(TokenTypes::Identifier, "users", 13),
-            token(TokenTypes::LeftParen, "(", 18),
-            token(TokenTypes::Identifier, "id", 19),
-            token(TokenTypes::Asterisk, "*", 22), // Bad Data Type
-            token(TokenTypes::Comma, ",", 23),
-            token(TokenTypes::Identifier, "name", 25),
-            token(TokenTypes::Text, "TEXT", 30),
-            token(TokenTypes::RightParen, ")", 34),
-            token(TokenTypes::SemiColon, ";", 35),
-            token(TokenTypes::EOF, "", 0),
+            token(TokenTypes::Create, "CREATE"),
+            token(TokenTypes::Table, "TABLE"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Asterisk, "*"), // Bad Data Type
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Text, "TEXT"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
         ];
         let mut interpreter = Interpreter::new(tokens);
         let result = build(&mut interpreter);
@@ -239,18 +242,19 @@ mod tests {
 
     #[test]
     fn create_table_missing_comma() {
+        // CREATE TABLE users (id INTEGER name TEXT);
         let tokens = vec![
-            token(TokenTypes::Create, "CREATE", 0),
-            token(TokenTypes::Table, "TABLE", 7),
-            token(TokenTypes::Identifier, "users", 13),
-            token(TokenTypes::LeftParen, "(", 18),
-            token(TokenTypes::Identifier, "id", 19),
-            token(TokenTypes::Integer, "INTEGER", 22), // Missing Comma
-            token(TokenTypes::Identifier, "name", 31),
-            token(TokenTypes::Text, "TEXT", 36),
-            token(TokenTypes::RightParen, ")", 40),
-            token(TokenTypes::SemiColon, ";", 41),
-            token(TokenTypes::EOF, "", 0),
+            token(TokenTypes::Create, "CREATE"),
+            token(TokenTypes::Table, "TABLE"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Integer, "INTEGER"), // Missing Comma
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Text, "TEXT"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
         ];
         let mut interpreter = Interpreter::new(tokens);
         let result = build(&mut interpreter);
@@ -259,12 +263,13 @@ mod tests {
 
     #[test]
     fn index_statement_not_implemented() {
+        // CREATE INDEX my_index;
         let tokens = vec![
-            token(TokenTypes::Create, "CREATE", 0),
-            token(TokenTypes::Index, "INDEX", 7),
-            token(TokenTypes::Identifier, "my_index", 13),
-            token(TokenTypes::SemiColon, ";", 22),
-            token(TokenTypes::EOF, "", 0),
+            token(TokenTypes::Create, "CREATE"),
+            token(TokenTypes::Index, "INDEX"),
+            token(TokenTypes::Identifier, "my_index"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
         ];
         let mut interpreter = Interpreter::new(tokens);
         let result = build(&mut interpreter);
