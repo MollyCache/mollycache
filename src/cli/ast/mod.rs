@@ -8,7 +8,7 @@ mod select_statement;
 #[derive(Debug, PartialEq)]
 pub enum SqlStatement {
     CreateTable(CreateTableStatement),
-    Insert(InsertStatement),
+    InsertInto(InsertIntoStatement),
     Select(SelectStatement),
 }
 
@@ -19,9 +19,9 @@ pub struct CreateTableStatement {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct InsertStatement {
+pub struct InsertIntoStatement {
     pub table_name: String,
-    pub columns: Vec<String>,
+    pub columns: Option<Vec<String>>,
     pub values: Vec<Vec<Value>>,
 }
 
