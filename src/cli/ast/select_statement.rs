@@ -153,7 +153,7 @@ fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
 mod tests {
     use super::*;
     use crate::cli::tokenizer::scanner::Token;
-    use crate::cli::table::Value;
+    use crate::db::table::Value;
 
     fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
         Token {

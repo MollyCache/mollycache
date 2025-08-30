@@ -1,6 +1,5 @@
 use std::io;
 mod ast;
-mod table;
 mod tokenizer;
 
 pub fn cli() {

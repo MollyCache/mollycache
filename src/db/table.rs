@@ -12,7 +12,6 @@ pub struct _Table {
     name: String,
     columns: Vec<ColumnDefinition>,
     rows: Vec<_Row>,
-    length: usize,
 }
 
 #[derive(Debug, PartialEq)]

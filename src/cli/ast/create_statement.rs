@@ -1,4 +1,5 @@
-use crate::cli::{ast::{parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, common::expect_token_type}, table::{ColumnDefinition, DataType}, tokenizer::token::TokenTypes};
+use crate::cli::{ast::{parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, common::expect_token_type}, tokenizer::token::TokenTypes};
+use crate::db::table::{ColumnDefinition, DataType};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
@@ -36,7 +37,7 @@ fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
 }
 
 fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, String> {
-    let mut columns: Vec<crate::cli::table::ColumnDefinition> = vec![];
+    let mut columns: Vec<ColumnDefinition> = vec![];
 
     expect_token_type(parser, TokenTypes::LeftParen)?;
     parser.advance()?;
