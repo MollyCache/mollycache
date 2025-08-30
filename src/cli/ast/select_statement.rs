@@ -1,19 +1,17 @@
-use crate::cli::{ast::{parser::Parser, SqlStatement, SelectStatement, SelectStatementColumns, Operator, common::token_to_value, common::tokens_to_identifier_list, WhereClause, OrderByClause, OrderByDirection, LimitClause}, tokenizer::token::TokenTypes};
+use crate::cli::{ast::{parser::Parser, SqlStatement, SelectStatement, SelectStatementColumns, Operator, common::token_to_value, common::tokens_to_identifier_list, common::expect_token_type, WhereClause, OrderByClause, OrderByDirection, LimitClause}, tokenizer::token::TokenTypes};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance();
     let columns = get_columns(parser)?;
     parser.advance(); // parser comes out of get_columns() on the From token this advances to table name
     let table_name = get_table_name(parser)?;
-    let where_clause = get_where_clause(parser)?;
+    let where_clause: Option<WhereClause> = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
     
     // Ensure SemiColon
-    let token = parser.current_token().ok_or_else(|| parser.format_error())?;
-    if token.token_type != TokenTypes::SemiColon {
-        return Err(parser.format_error());
-    }
+    expect_token_type(parser, TokenTypes::SemiColon)?;
+
     parser.advance(); // Move past the semicolon
     return Ok(SqlStatement::Select(SelectStatement {
         table_name: table_name,
@@ -25,70 +23,53 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 }
 
 fn get_columns(parser: &mut Parser) -> Result<SelectStatementColumns, String> {
-    match parser.current_token() {
-        Some(token) => {
-            if token.token_type == TokenTypes::Asterisk {
-                parser.advance();
-                return Ok(SelectStatementColumns::All);
-            }
-            else {
-                let columns = tokens_to_identifier_list(parser)?;
-                return Ok(SelectStatementColumns::Specific(columns));
-            }
-        }
-        None => return Err(parser.format_error()),
+    let token = parser.current_token()?;
+    
+    if token.token_type == TokenTypes::Asterisk {
+        parser.advance();
+        Ok(SelectStatementColumns::All)
+    } else {
+        let columns = tokens_to_identifier_list(parser)?;
+        Ok(SelectStatementColumns::Specific(columns))
     }
 }
 
 fn get_table_name(parser: &mut Parser) -> Result<String, String> {
-    match parser.current_token() {
-        Some(token) => {
-            if token.token_type != TokenTypes::Identifier {
-                return Err(parser.format_error());
-            }
-            let result = token.value.to_string();
-            parser.advance();
-            return Ok(result);
-        },
-        None => return Err(parser.format_error()),
-    };
+    let token = parser.current_token()?;
+    expect_token_type(parser, TokenTypes::Identifier)?;
+
+    let result = token.value.to_string();
+    parser.advance();
+    Ok(result)
 }
 
+
 fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, String> {
-    let token = parser.current_token().ok_or_else(|| parser.format_error())?;
-    if token.token_type != TokenTypes::Where {
+    if expect_token_type(parser, TokenTypes::Where).is_err() {
         return Ok(None);
     }
     parser.advance();
 
-    let column = match parser.current_token() {
-        Some(token) => {
-            if token.token_type != TokenTypes::Identifier {
-                return Err(parser.format_error());
-            }
-            token.value.to_string()
-        }
-        None => return Err(parser.format_error()),
-    };
+    let token = parser.current_token()?;
+    expect_token_type(parser, TokenTypes::Identifier)?;
+    let column = token.value.to_string();
     parser.advance();
-    let operator = match parser.current_token() {
-        Some(token) => {
-            match token.token_type {
-                TokenTypes::Equals => Operator::Equals,
-                TokenTypes::NotEquals => Operator::NotEquals,
-                TokenTypes::LessThan => Operator::LessThan,
-                TokenTypes::LessEquals => Operator::LessEquals,
-                TokenTypes::GreaterThan => Operator::GreaterThan,
-                TokenTypes::GreaterEquals => Operator::GreaterEquals,
-                _ => return Err(parser.format_error()),
-            }
-        }
-        None => return Err(parser.format_error()),
-    };
-    parser.advance();
-    let value = token_to_value(parser)?;
 
+    let token = parser.current_token()?;
+    let operator  = match token.token_type {
+        TokenTypes::Equals => Operator::Equals,
+        TokenTypes::NotEquals => Operator::NotEquals,
+        TokenTypes::LessThan => Operator::LessThan,
+        TokenTypes::LessEquals => Operator::LessEquals,
+        TokenTypes::GreaterThan => Operator::GreaterThan,
+        TokenTypes::GreaterEquals => Operator::GreaterEquals,
+        _ => return Err(parser.format_error()),
+    };
     parser.advance();
+
+    let value = token_to_value(parser)?;
+    parser.advance();
+
     return Ok(Some(WhereClause {
         column: column,
         operator: operator,
@@ -97,46 +78,32 @@ fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, String> 
 }
 
 fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, String> {
-    let token = parser.current_token().ok_or_else(|| parser.format_error())?;
-    if token.token_type != TokenTypes::Order {
+    if expect_token_type(parser, TokenTypes::Order).is_err() {
         return Ok(None);
     }
     parser.advance();
 
-    let token = parser.current_token().ok_or_else(|| parser.format_error())?;
-    if token.token_type != TokenTypes::By {
-        return Err(parser.format_error());
-    }
+    expect_token_type(parser, TokenTypes::By)?;
     parser.advance();
 
     let mut order_by_clauses = vec![];
     loop {
-        let column = match parser.current_token() {
-            Some(token) => {
-                if token.token_type != TokenTypes::Identifier {
-                    return Err(parser.format_error());
-                }
-                token.value.to_string()
-            },
-            None => return Err(parser.format_error()),
-        };
-
+        let token = parser.current_token()?;
+        expect_token_type(parser, TokenTypes::Identifier)?;
+        let column = token.value.to_string();
         parser.advance();
-        let direction = match parser.current_token() {
-            Some(token) => {
-                match token.token_type {
-                    TokenTypes::Asc => {
-                        parser.advance();
-                        OrderByDirection::Asc
-                    },
-                    TokenTypes::Desc => {
-                        parser.advance();
-                        OrderByDirection::Desc
-                    },
-                    _ => OrderByDirection::Asc,
-                }
+
+        let token = parser.current_token()?;
+        let direction = match token.token_type {
+            TokenTypes::Asc => {
+                parser.advance();
+                OrderByDirection::Asc
             },
-            None => return Err(parser.format_error()),
+            TokenTypes::Desc => {
+                parser.advance();
+                OrderByDirection::Desc
+            },
+            _ => OrderByDirection::Asc,
         };
 
         order_by_clauses.push(OrderByClause {
@@ -144,7 +111,7 @@ fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, Strin
             direction: direction,
         });
 
-        let token = parser.current_token().ok_or_else(|| parser.format_error())?;
+        let token = parser.current_token()?;
         if token.token_type != TokenTypes::Comma {
             break;
         }
@@ -153,25 +120,17 @@ fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, Strin
     return Ok(Some(order_by_clauses));
 }
 
-fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
-    let token = parser.current_token().ok_or_else(|| parser.format_error())?;
-    if token.token_type != TokenTypes::Limit {
+fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> { 
+    if expect_token_type(parser, TokenTypes::Limit).is_err() {
         return Ok(None);
     }
     parser.advance();
 
-    let limit = match parser.current_token() {
-        Some(token) => {
-            if token.token_type != TokenTypes::IntLiteral {
-                return Err(parser.format_error());
-            }
-            token_to_value(parser)?
-        },
-        None => return Err(parser.format_error()),
-    };
+    expect_token_type(parser, TokenTypes::IntLiteral)?;
+    let limit = token_to_value(parser)?;
     parser.advance();
 
-    let token = parser.current_token().ok_or_else(|| parser.format_error())?;
+    let token = parser.current_token()?;
     if token.token_type != TokenTypes::Offset {
         return Ok(Some(LimitClause {
             limit: limit,
@@ -180,17 +139,10 @@ fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
     }
     parser.advance();
 
-    let offset = match parser.current_token() {
-        Some(token) => {
-            if token.token_type != TokenTypes::IntLiteral {
-                return Err(parser.format_error());
-            }
-            token_to_value(parser)?
-        },
-        None => return Err(parser.format_error()),
-    };   
-
+    expect_token_type(parser, TokenTypes::IntLiteral)?;
+    let offset = token_to_value(parser)?;
     parser.advance();
+
     return Ok(Some(LimitClause {
         limit: limit,
         offset: Some(offset),

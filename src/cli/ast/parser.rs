@@ -20,13 +20,6 @@ impl<'a> Parser<'a> {
         return Ok(&self.tokens[self.current]);
     }
 
-    pub fn peek_token(&self) -> Result<&Token<'a>, String> {
-        if self.current + 1 >= self.tokens.len() {
-            return Err(self.format_error());
-        }
-        return Ok(&self.tokens[self.current + 1]);
-    }
-
     pub fn advance(&mut self) {
         self.current += 1;
     }

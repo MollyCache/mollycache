@@ -1,8 +1,17 @@
 use crate::cli::{ast::parser::Parser, table::Value, tokenizer::token::TokenTypes};
 use hex::decode;
 
+// Returns an error if the current token does not match the given token type
+pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), String> {
+    let token = parser.current_token()?;
+    if token.token_type != token_type {
+        return Err(parser.format_error());
+    }
+    Ok(())
+}
+
 pub fn token_to_value(parser: &Parser) -> Result<Value, String> {
-    let token = parser.current_token().ok_or_else(|| parser.format_error())?;
+    let token = parser.current_token()?;
     
     match token.token_type {
         TokenTypes::IntLiteral => {
@@ -30,13 +39,12 @@ pub fn token_to_value(parser: &Parser) -> Result<Value, String> {
 pub fn tokens_to_identifier_list(parser: &mut Parser) -> Result<Vec<String>, String> {
     let mut identifiers: Vec<String> = vec![];
     loop {
-        let token = parser.current_token().ok_or_else(|| parser.format_error())?;
-        if token.token_type != TokenTypes::Identifier {
-            return Err(parser.format_error());
-        }
+        let token = parser.current_token()?;
+        expect_token_type(parser, TokenTypes::Identifier)?;
+
         identifiers.push(token.value.to_string());
         parser.advance();
-        let token = parser.current_token().ok_or_else(|| parser.format_error())?;
+        let token = parser.current_token()?;
         if token.token_type != TokenTypes::Comma {
             break;
         }
