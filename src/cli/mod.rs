@@ -1,11 +1,13 @@
 use std::io;
-mod ast;
+use crate::db;
+pub mod ast;
 mod tokenizer;
 
 pub fn cli() {
     clear_screen();
     println!("Welcome to the MollyDB CLI");
     let mut line_count = 1;
+    let mut database = db::database::Database::new();
 
     loop {
         print!("({:03}) > ", line_count);
@@ -30,8 +32,17 @@ pub fn cli() {
         let tokens = tokenizer::tokenize(input);
         println!("{:?}", tokens);
         let ast = ast::generate(tokens);
-        for result in ast {
-            println!("{:?}", result);
+        for sql_statement in ast {
+            println!("{:?}", sql_statement);
+            match sql_statement {
+                Ok(statement) => {
+                    let result = database.execute(statement);
+                    println!("{:?}", result);
+                },
+                Err(error) => {
+                    println!("Error: {}", error);
+                },
+            }
         }
     }
 }
