@@ -13,11 +13,18 @@ impl<'a> Parser<'a> {
         return Self { tokens, current: 0 };
     }
 
-    pub fn current_token(&self) -> Option<&Token<'a>> {
+    pub fn current_token(&self) -> Result<&Token<'a>, String> {
         if self.current >= self.tokens.len() {
-            return None;
+            return Err(self.format_error());
         }
-        return Some(&self.tokens[self.current]);
+        return Ok(&self.tokens[self.current]);
+    }
+
+    pub fn peek_token(&self) -> Result<&Token<'a>, String> {
+        if self.current + 1 >= self.tokens.len() {
+            return Err(self.format_error());
+        }
+        return Ok(&self.tokens[self.current + 1]);
     }
 
     pub fn advance(&mut self) {
@@ -25,9 +32,10 @@ impl<'a> Parser<'a> {
     }
 
     pub fn format_error(&self) -> String {
-        if let Some(token) = self.current_token() {
+        if self.current < self.tokens.len() {
+            let token = &self.tokens[self.current];
             return format!(
-                "Error at line {:?}, column {:?}: Unexpected type: {:?}",
+                "Error at line {:?}, column {:?}: Unexpected token type: {:?}",
                 token.line_num, token.col_num, token.token_type
             );
         } else {
@@ -36,18 +44,18 @@ impl<'a> Parser<'a> {
     }
 
     pub fn next_statement(&mut self) -> Option<Result<SqlStatement, String>> {
-        if self.tokens.len() == 0 {
-            return Some(Err("No tokens to parse".to_string()));
+        match self.current_token() {
+            Ok(token) => match token.token_type {
+                TokenTypes::Create => Some(create_statement::build(self)),
+                TokenTypes::Insert => Some(insert_statement::build(self)),
+                TokenTypes::Select => Some(select_statement::build(self)),
+                TokenTypes::EOF => None,
+                _ => {
+                    self.advance();
+                    Some(Err(self.format_error()))
+                }
+            },
+            Err(error) => Some(Err(error)),
         }
-        return match self.current_token()?.token_type {
-            TokenTypes::Create => Some(create_statement::build(self)),
-            TokenTypes::Insert => Some(insert_statement::build(self)),
-            TokenTypes::Select => Some(select_statement::build(self)),
-            TokenTypes::EOF => None,
-            _ => {
-                self.advance();
-                Some(Err(self.format_error()))
-            }
-        };
     }
 }
