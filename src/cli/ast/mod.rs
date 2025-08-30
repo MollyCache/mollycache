@@ -3,7 +3,7 @@ use crate::cli::{self, table::{Value, ColumnDefinition}};
 mod common;
 mod create_statement;
 mod insert_statement;
-mod interpreter;
+mod parser;
 mod select_statement;
 
 #[derive(Debug, PartialEq)]
@@ -76,11 +76,34 @@ pub struct LimitClause {
     pub offset: Option<Value>,
 }
 
+pub trait StatementBuilder {
+    fn build_create(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_insert(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+}
+
+pub struct DefaultStatementBuilder;
+
+impl StatementBuilder for DefaultStatementBuilder {
+    fn build_create(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        create_statement::build(parser)
+    }
+    
+    fn build_insert(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        insert_statement::build(parser)
+    }
+    
+    fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        select_statement::build(parser)
+    }
+}
+
 pub fn generate(tokens: Vec<cli::tokenizer::scanner::Token>) -> Vec<Result<SqlStatement, String>> {
     let mut results: Vec<Result<SqlStatement, String>> = vec![];
-    let mut interpreter = interpreter::Interpreter::new(tokens);
+    let mut parser = parser::Parser::new(tokens);
+    let builder : Box<dyn StatementBuilder> = Box::new(DefaultStatementBuilder);
     loop {
-        let next_statement = interpreter.next_statement();
+        let next_statement = parser.next_statement(&builder);
         if let Some(next_statement) = next_statement {
             results.push(next_statement);
         } else {

@@ -1,0 +1,186 @@
+use crate::cli::{
+    ast::{SqlStatement, StatementBuilder},
+    tokenizer::scanner::Token, tokenizer::token::TokenTypes,
+};
+
+
+
+pub struct Parser<'a> {
+    tokens: Vec<Token<'a>>,
+    current: usize,
+}
+
+impl<'a> Parser<'a> {
+    pub fn new(tokens: Vec<Token<'a>>) -> Self {
+        return Self { 
+            tokens, 
+            current: 0, 
+        };
+    }
+    
+    pub fn current_token(&self) -> Result<&Token<'a>, String> {
+        if self.current >= self.tokens.len() {
+            return Err(self.format_error());
+        }
+        return Ok(&self.tokens[self.current]);
+    }
+
+    pub fn advance(&mut self) {
+        self.current += 1;
+    }
+
+    pub fn format_error(&self) -> String {
+        if self.current < self.tokens.len() {
+            let token = &self.tokens[self.current];
+            return format!(
+                "Error at line {:?}, column {:?}: Unexpected token type: {:?}",
+                token.line_num, token.col_num, token.token_type
+            );
+        } else {
+            return "Error at end of input.".to_string();
+        }
+    }
+
+    pub fn next_statement(&mut self, builder: &Box<dyn StatementBuilder>) -> Option<Result<SqlStatement, String>> {
+        match self.current_token() {
+            Ok(token) => match token.token_type {
+                TokenTypes::Create => Some(builder.build_create(self)),
+                TokenTypes::Insert => Some(builder.build_insert(self)),
+                TokenTypes::Select => Some(builder.build_select(self)),
+                TokenTypes::EOF => None,
+                _ => {
+                    Some(Err(self.format_error()))
+                }
+            },
+            Err(error) => Some(Err(error)),
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cli::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns};
+
+    fn token(tt: TokenTypes, val: &'static str, col: usize, line: usize) -> Token<'static> {
+        Token {
+            token_type: tt,
+            value: val,
+            col_num: col,
+            line_num: line,
+        }
+    }
+
+    #[test]
+    fn parser_formats_error_when_at_end_of_input() {
+        let tokens = vec![];
+        let parser = Parser::new(tokens);
+        let result = parser.format_error();
+        assert_eq!(result, "Error at end of input.");
+    }
+
+    #[test]
+    fn parser_formats_error_when_unexpected_token_type() {
+        let tokens = vec![token(TokenTypes::Insert, "INSERT", 15, 3)];
+        let parser = Parser::new(tokens);
+        let result = parser.format_error();
+        assert_eq!(result, "Error at line 3, column 15: Unexpected token type: Insert");
+    }
+
+    pub struct MockStatementBuilder;
+
+    impl StatementBuilder for MockStatementBuilder {
+        fn build_create(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
+            parser.advance();
+            parser.advance();
+            return Ok(SqlStatement::CreateTable(CreateTableStatement {
+                table_name: "users".to_string(),
+                columns: vec![],
+            }));
+        }
+        
+        fn build_insert(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
+            parser.advance();
+            parser.advance();
+            return Ok(SqlStatement::InsertInto(InsertIntoStatement {
+                table_name: "users".to_string(),
+                columns: None,
+                values: vec![],
+            }));
+        }
+        
+        fn build_select(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
+            parser.advance();
+            parser.advance();
+            return Ok(SqlStatement::Select(SelectStatement {
+                table_name: "users".to_string(),
+                columns: SelectStatementColumns::All,
+                where_clause: None,
+                order_by_clause: None,
+                limit_clause: None,
+            }));
+        }
+    }
+
+    #[test]
+    fn parser_next_statement_filters_options_correctly_handles_multiple_statements() {
+        let tokens = vec![
+            token(TokenTypes::Create, "CREATE", 1, 1),
+            token(TokenTypes::SemiColon, ";", 1, 1),
+            token(TokenTypes::Insert, "INSERT", 1, 1),
+            token(TokenTypes::SemiColon, ";", 1, 1),
+            token(TokenTypes::Select, "SELECT", 1, 1),
+            token(TokenTypes::SemiColon, ";", 1, 1),
+            token(TokenTypes::EOF, "", 1, 1),
+        ];
+        let mut parser = Parser::new(tokens);
+        let builder : Box<dyn StatementBuilder> = Box::new(MockStatementBuilder);
+        // Create Table
+        let result = parser.next_statement(&builder);
+        let expected = Some(Ok(SqlStatement::CreateTable(CreateTableStatement {
+            table_name: "users".to_string(),
+            columns: vec![],
+        })));
+        assert_eq!(result, expected);
+
+        // Insert Into
+        let result = parser.next_statement(&builder);
+        let expected = Some(Ok(SqlStatement::InsertInto(InsertIntoStatement {
+            table_name: "users".to_string(),
+            columns: None,
+            values: vec![],
+        })));
+        assert_eq!(result, expected);
+
+        // Select
+        let result = parser.next_statement(&builder);
+        let expected = Some(Ok(SqlStatement::Select(SelectStatement {
+            table_name: "users".to_string(),
+            columns: SelectStatementColumns::All,
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        })));
+        assert_eq!(result, expected);
+
+        // EOF
+        let result = parser.next_statement(&builder);
+        let expected = None;
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parser_next_statement_handles_errors_correctly() {
+        let tokens = vec![
+            token(TokenTypes::Identifier, "users", 1, 1),
+            token(TokenTypes::SemiColon, ";", 1, 1),
+            token(TokenTypes::EOF, "", 1, 1),
+        ];
+        let mut parser = Parser::new(tokens);
+        let builder : Box<dyn StatementBuilder> = Box::new(MockStatementBuilder);
+        let result = parser.next_statement(&builder);
+        let expected = Some(Err("Error at line 1, column 1: Unexpected token type: Identifier".to_string()));
+        assert_eq!(result, expected);
+    }
+}

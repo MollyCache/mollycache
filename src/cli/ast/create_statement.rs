@@ -1,143 +1,98 @@
-use crate::cli::{ast::{interpreter::Interpreter, CreateTableStatement, SqlStatement::{self, CreateTable}}, table::{ColumnDefinition, DataType}, tokenizer::token::TokenTypes};
+use crate::cli::{ast::{parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, common::expect_token_type}, table::{ColumnDefinition, DataType}, tokenizer::token::TokenTypes};
 
-pub fn build(interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
-    interpreter.advance();
+pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
+    parser.advance();
     let statement: Result<SqlStatement, String>;
-    match interpreter.current_token() {
-        Some(token) => {
-            match token.token_type {
-                TokenTypes::Table => {
-                    statement = table_statement(interpreter);
-                },
-                TokenTypes::Index => {
-                    statement = index_statement(interpreter);
-                },
-                _ => return Err(interpreter.format_error()),
-            }
+    
+    let token = parser.current_token()?;
+    match token.token_type {
+        TokenTypes::Table => {
+            statement = table_statement(parser);
         },
-        None => return Err(interpreter.format_error()),
+        TokenTypes::Index => {
+            statement = index_statement(parser);
+        },
+        _ => return Err(parser.format_error()),
     }
+
     // Ensure SemiColon
-    match interpreter.current_token() {
-        Some(token) => {
-            if token.token_type != TokenTypes::SemiColon {
-                return Err(interpreter.format_error());
-            }
-        },
-        None => return Err(interpreter.format_error()),
-    }
-    interpreter.advance(); // Move past the semicolon
+    expect_token_type(parser, TokenTypes::SemiColon)?;
+    parser.advance(); // Move past the semicolon
     return statement;
 }
 
-fn table_statement(interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
-    interpreter.advance();
-    let table_name = match interpreter.current_token() {
-        Some(token) => {
-            if token.token_type != TokenTypes::Identifier {
-                return Err(interpreter.format_error());
-            }
-            token.value.to_string()
-            
-        },
-        None => return Err(interpreter.format_error()),
-    };
-    interpreter.advance();
+fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
+    parser.advance();
 
-    let column_definitions = column_definitions(interpreter)?;
+    let token = parser.current_token()?;
+    expect_token_type(parser, TokenTypes::Identifier)?;
+    let table_name = token.value.to_string();
+    parser.advance();
+
+    let column_definitions = column_definitions(parser)?;
     return Ok(CreateTable(CreateTableStatement {
         table_name,
         columns: column_definitions,
     }));
 }
 
-fn column_definitions(interpreter: &mut Interpreter) -> Result<Vec<ColumnDefinition>, String> {
+fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, String> {
     let mut columns: Vec<crate::cli::table::ColumnDefinition> = vec![];
-    if let Some(token) = interpreter.current_token() {
-        if token.token_type != TokenTypes::LeftParen {
-            return Err(interpreter.format_error());
-        }
-        else {
-            interpreter.advance();
-            loop {
-                let column_name = match interpreter.current_token() {
-                    Some(token) => {
-                        if token.token_type != TokenTypes::Identifier {
-                            return Err(interpreter.format_error());
-                        }
-                        token.value.to_string()
-                    },
-                    None => return Err(interpreter.format_error()),
-                };
-                interpreter.advance();
-                
-                // Grab the column data type
-                let column_data_type = token_to_data_type(interpreter)?;
-                interpreter.advance();
 
-                // TODO: Modifiers and Constraints
+    expect_token_type(parser, TokenTypes::LeftParen)?;
+    parser.advance();
 
-                // Ensure we have a comma or right paren
-                if let Some(token) = interpreter.current_token() {
-                    match &token.token_type {
-                        TokenTypes::Comma => {
-                            columns.push(ColumnDefinition {
-                                name: column_name,
-                                data_type: column_data_type,
-                                constraints: vec![] // TODO,
-                            });
-                        }
-                        TokenTypes::RightParen => {
-                            columns.push(ColumnDefinition {
-                                name: column_name,
-                                data_type: column_data_type,
-                                constraints: vec![] // TODO,
-                            });
-                            interpreter.advance();
-                            break;
-                        },
-                        _ => return Err(interpreter.format_error()),
-                    }
-                } else {
-                    return Err(interpreter.format_error());
-                }
-                interpreter.advance();
-            }
-            return Ok(columns);
-        }
-    } else {
-        return Err(interpreter.format_error());
-    }
-}
+    loop {
+        let token = parser.current_token()?;
+        expect_token_type(parser, TokenTypes::Identifier)?;
+        let column_name = token.value.to_string();
+        parser.advance();
+        
+        // Grab the column data type
+        let column_data_type = token_to_data_type(parser)?;
+        parser.advance();
 
-fn token_to_data_type(interpreter: &mut Interpreter) -> Result<DataType, String> {
-    if let Some(token) = interpreter.current_token() {
+        // TODO: Modifiers and Constraints
+
+        // Ensure we have a comma or right paren
+        let token = parser.current_token()?;
         match token.token_type {
-            TokenTypes::Integer => {
-                return Ok(DataType::Integer);
-            },
-            TokenTypes::Real => {
-                return Ok(DataType::Real);
-            },
-            TokenTypes::Text => {
-                return Ok(DataType::Text);
-            },
-            TokenTypes::Blob => {
-                return Ok(DataType::Blob);
-            },
-            TokenTypes::Null => {
-                return Ok(DataType::Null);
-            },
-            _ => {
-                return Err(interpreter.format_error());
+            TokenTypes::Comma => {
+                columns.push(ColumnDefinition {
+                    name: column_name,
+                    data_type: column_data_type,
+                    constraints: vec![] // TODO,
+                });
+                parser.advance();
             }
+            TokenTypes::RightParen => {
+                columns.push(ColumnDefinition {
+                    name: column_name,
+                    data_type: column_data_type,
+                    constraints: vec![] // TODO,
+                });
+                parser.advance();
+                break;
+            },
+            _ => return Err(parser.format_error()),
         }
-    } else {
-        return Err(interpreter.format_error());
     }
+    return Ok(columns);
 }
 
-fn index_statement(_interpreter: &mut Interpreter) -> Result<SqlStatement, String> {
+fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
+    let token = parser.current_token()?;
+    return match token.token_type {
+        TokenTypes::Integer => Ok(DataType::Integer),
+        TokenTypes::Real => Ok(DataType::Real),
+        TokenTypes::Text => Ok(DataType::Text),
+        TokenTypes::Blob => Ok(DataType::Blob),
+        TokenTypes::Null => Ok(DataType::Null),
+        _ => Err(parser.format_error()),
+    };
+}
+
+fn index_statement(_parser: &mut Parser) -> Result<SqlStatement, String> {
     return Err("Index statements not yet implemented".to_string());
 }
 
@@ -173,8 +128,8 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
             token(TokenTypes::EOF, ""),
         ];
-        let mut interpreter = Interpreter::new(tokens);
-        let result = build(&mut interpreter);
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
         let expected = SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
             columns: vec![
@@ -213,8 +168,8 @@ mod tests {
             // Missing SemiColon
             token(TokenTypes::EOF, ""),
         ];
-        let mut interpreter = Interpreter::new(tokens);
-        let result = build(&mut interpreter);
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
         assert!(result.is_err());
     }
 
@@ -235,8 +190,8 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
             token(TokenTypes::EOF, ""),
         ];
-        let mut interpreter = Interpreter::new(tokens);
-        let result = build(&mut interpreter);
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
         assert!(result.is_err());
     }
 
@@ -256,8 +211,8 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
             token(TokenTypes::EOF, ""),
         ];
-        let mut interpreter = Interpreter::new(tokens);
-        let result = build(&mut interpreter);
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
         assert!(result.is_err());
     }
 
@@ -271,8 +226,8 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
             token(TokenTypes::EOF, ""),
         ];
-        let mut interpreter = Interpreter::new(tokens);
-        let result = build(&mut interpreter);
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
         assert!(result.is_err());
     }
 }
