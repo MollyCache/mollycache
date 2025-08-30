@@ -101,9 +101,9 @@ impl StatementBuilder for DefaultStatementBuilder {
 pub fn generate(tokens: Vec<cli::tokenizer::scanner::Token>) -> Vec<Result<SqlStatement, String>> {
     let mut results: Vec<Result<SqlStatement, String>> = vec![];
     let mut parser = parser::Parser::new(tokens);
-    let builder : Box<dyn StatementBuilder> = Box::new(DefaultStatementBuilder);
+    let builder : &dyn StatementBuilder = &DefaultStatementBuilder;
     loop {
-        let next_statement = parser.next_statement(&builder);
+        let next_statement = parser.next_statement(builder);
         if let Some(next_statement) = next_statement {
             results.push(next_statement);
         } else {
