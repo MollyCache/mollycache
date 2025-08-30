@@ -3,12 +3,12 @@ use crate::cli::{
     tokenizer::scanner::Token, tokenizer::token::TokenTypes,
 };
 
-pub struct Interpreter<'a> {
+pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     current: usize,
 }
 
-impl<'a> Interpreter<'a> {
+impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token<'a>>) -> Self {
         return Self { tokens, current: 0 };
     }

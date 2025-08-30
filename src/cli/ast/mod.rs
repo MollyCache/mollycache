@@ -3,7 +3,7 @@ use crate::cli::{self, table::{Value, ColumnDefinition}};
 mod common;
 mod create_statement;
 mod insert_statement;
-mod interpreter;
+mod parser;
 mod select_statement;
 
 #[derive(Debug, PartialEq)]
@@ -78,9 +78,9 @@ pub struct LimitClause {
 
 pub fn generate(tokens: Vec<cli::tokenizer::scanner::Token>) -> Vec<Result<SqlStatement, String>> {
     let mut results: Vec<Result<SqlStatement, String>> = vec![];
-    let mut interpreter = interpreter::Interpreter::new(tokens);
+    let mut parser = parser::Parser::new(tokens);
     loop {
-        let next_statement = interpreter.next_statement();
+        let next_statement = parser.next_statement();
         if let Some(next_statement) = next_statement {
             results.push(next_statement);
         } else {
