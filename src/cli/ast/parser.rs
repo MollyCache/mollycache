@@ -41,7 +41,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn next_statement(&mut self, builder: &Box<dyn StatementBuilder>) -> Option<Result<SqlStatement, String>> {
+    pub fn next_statement(&mut self, builder: &dyn StatementBuilder) -> Option<Result<SqlStatement, String>> {
         match self.current_token() {
             Ok(token) => match token.token_type {
                 TokenTypes::Create => Some(builder.build_create(self)),
@@ -135,9 +135,9 @@ mod tests {
             token(TokenTypes::EOF, "", 1, 1),
         ];
         let mut parser = Parser::new(tokens);
-        let builder : Box<dyn StatementBuilder> = Box::new(MockStatementBuilder);
+        let builder : &dyn StatementBuilder = &MockStatementBuilder;
         // Create Table
-        let result = parser.next_statement(&builder);
+        let result = parser.next_statement(builder);
         let expected = Some(Ok(SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
             columns: vec![],
@@ -145,7 +145,7 @@ mod tests {
         assert_eq!(result, expected);
 
         // Insert Into
-        let result = parser.next_statement(&builder);
+        let result = parser.next_statement(builder);
         let expected = Some(Ok(SqlStatement::InsertInto(InsertIntoStatement {
             table_name: "users".to_string(),
             columns: None,
@@ -154,7 +154,7 @@ mod tests {
         assert_eq!(result, expected);
 
         // Select
-        let result = parser.next_statement(&builder);
+        let result = parser.next_statement(builder);
         let expected = Some(Ok(SqlStatement::Select(SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::All,
@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(result, expected);
 
         // EOF
-        let result = parser.next_statement(&builder);
+        let result = parser.next_statement(builder);
         let expected = None;
         assert_eq!(result, expected);
     }
@@ -178,8 +178,8 @@ mod tests {
             token(TokenTypes::EOF, "", 1, 1),
         ];
         let mut parser = Parser::new(tokens);
-        let builder : Box<dyn StatementBuilder> = Box::new(MockStatementBuilder);
-        let result = parser.next_statement(&builder);
+        let builder : &dyn StatementBuilder = &MockStatementBuilder;
+        let result = parser.next_statement(builder);
         let expected = Some(Err("Error at line 1, column 1: Unexpected token type: Identifier".to_string()));
         assert_eq!(result, expected);
     }
