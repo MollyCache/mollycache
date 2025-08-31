@@ -1,4 +1,5 @@
 pub mod where_clause;
+pub mod limit_clause;
 use crate::db::table::{Table, Value};
 use crate::cli::ast::SelectStatement;
 use crate::cli::ast::SelectStatementColumns;
@@ -6,8 +7,18 @@ use crate::db::table::common::validate_and_clone_row;
 
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
+    let mut rows = get_initial_rows(table, &statement)?;
+    // Implement order by
+    if let Some(limit_clause) = &statement.limit_clause {
+        rows = limit_clause::get_limited_rows(rows, limit_clause)?;
+    }
+    
+    return Ok(rows);
+}
+
+pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
-    if let Some(where_clause) = statement.where_clause {
+    if let Some(where_clause) = &statement.where_clause {
         for row in table.rows.iter() {
             if where_clause::matches_where_clause(table, &row, &where_clause) {
                 rows.push(get_columns_from_row(table, &row, &statement.columns)?);
@@ -18,8 +29,9 @@ pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value
             rows.push(get_columns_from_row(table, &row, &statement.columns)?);
         }
     }
-    return Ok(rows);
+    Ok(rows)
 }
+
 
 pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
     let mut row_values: Vec<Value> = vec![];
