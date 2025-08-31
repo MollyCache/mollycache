@@ -11,6 +11,7 @@ env:
 
 jobs:
   test:
+    name: Rust Tests
     runs-on: ubuntu-latest
 
     steps:
