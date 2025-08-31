@@ -55,6 +55,7 @@ mod tests {
     use crate::cli::ast::SelectStatementColumns;
     use crate::cli::ast::Operator;
     use crate::cli::ast::WhereClause;
+    use crate::cli::ast::LimitClause;
 
     fn default_table() -> Table {
         Table {
@@ -156,6 +157,27 @@ mod tests {
         assert!(result.is_ok());
         let expected = vec![
             vec![Value::Text("John".to_string()), Value::Integer(25)],
+        ];
+        assert_eq!(expected, result.unwrap());
+    }
+
+    #[test]
+    fn select_with_limit_clause_is_generated_correctly() {
+        let table = default_table();
+        let statement = SelectStatement {
+            table_name: "users".to_string(),
+            columns: SelectStatementColumns::All,
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: Some(LimitClause {
+                limit: Value::Integer(1),
+                offset: Some(Value::Integer(1)),
+            }),
+        };
+        let result = select(&table, statement);
+        assert!(result.is_ok());
+        let expected = vec![
+            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
         ];
         assert_eq!(expected, result.unwrap());
     }
