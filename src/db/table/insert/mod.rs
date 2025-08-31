@@ -19,6 +19,7 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<(), S
     // Creates a hash map from the statement values with the columns as the keys
     // The values are stored in a queue to match the order of the columns, we push back to the queue
     // and then pop off the front when creating the rows.
+    // Todo: make this logic simpler.
     if let Some(statement_columns) = &statement.columns {
         let mut map: HashMap<&String, VecDeque<Value>> = HashMap::new();
         for (i, column) in statement_columns.iter().enumerate() {

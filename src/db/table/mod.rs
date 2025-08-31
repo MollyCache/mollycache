@@ -54,16 +54,17 @@ impl Value {
     }
 }
 
+#[derive(Debug)]
 pub struct Table {
-    pub _name: String,
+    pub name: String,
     pub columns: Vec<ColumnDefinition>,
     pub rows: Vec<Vec<Value>>,
 }
 
 impl Table {
-    pub fn new(_name: String, columns: Vec<ColumnDefinition>) -> Self {
+    pub fn new(name: String, columns: Vec<ColumnDefinition>) -> Self {
         Self {
-            _name,
+            name,
             columns,
             rows: vec![],
         }

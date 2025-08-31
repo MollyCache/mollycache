@@ -36,8 +36,8 @@ impl Database {
         if self.has_table(&statement.table_name) {
             return Err(format!("Table {} already exists", statement.table_name));
         }
-        let table_name = statement.table_name;
-        self.tables.insert(table_name.clone(), Table::new(table_name, statement.columns));
+        let table = Table::new(statement.table_name, statement.columns) ;
+        self.tables.insert(table.name.clone(), table);
         Ok(())
     }
 
@@ -78,6 +78,26 @@ mod tests {
     use crate::cli::ast::CreateTableStatement;
     use crate::db::table::{ColumnDefinition, DataType};
 
+
+    fn default_database() -> Database {
+        Database {
+            tables: HashMap::from([
+                ("users".to_string(), Table::new("users".to_string(), vec![
+                    ColumnDefinition {
+                        name: "id".to_string(),
+                        data_type: DataType::Integer,
+                        constraints: vec![]
+                    },
+                    ColumnDefinition {
+                        name: "name".to_string(),
+                        data_type: DataType::Text,
+                        constraints: vec![]
+                    },
+                ]))
+            ])
+        }
+    }
+
     #[test]
     fn create_table_generates_proper_table() {
         let statement = CreateTableStatement {
@@ -93,5 +113,29 @@ mod tests {
         let mut database = Database::new();
         assert!(database.create_table(statement).is_ok());
         assert!(database.has_table("users"));
+    }
+
+    #[test]
+    fn has_table_returns_proper_response() {
+        let database = default_database();
+        assert!(database.has_table("users"));
+        assert!(!database.has_table("not_users"));
+    }
+
+    #[test]
+    fn get_table_funcs_returns_proper_table() {
+        let mut database = default_database();
+        let table = database.get_table("users");
+        assert!(table.is_ok());
+        assert_eq!(table.unwrap().name, "users");
+        let table = database.get_table("not_users");
+        assert!(table.is_err());
+        assert_eq!(table.unwrap_err(), "Table not_users does not exist");
+        let table = database.get_table_mut("users");
+        assert!(table.is_ok());
+        assert_eq!(table.unwrap().name, "users");
+        let table = database.get_table_mut("not_users");
+        assert!(table.is_err());
+        assert_eq!(table.unwrap_err(), "Table not_users does not exist");
     }
 }

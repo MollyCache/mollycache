@@ -46,7 +46,7 @@ mod tests {
 
     fn default_table() -> Table {
         Table {
-            _name: "users".to_string(),
+            name: "users".to_string(),
             columns: vec![
                 ColumnDefinition {name: "id".to_string(), data_type: DataType::Integer, constraints: vec![]},
                 ColumnDefinition {name: "name".to_string(), data_type: DataType::Text, constraints: vec![]},
