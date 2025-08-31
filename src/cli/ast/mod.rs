@@ -173,7 +173,7 @@ mod tests {
         ];
         let result = generate(tokens);
         assert!(result[0].is_err());
-        let expected = vec![Err("Error at line 1, column 0: Unexpected token type: Into".to_string())];
+        let expected = vec![Err("Error at line 1, column 0: Unexpected value: INTO".to_string())];
         assert_eq!(expected, result);
     }
 
@@ -242,7 +242,7 @@ mod tests {
         assert!(result[0].is_err());
         assert!(result[1].is_ok());
         let expected = vec![
-            Err("Error at line 1, column 0: Unexpected token type: SemiColon".to_string()),
+            Err("Error at line 1, column 0: Unexpected value: ;".to_string()),
             Ok(SqlStatement::InsertInto(InsertIntoStatement {
         
                 table_name: "users".to_string(),

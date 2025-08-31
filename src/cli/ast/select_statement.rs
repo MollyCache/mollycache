@@ -1,4 +1,4 @@
-use crate::cli::{ast::{parser::Parser, SqlStatement, SelectStatement, SelectStatementColumns, Operator, common::token_to_value, common::tokens_to_identifier_list, common::expect_token_type, WhereClause, OrderByClause, OrderByDirection, LimitClause}, tokenizer::token::TokenTypes};
+use crate::{cli::{ast::{common::{expect_token_type, token_to_value, tokens_to_identifier_list}, parser::Parser, LimitClause, Operator, OrderByClause, OrderByDirection, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause}, tokenizer::token::TokenTypes}, db::table::Value};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
@@ -138,6 +138,11 @@ fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
 
     expect_token_type(parser, TokenTypes::IntLiteral)?;
     let offset = token_to_value(parser)?;
+    if let Value::Integer(offset) = offset {
+        if offset < 0 {
+            return Err(parser.format_error());
+        }
+    };
     parser.advance()?;
 
     return Ok(Some(LimitClause {
@@ -165,6 +170,7 @@ mod tests {
 
     #[test]
     fn select_statement_with_all_tokens_is_generated_correctly() {
+        // SELECT * FROM users;
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Asterisk, "*"),
@@ -187,6 +193,7 @@ mod tests {
 
     #[test]
     fn select_statement_with_a_single_column_is_generated_correctly() {
+        // SELECT id FROM guests;
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Identifier, "id"),
@@ -211,6 +218,7 @@ mod tests {
 
     #[test]
     fn select_statement_with_multiple_columns_is_generated_correctly() {
+        // SELECT id, name FROM users;
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Identifier, "id"),
@@ -238,6 +246,7 @@ mod tests {
 
     #[test]
     fn select_statement_with_all_clauses_is_generated_correctly() {
+        // SELECT id FROM guests WHERE id = 1 ORDER BY id ASC, name DESC, age ASC LIMIT 10 OFFSET 5;
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Identifier, "id"),
@@ -299,6 +308,7 @@ mod tests {
 
     #[test]
     fn select_statement_with_limit_clause_no_offset_is_generated_correctly() {
+        // SELECT id FROM guests WHERE id > 1 LIMIT 10;
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Identifier, "id"),
@@ -332,5 +342,25 @@ mod tests {
                 offset: None,
             }),
         }));
+    }
+
+    #[test]
+    fn select_statement_with_limit_clause_with_negative_offset_is_generated_correctly() {
+        // SELECT id FROM guests LIMIT 10 OFFSET -5;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "guests"),
+            token(TokenTypes::Limit, "LIMIT"),
+            token(TokenTypes::IntLiteral, "10"),
+            token(TokenTypes::Offset, "OFFSET"),
+            token(TokenTypes::IntLiteral, "-5"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Error at line 1, column 0: Unexpected value: -5");
     }
 }
