@@ -37,8 +37,8 @@ pub fn cli() {
             match sql_statement {
                 Ok(statement) => {
                     let result = database.execute(statement);
-                    if let Ok(result) = result {
-                        if let Some(rows) = result {
+                    if let Ok(values) = result {
+                        if let Some(rows) = values {
                             for row in rows {
                                 println!("{:?}", row);
                             }

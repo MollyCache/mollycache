@@ -109,7 +109,9 @@ impl Table {
                 }
             }
         } else {
-            todo!()
+            for row in self.rows.iter() {
+                rows.push(self.get_columns_from_row(&row, &statement.columns)?);
+            }
         }
         return Ok(rows);
     }
