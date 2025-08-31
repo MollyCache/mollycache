@@ -13,7 +13,7 @@ MollyDB is currently in early development with many of the listed features yet t
 4. MollyDB maintains a test coverage of >80%.
 
 ## Features:
-1. Row caching: The core feature of MollyDB is the idea of row caching. Similar to a query cache, once a query to a database is performed the results are cached into a MollyDB instance. Once a cache is warm, subsequent queries can be specified to be run against MollyDB instead of the database. However because MollyDB stores results as rows in a database you can perform new queries against the cache instead of fetching exact queries. This sacrifices accuracy / completeness of the results in exchange for better performance.
+1. Row caching: The core feature of MollyDB is the idea of row caching. Similar to a query cache, once a query to a database is performed the result rows are cached into a MollyDB instance. Once a cache is warm, subsequent queries can be specified to be run against MollyDB instead of the database. However because MollyDB stores results as rows in a database you can perform new queries against the cache instead of fetching exact queries. This sacrifices accuracy / completeness of the results in exchange for better performance.
 
 2. Snapshotting: Complete parity with SQLite allows you to load schemas and data from a SQLite database to use as a datasource specifying snapshot backup intervals and fetching intervals. 
 
