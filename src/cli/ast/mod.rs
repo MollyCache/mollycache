@@ -1,4 +1,5 @@
-use crate::cli::{self, table::{ColumnDefinition, Value}, tokenizer::token::TokenTypes};
+use crate::cli::tokenizer::{scanner::Token, token::TokenTypes};
+use crate::db::table::{ColumnDefinition, Value};
 
 mod common;
 mod create_statement;
@@ -98,7 +99,7 @@ impl StatementBuilder for DefaultStatementBuilder {
     }
 }
 
-pub fn generate(tokens: Vec<cli::tokenizer::scanner::Token>) -> Vec<Result<SqlStatement, String>> {
+pub fn generate(tokens: Vec<Token>) -> Vec<Result<SqlStatement, String>> {
     let mut results: Vec<Result<SqlStatement, String>> = vec![];
     let mut parser = parser::Parser::new(tokens);
     let builder : &dyn StatementBuilder = &DefaultStatementBuilder;

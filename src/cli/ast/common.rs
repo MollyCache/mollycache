@@ -1,4 +1,5 @@
-use crate::cli::{ast::parser::Parser, table::Value, tokenizer::token::TokenTypes};
+use crate::cli::{ast::parser::Parser, tokenizer::token::TokenTypes};
+use crate::db::table::Value;
 use hex::decode;
 
 // Returns an error if the current token does not match the given token type

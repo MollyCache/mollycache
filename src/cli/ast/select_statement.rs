@@ -41,7 +41,6 @@ fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     Ok(result)
 }
 
-
 fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, String> {
     if expect_token_type(parser, TokenTypes::Where).is_err() {
         return Ok(None);
@@ -153,7 +152,7 @@ fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
 mod tests {
     use super::*;
     use crate::cli::tokenizer::scanner::Token;
-    use crate::cli::table::Value;
+    use crate::db::table::Value;
 
     fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
         Token {
