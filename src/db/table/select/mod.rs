@@ -1,6 +1,8 @@
 pub mod where_clause;
 use crate::db::table::{Table, Value};
 use crate::cli::ast::SelectStatement;
+use crate::cli::ast::SelectStatementColumns;
+use crate::db::table::common::validate_and_clone_row;
 
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
@@ -8,15 +10,30 @@ pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value
     if let Some(where_clause) = statement.where_clause {
         for row in table.rows.iter() {
             if where_clause::matches_where_clause(table, &row, &where_clause) {
-                rows.push(table.get_columns_from_row(&row, &statement.columns)?);
+                rows.push(get_columns_from_row(table, &row, &statement.columns)?);
             }
         }
     } else {
         for row in table.rows.iter() {
-            rows.push(table.get_columns_from_row(&row, &statement.columns)?);
+            rows.push(get_columns_from_row(table, &row, &statement.columns)?);
         }
     }
     return Ok(rows);
+}
+
+pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
+    let mut row_values: Vec<Value> = vec![];
+    if *selected_columns == SelectStatementColumns::All {
+        return Ok(validate_and_clone_row(table, row)?);
+    } else {
+        let specific_selected_columns = selected_columns.columns()?;
+        for (i, column) in table.columns.iter().enumerate() {
+            if (*specific_selected_columns).contains(&column.name) {
+                row_values.push(row[i].clone());
+            }
+        }
+    }
+    return Ok(row_values);
 }
 
 #[cfg(test)]

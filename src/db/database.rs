@@ -1,6 +1,7 @@
 use crate::db::table::{Table, Value};
 use crate::cli::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement};
 use crate::db::table::select;
+use crate::db::table::insert;
 use std::collections::HashMap;
 
 pub struct Database {
@@ -42,7 +43,7 @@ impl Database {
 
     fn insert_into_table(&mut self, statement: InsertIntoStatement) -> Result<(), String> {
         let table = self.get_table_mut(&statement.table_name)?;
-        table.insert(statement)?;
+        insert::insert(table, statement)?;
         Ok(())
     }
 
