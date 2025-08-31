@@ -42,6 +42,15 @@ pub enum SelectStatementColumns {
     Specific(Vec<String>),
 }
 
+impl SelectStatementColumns {
+    pub fn columns(&self) -> Result<&Vec<String>, String> {
+        return match self {
+            SelectStatementColumns::All => Err("Cannot get columns from all columns".to_string()),
+            SelectStatementColumns::Specific(columns) => Ok(columns),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Operator {
     Equals,

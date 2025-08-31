@@ -1,5 +1,6 @@
 use crate::db::table::{Table, Value};
 use crate::cli::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement};
+use crate::db::select;
 use std::collections::HashMap;
 
 pub struct Database {
@@ -47,7 +48,7 @@ impl Database {
 
     fn select_from_table(&mut self, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
         let table = self.get_table(&statement.table_name)?;
-        let rows = table.select(statement)?;
+        let rows = select::select(table, statement)?;
         Ok(rows)
     }
 

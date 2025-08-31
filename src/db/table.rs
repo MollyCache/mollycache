@@ -1,5 +1,4 @@
-use crate::cli::ast::{InsertIntoStatement, SelectStatement, SelectStatementColumns};
-use crate::db::select_statements::where_clause::matches_where_clause;
+use crate::cli::ast::{InsertIntoStatement, SelectStatementColumns};
 
 #[derive(Debug, PartialEq)]
 pub enum DataType {
@@ -57,9 +56,9 @@ impl Value {
 }
 
 pub struct Table {
-    _name: String,
-    columns: Vec<ColumnDefinition>,
-    rows: Vec<Vec<Value>>,
+    pub _name: String,
+    pub columns: Vec<ColumnDefinition>,
+    pub rows: Vec<Vec<Value>>,
 }
 
 impl Table {
@@ -101,21 +100,7 @@ impl Table {
         return Ok(());
     }
 
-    pub fn select(&self, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-        let mut rows: Vec<Vec<Value>> = vec![];
-        if let Some(where_clause) = statement.where_clause {
-            for row in self.rows.iter() {
-                if matches_where_clause(self, &row, &where_clause) {
-                    rows.push(self.get_columns_from_row(&row, &statement.columns)?);
-                }
-            }
-        } else {
-            for row in self.rows.iter() {
-                rows.push(self.get_columns_from_row(&row, &statement.columns)?);
-            }
-        }
-        return Ok(rows);
-    }
+    
 
 
 
@@ -128,13 +113,14 @@ impl Table {
         return &Value::Null;
     }
 
-    pub fn get_columns_from_row(&self, row: &Vec<Value>, columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
+    pub fn get_columns_from_row(&self, row: &Vec<Value>, selected_columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
         let mut row_values: Vec<Value> = vec![];
-        if *columns == SelectStatementColumns::All {
+        if *selected_columns == SelectStatementColumns::All {
             return Ok(self.validate_and_clone_row(row)?);
         } else {
+            let specific_selected_columns = selected_columns.columns()?;
             for (i, column) in self.columns.iter().enumerate() {
-                if self.columns.contains(column) {
+                if (*specific_selected_columns).contains(&column.name) {
                     row_values.push(row[i].clone());
                 }
             }
