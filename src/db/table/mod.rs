@@ -1,4 +1,5 @@
 use crate::cli::ast::{InsertIntoStatement, SelectStatementColumns};
+pub mod select;
 
 #[derive(Debug, PartialEq)]
 pub enum DataType {
@@ -8,8 +9,6 @@ pub enum DataType {
     Blob,
     Null,
 }
-
-
 
 #[derive(Debug, PartialEq)]
 pub struct ColumnDefinition {
@@ -22,7 +21,6 @@ pub struct ColumnDefinition {
 pub struct ColumnConstraint {
     pub constraint_type: String,
 }
-
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Value {

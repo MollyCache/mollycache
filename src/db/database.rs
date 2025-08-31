@@ -1,6 +1,6 @@
 use crate::db::table::{Table, Value};
 use crate::cli::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement};
-use crate::db::select;
+use crate::db::table::select;
 use std::collections::HashMap;
 
 pub struct Database {
