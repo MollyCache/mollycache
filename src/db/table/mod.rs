@@ -23,7 +23,7 @@ pub struct ColumnConstraint {
     pub constraint_type: String,
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub enum Value {
     Integer(i64),
     Real(f64),
@@ -31,6 +31,7 @@ pub enum Value {
     Blob(Vec<u8>),
     Null
 }
+
 
 impl Value {
     pub fn get_type(&self) -> DataType {
@@ -40,16 +41,6 @@ impl Value {
             Value::Text(_) => DataType::Text,
             Value::Blob(_) => DataType::Blob,
             Value::Null => DataType::Null,
-        }
-    }
-
-    pub fn clone(&self) -> Value {
-        match self {
-            Value::Integer(value) => Value::Integer(*value),
-            Value::Real(value) => Value::Real(*value),
-            Value::Text(value) => Value::Text(value.clone()),
-            Value::Blob(value) => Value::Blob(value.clone()),
-            Value::Null => Value::Null,
         }
     }
 }
