@@ -49,8 +49,8 @@ impl<'a> Parser<'a> {
         if self.current < self.tokens.len() {
             let token = &self.tokens[self.current];
             return format!(
-                "Error at line {:?}, column {:?}: Unexpected token type: {:?}",
-                token.line_num, token.col_num, token.token_type
+                "Error at line {:?}, column {:?}: Unexpected value: {}",
+                token.line_num, token.col_num, token.value.to_string()
             );
         } else {
             return "Error at end of input.".to_string();
@@ -101,7 +101,7 @@ mod tests {
         let tokens = vec![token(TokenTypes::Insert, "INSERT", 15, 3)];
         let parser = Parser::new(tokens);
         let result = parser.format_error();
-        assert_eq!(result, "Error at line 3, column 15: Unexpected token type: Insert");
+        assert_eq!(result, "Error at line 3, column 15: Unexpected value: INSERT");
     }
 
     pub struct MockStatementBuilder;
@@ -196,7 +196,7 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let builder : &dyn StatementBuilder = &MockStatementBuilder;
         let result = parser.next_statement(builder);
-        let expected = Some(Err("Error at line 1, column 1: Unexpected token type: Identifier".to_string()));
+        let expected = Some(Err("Error at line 1, column 1: Unexpected value: users".to_string()));
         assert_eq!(result, expected);
     }
 }
