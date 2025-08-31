@@ -41,7 +41,6 @@ fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     Ok(result)
 }
 
-
 fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, String> {
     if expect_token_type(parser, TokenTypes::Where).is_err() {
         return Ok(None);

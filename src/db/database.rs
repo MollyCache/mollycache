@@ -1,4 +1,4 @@
-use crate::db::table::Table;
+use crate::db::table::{Table, Value};
 use crate::cli::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement};
 use std::collections::HashMap;
 
@@ -13,11 +13,20 @@ impl Database {
         }
     }
 
-    pub fn execute(&mut self, sql_statement: SqlStatement) -> Result<(), String> {
+    pub fn execute(&mut self, sql_statement: SqlStatement) -> Result<Option<Vec<Vec<Value>>>, String> {
         return match sql_statement {
-            SqlStatement::CreateTable(statement) => self.create_table(statement),
-            SqlStatement::InsertInto(statement) => self.insert_into_table(statement),
-            SqlStatement::Select(statement) => self.select_from_table(statement),
+            SqlStatement::CreateTable(statement) => {
+                self.create_table(statement)?;
+                Ok(None)
+            },
+            SqlStatement::InsertInto(statement) => {
+                self.insert_into_table(statement)?;
+                Ok(None)
+            },
+            SqlStatement::Select(statement) => {
+                let rows = self.select_from_table(statement)?;
+                Ok(Some(rows))
+            },
         }
     }
 
@@ -36,15 +45,17 @@ impl Database {
         Ok(())
     }
 
-    fn select_from_table(&mut self, _statement: SelectStatement) -> Result<(), String> {
-        todo!()
+    fn select_from_table(&mut self, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
+        let table = self.get_table(&statement.table_name)?;
+        let rows = table.select(statement)?;
+        Ok(rows)
     }
 
     fn has_table(&self, table_name: &str) -> bool {
         self.tables.contains_key(table_name)
     }
 
-    fn _get_table(&self, table_name: &str) -> Result<&Table, String> {
+    fn get_table(&self, table_name: &str) -> Result<&Table, String> {
         if !self.has_table(table_name) {
             return Err(format!("Table {} does not exist", table_name));
         }

@@ -37,7 +37,19 @@ pub fn cli() {
             match sql_statement {
                 Ok(statement) => {
                     let result = database.execute(statement);
-                    println!("{:?}", result);
+                    if let Ok(result) = result {
+                        if let Some(rows) = result {
+                            for row in rows {
+                                println!("{:?}", row);
+                            }
+                        }
+                        else {
+                            println!("Executed Successfully");
+                        }
+                    }
+                    else {
+                        println!("Error: {}", result.unwrap_err());
+                    }
                 },
                 Err(error) => {
                     println!("Error: {}", error);

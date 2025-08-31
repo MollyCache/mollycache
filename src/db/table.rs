@@ -1,4 +1,4 @@
-use crate::cli::ast::{InsertIntoStatement, SelectStatement};
+use crate::cli::ast::{InsertIntoStatement, Operator, SelectStatement, SelectStatementColumns, WhereClause};
 
 #[derive(Debug, PartialEq)]
 pub enum DataType {
@@ -24,7 +24,7 @@ pub struct ColumnConstraint {
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub enum Value {
     Integer(i64),
     Real(f64),
@@ -56,15 +56,15 @@ impl Value {
 }
 
 pub struct Table {
-    name: String,
+    _name: String,
     columns: Vec<ColumnDefinition>,
     rows: Vec<Vec<Value>>,
 }
 
 impl Table {
-    pub fn new(name: String, columns: Vec<ColumnDefinition>) -> Self {
+    pub fn new(_name: String, columns: Vec<ColumnDefinition>) -> Self {
         Self {
-            name,
+            _name,
             columns,
             rows: vec![],
         }
@@ -89,7 +89,7 @@ impl Table {
             if row.len() != self.width() {
                 return Err(format!("Rows have incorrect width"));
             }
-            let row_values = self.validate_and_clone_row(row)?;
+            let row_values = self.validate_and_clone_row(&row)?;
             rows.push(row_values);
         }
         
@@ -100,15 +100,90 @@ impl Table {
         return Ok(());
     }
 
-    pub fn select(&self, statement: SelectStatement) {
-        todo!()
+    pub fn select(&self, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
+        let mut rows: Vec<Vec<Value>> = vec![];
+        if let Some(where_clause) = statement.where_clause {
+            for row in self.rows.iter() {
+                if self.matches_where_clause(&row, &where_clause) {
+                    rows.push(self.get_columns_from_row(&row, &statement.columns)?);
+                }
+            }
+        } else {
+            todo!()
+        }
+        return Ok(rows);
+    }
+
+    fn matches_where_clause(&self, row: &Vec<Value>, where_clause: &WhereClause) -> bool {
+        let column_value = self.get_column_from_row(row, &where_clause.column);
+        if column_value.get_type() != where_clause.value.get_type() {
+            return false;
+        }
+
+        match where_clause.operator {
+            Operator::Equals => {
+                return *column_value == where_clause.value;
+            },
+            Operator::NotEquals => {
+                return *column_value != where_clause.value;
+            },
+            _ => {
+                match column_value.get_type() {
+                    DataType::Integer | DataType::Real => {
+                        match where_clause.operator {
+                            Operator::LessThan => {
+                                return *column_value < where_clause.value;
+                            },
+                            Operator::GreaterThan => {
+                                return *column_value > where_clause.value;
+                            },
+                            Operator::LessEquals => {
+                                return *column_value <= where_clause.value;
+                            },
+                            Operator::GreaterEquals => {
+                                return *column_value >= where_clause.value;
+                            },
+                            _ => {
+                                return false;
+                            },
+                        }
+                    },
+                    _ => {
+                        return false;
+                    },
+                }
+            }
+        }
+    }
+
+    fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> &'a Value {
+        for (i, value) in row.iter().enumerate() {
+            if self.columns[i].name == *column {
+                return &value;
+            }
+        }
+        return &Value::Null;
+    }
+
+    fn get_columns_from_row(&self, row: &Vec<Value>, columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
+        let mut row_values: Vec<Value> = vec![];
+        if *columns == SelectStatementColumns::All {
+            return Ok(self.validate_and_clone_row(row)?);
+        } else {
+            for (i, column) in self.columns.iter().enumerate() {
+                if self.columns.contains(column) {
+                    row_values.push(row[i].clone());
+                }
+            }
+        }
+        return Ok(row_values);
     }
 
     fn width(&self) -> usize {
         self.columns.len()
     }
 
-    fn validate_and_clone_row(&self, row: Vec<Value>) -> Result<Vec<Value>, String> {
+    fn validate_and_clone_row(&self, row: &Vec<Value>) -> Result<Vec<Value>, String> {
         if row.len() != self.width() {
             return Err(format!("Rows have incorrect width"));
         }
