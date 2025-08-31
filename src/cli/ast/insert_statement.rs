@@ -53,11 +53,28 @@ fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
         }
     }
 
-    return Ok(InsertInto(InsertIntoStatement {
+    let statement = InsertIntoStatement {
         table_name: table_name,
         columns: columns,
         values: values,
-    }));
+    };
+    validate_insert_statement(&statement)?;
+    return Ok(InsertInto(statement));
+}
+
+fn validate_insert_statement(statement: &InsertIntoStatement) -> Result<(), String> {
+    for row in &statement.values {
+        if row.len() != statement.values[0].len() {
+            return Err(format!("Rows have different lengths"));
+        }
+    }
+
+    if let Some(columns) = &statement.columns {
+        if columns.len() != statement.values[0].len() {
+            return Err(format!("Columns and values have different lengths"));
+        }
+    }
+    return Ok(());
 }
 
 fn get_values(parser: &mut Parser) -> Result<Vec<Value>, String> {
@@ -278,5 +295,64 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn insert_with_different_lengths_is_error() {
+        // INSERT INTO users VALUES (1, "Alice"), (2, "Bob", "Charlie");
+        let tokens = vec![
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "2"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Bob"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Charlie"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
+        assert!(result.is_err());
+        let expected = Err("Rows have different lengths".to_string());
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn insert_with_different_column_and_value_lengths_is_error() {
+        // INSERT INTO users (id, name) VALUES (1, "Alice", "Bob");
+        let tokens = vec![
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Bob"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
+        assert!(result.is_err());
+        let expected = Err("Columns and values have different lengths".to_string());
+        assert_eq!(expected, result);
     }
 }
