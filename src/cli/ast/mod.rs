@@ -1,4 +1,4 @@
-use crate::cli::{self, table::{Value, ColumnDefinition}};
+use crate::cli::{self, table::{ColumnDefinition, Value}, tokenizer::token::TokenTypes};
 
 mod common;
 mod create_statement;
@@ -105,10 +105,185 @@ pub fn generate(tokens: Vec<cli::tokenizer::scanner::Token>) -> Vec<Result<SqlSt
     loop {
         let next_statement = parser.next_statement(builder);
         if let Some(next_statement) = next_statement {
+            if next_statement.is_err() {
+                loop {
+                    if let Ok(token) = parser.current_token() {
+                        if token.token_type != TokenTypes::EOF && token.token_type != TokenTypes::SemiColon {
+                           let _ = parser.advance();
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+            let parser_advance_result = parser.advance_past_semicolon();
+            if parser_advance_result.is_err() {
+                results.push(Err(parser_advance_result.err().unwrap()));
+                return results;
+            }
             results.push(next_statement);
         } else {
             break;
         }
     }
     return results;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cli::tokenizer::scanner::Token;
+
+    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
+        Token {
+            token_type: tt,
+            value: val,
+            col_num: 0,
+            line_num: 1,
+        }
+    }
+
+    #[test]
+    fn ast_handles_invalid_statements_gracefully() {
+        let tokens = vec![
+            token(TokenTypes::Select, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
+        ];
+        let result = generate(tokens);
+        assert!(result[0].is_err());
+        let expected = vec![Err("Error at line 1, column 0: Unexpected token type: Into".to_string())];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn ast_handles_multiple_statements() {
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Asterisk, "*"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
+        ];
+        let result = generate(tokens);
+        assert!(result[0].is_ok());
+        assert!(result[1].is_ok());
+        let expected = vec![
+            Ok(SqlStatement::Select(SelectStatement {
+                table_name: "users".to_string(),
+                columns: SelectStatementColumns::All,
+                where_clause: None,
+                order_by_clause: None,
+                limit_clause: None,
+            })),
+            Ok(SqlStatement::InsertInto(InsertIntoStatement {
+                table_name: "users".to_string(),
+                columns: None,
+                values: vec![
+                    vec![Value::Integer(1), Value::Text("Alice".to_string())],
+                ],
+            })),
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn ast_handles_invalid_statement_then_valid_statement() {
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
+        ];
+        let result = generate(tokens);
+        println!("{:?}", result);
+        assert!(result[0].is_err());
+        assert!(result[1].is_ok());
+        let expected = vec![
+            Err("Error at line 1, column 0: Unexpected token type: SemiColon".to_string()),
+            Ok(SqlStatement::InsertInto(InsertIntoStatement {
+        
+                table_name: "users".to_string(),
+                columns: None,
+                values: vec![
+                    vec![Value::Integer(1), Value::Text("Alice".to_string())],
+                ],
+            })),
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn ast_handles_multiple_valid_statements() {
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Asterisk, "*"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::String, "Alice"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
+        ];
+        let result = generate(tokens);
+        assert!(result[0].is_ok());
+        assert!(result[1].is_ok());
+        let expected = vec![
+            Ok(SqlStatement::Select(SelectStatement {
+                table_name: "users".to_string(),
+                columns: SelectStatementColumns::All,
+                where_clause: None,
+                order_by_clause: None,
+                limit_clause: None,
+            })),
+            Ok(SqlStatement::InsertInto(InsertIntoStatement {
+                table_name: "users".to_string(),
+                columns: None,
+                values: vec![
+                    vec![Value::Integer(1), Value::Text("Alice".to_string())],
+                ],
+            })),
+        ];
+        assert_eq!(expected, result);
+    }
 }
