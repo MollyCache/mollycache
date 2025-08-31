@@ -43,12 +43,12 @@ pub fn tokens_to_identifier_list(parser: &mut Parser) -> Result<Vec<String>, Str
         expect_token_type(parser, TokenTypes::Identifier)?;
 
         identifiers.push(token.value.to_string());
-        parser.advance();
+        parser.advance()?;
         let token = parser.current_token()?;
         if token.token_type != TokenTypes::Comma {
             break;
         }
-        parser.advance();
+        parser.advance()?;
     }
     return Ok(identifiers);
 }

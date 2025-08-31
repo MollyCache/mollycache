@@ -25,8 +25,24 @@ impl<'a> Parser<'a> {
         return Ok(&self.tokens[self.current]);
     }
 
-    pub fn advance(&mut self) {
+    pub fn advance(&mut self) -> Result<(), String> {
+        if let Ok(token) = self.current_token() {
+            if token.token_type == TokenTypes::SemiColon {
+                return Err(self.format_error());
+            }
+        }
         self.current += 1;
+        Ok(())
+    }
+
+    pub fn advance_past_semicolon(&mut self) -> Result<(), String> {
+        if let Ok(token) = self.current_token() {
+            if token.token_type == TokenTypes::SemiColon {
+                self.current += 1;
+                return Ok(());
+            }
+        }
+        return Err("Expected token type: SemiColon was not found".to_string());
     }
 
     pub fn format_error(&self) -> String {
@@ -92,8 +108,8 @@ mod tests {
 
     impl StatementBuilder for MockStatementBuilder {
         fn build_create(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
-            parser.advance();
-            parser.advance();
+            parser.advance()?;
+            parser.advance_past_semicolon()?;
             return Ok(SqlStatement::CreateTable(CreateTableStatement {
                 table_name: "users".to_string(),
                 columns: vec![],
@@ -101,8 +117,8 @@ mod tests {
         }
         
         fn build_insert(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
-            parser.advance();
-            parser.advance();
+            parser.advance()?;
+            parser.advance_past_semicolon()?;
             return Ok(SqlStatement::InsertInto(InsertIntoStatement {
                 table_name: "users".to_string(),
                 columns: None,
@@ -111,8 +127,8 @@ mod tests {
         }
         
         fn build_select(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
-            parser.advance();
-            parser.advance();
+            parser.advance()?;
+            parser.advance_past_semicolon()?;
             return Ok(SqlStatement::Select(SelectStatement {
                 table_name: "users".to_string(),
                 columns: SelectStatementColumns::All,

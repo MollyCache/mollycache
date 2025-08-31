@@ -1,7 +1,7 @@
 use crate::cli::{ast::{parser::Parser, common::token_to_value, common::expect_token_type, InsertIntoStatement, SqlStatement::{self, InsertInto}}, table::Value, tokenizer::token::TokenTypes};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
-    parser.advance();
+    parser.advance()?;
     let statement: Result<SqlStatement, String>;
     let token = parser.current_token()?;
     match token.token_type {
@@ -16,18 +16,17 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 
     // Ensure SemiColon
     expect_token_type(parser, TokenTypes::SemiColon)?;
-    parser.advance(); // Move past the semicolon
 
     return statement;
 }
 
 fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
-    parser.advance();
+    parser.advance()?;
 
     let token = parser.current_token()?;
     expect_token_type(parser, TokenTypes::Identifier)?;
     let table_name = token.value.to_string();
-    parser.advance();
+    parser.advance()?;
 
     let token = parser.current_token()?;
     let columns = match token.token_type {
@@ -40,13 +39,13 @@ fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
 
     let token = parser.current_token()?;
     if token.token_type == TokenTypes::Values {
-        parser.advance();
+        parser.advance()?;
         loop {
             values.push(get_values(parser)?);
             let token = parser.current_token()?;
             match token.token_type {
                 TokenTypes::Comma => {
-                    parser.advance();
+                    parser.advance()?;
                 },
                 _ => break,
             }
@@ -63,19 +62,19 @@ fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
 fn get_values(parser: &mut Parser) -> Result<Vec<Value>, String> {
     // Check for LeftParen
     expect_token_type(parser, TokenTypes::LeftParen)?;
-    parser.advance();
+    parser.advance()?;
     let mut values: Vec<Value> = vec![];
     loop {
         values.push(token_to_value(parser)?);
-        parser.advance();
+        parser.advance()?;
 
         let token = parser.current_token()?;
         match token.token_type {
             TokenTypes::Comma => {
-                parser.advance();
+                parser.advance()?;
             },
             TokenTypes::RightParen => {
-                parser.advance();
+                parser.advance()?;
                 return Ok(values);
             },
             _ => return Err(parser.format_error()),
@@ -84,21 +83,21 @@ fn get_values(parser: &mut Parser) -> Result<Vec<Value>, String> {
 }
 
 fn get_columns(parser: &mut Parser) -> Result<Vec<String>, String> {
-    parser.advance();
+    parser.advance()?;
     let mut columns: Vec<String> = vec![];
     loop {
         let token = parser.current_token()?;
         expect_token_type(parser, TokenTypes::Identifier)?;
         columns.push(token.value.to_string());
-        parser.advance();
+        parser.advance()?;
         
         let token = parser.current_token()?;
         match token.token_type {
             TokenTypes::Comma => {
-                parser.advance();
+                parser.advance()?;
             }
             TokenTypes::RightParen => {
-                parser.advance();
+                parser.advance()?;
                 break;
             }
             _ => {

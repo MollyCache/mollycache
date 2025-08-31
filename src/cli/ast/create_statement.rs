@@ -1,7 +1,7 @@
 use crate::cli::{ast::{parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, common::expect_token_type}, table::{ColumnDefinition, DataType}, tokenizer::token::TokenTypes};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
-    parser.advance();
+    parser.advance()?;
     let statement: Result<SqlStatement, String>;
     
     let token = parser.current_token()?;
@@ -17,17 +17,16 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 
     // Ensure SemiColon
     expect_token_type(parser, TokenTypes::SemiColon)?;
-    parser.advance(); // Move past the semicolon
     return statement;
 }
 
 fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
-    parser.advance();
+    parser.advance()?;
 
     let token = parser.current_token()?;
     expect_token_type(parser, TokenTypes::Identifier)?;
     let table_name = token.value.to_string();
-    parser.advance();
+    parser.advance()?;
 
     let column_definitions = column_definitions(parser)?;
     return Ok(CreateTable(CreateTableStatement {
@@ -40,17 +39,17 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
     let mut columns: Vec<crate::cli::table::ColumnDefinition> = vec![];
 
     expect_token_type(parser, TokenTypes::LeftParen)?;
-    parser.advance();
+    parser.advance()?;
 
     loop {
         let token = parser.current_token()?;
         expect_token_type(parser, TokenTypes::Identifier)?;
         let column_name = token.value.to_string();
-        parser.advance();
+        parser.advance()?;
         
         // Grab the column data type
         let column_data_type = token_to_data_type(parser)?;
-        parser.advance();
+        parser.advance()?;
 
         // TODO: Modifiers and Constraints
 
@@ -63,7 +62,7 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
                     data_type: column_data_type,
                     constraints: vec![] // TODO,
                 });
-                parser.advance();
+                parser.advance()?;
             }
             TokenTypes::RightParen => {
                 columns.push(ColumnDefinition {
@@ -71,7 +70,7 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
                     data_type: column_data_type,
                     constraints: vec![] // TODO,
                 });
-                parser.advance();
+                parser.advance()?;
                 break;
             },
             _ => return Err(parser.format_error()),
