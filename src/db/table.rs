@@ -1,4 +1,5 @@
-use crate::cli::ast::{InsertIntoStatement, Operator, SelectStatement, SelectStatementColumns, WhereClause};
+use crate::cli::ast::{InsertIntoStatement, SelectStatement, SelectStatementColumns};
+use crate::db::select_statements::where_clause::matches_where_clause;
 
 #[derive(Debug, PartialEq)]
 pub enum DataType {
@@ -104,7 +105,7 @@ impl Table {
         let mut rows: Vec<Vec<Value>> = vec![];
         if let Some(where_clause) = statement.where_clause {
             for row in self.rows.iter() {
-                if self.matches_where_clause(&row, &where_clause) {
+                if matches_where_clause(self, &row, &where_clause) {
                     rows.push(self.get_columns_from_row(&row, &statement.columns)?);
                 }
             }
@@ -116,49 +117,9 @@ impl Table {
         return Ok(rows);
     }
 
-    fn matches_where_clause(&self, row: &Vec<Value>, where_clause: &WhereClause) -> bool {
-        let column_value = self.get_column_from_row(row, &where_clause.column);
-        if column_value.get_type() != where_clause.value.get_type() {
-            return false;
-        }
 
-        match where_clause.operator {
-            Operator::Equals => {
-                return *column_value == where_clause.value;
-            },
-            Operator::NotEquals => {
-                return *column_value != where_clause.value;
-            },
-            _ => {
-                match column_value.get_type() {
-                    DataType::Integer | DataType::Real => {
-                        match where_clause.operator {
-                            Operator::LessThan => {
-                                return *column_value < where_clause.value;
-                            },
-                            Operator::GreaterThan => {
-                                return *column_value > where_clause.value;
-                            },
-                            Operator::LessEquals => {
-                                return *column_value <= where_clause.value;
-                            },
-                            Operator::GreaterEquals => {
-                                return *column_value >= where_clause.value;
-                            },
-                            _ => {
-                                return false;
-                            },
-                        }
-                    },
-                    _ => {
-                        return false;
-                    },
-                }
-            }
-        }
-    }
 
-    fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> &'a Value {
+    pub fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> &'a Value {
         for (i, value) in row.iter().enumerate() {
             if self.columns[i].name == *column {
                 return &value;
@@ -167,7 +128,7 @@ impl Table {
         return &Value::Null;
     }
 
-    fn get_columns_from_row(&self, row: &Vec<Value>, columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
+    pub fn get_columns_from_row(&self, row: &Vec<Value>, columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
         let mut row_values: Vec<Value> = vec![];
         if *columns == SelectStatementColumns::All {
             return Ok(self.validate_and_clone_row(row)?);

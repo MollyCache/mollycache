@@ -69,3 +69,27 @@ impl Database {
         Ok(self.tables.get_mut(table_name).unwrap())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cli::ast::CreateTableStatement;
+    use crate::db::table::{ColumnDefinition, DataType};
+
+    #[test]
+    fn create_table_generates_proper_table() {
+        let statement = CreateTableStatement {
+            table_name: "users".to_string(),
+            columns: vec![
+                ColumnDefinition {
+                    name: "id".to_string(),
+                    data_type: DataType::Integer,
+                    constraints: vec![] 
+                },
+            ],
+        };
+        let mut database = Database::new();
+        assert!(database.create_table(statement).is_ok());
+        assert!(database.has_table("users"));
+    }
+}
