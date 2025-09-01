@@ -19,6 +19,10 @@ pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value
 pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
     if let Some(where_clause) = &statement.where_clause {
+        if !table.has_column(&where_clause.column) {
+            return Err(format!("Column {} does not exist in table {}", where_clause.column, table.name));
+
+        }
         for row in table.rows.iter() {
             if where_clause::matches_where_clause(table, &row, &where_clause) {
                 rows.push(get_columns_from_row(table, &row, &statement.columns)?);
@@ -180,5 +184,24 @@ mod tests {
             vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
         ];
         assert_eq!(expected, result.unwrap());
+    }
+
+    #[test]
+    fn select_with_where_clause_using_column_not_included_in_table_returns_error() {
+        let table = default_table();
+        let statement = SelectStatement {
+            table_name: "users".to_string(),
+            columns: SelectStatementColumns::All,
+            where_clause: Some(WhereClause {
+                column: "column_not_included".to_string(),
+                operator: Operator::Equals,
+                value: Value::Text("John".to_string()),
+            }),
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        let result = select(&table, statement);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Column column_not_included does not exist in table users");
     }
 }

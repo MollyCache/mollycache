@@ -70,6 +70,10 @@ impl Table {
         return &Value::Null;
     }
 
+    pub fn has_column(&self, column: &String) -> bool {
+        self.columns.iter().any(|c| c.name == *column)
+    }
+
     fn width(&self) -> usize {
         self.columns.len()
     }
