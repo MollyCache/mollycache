@@ -1,5 +1,6 @@
 pub mod where_clause;
 pub mod limit_clause;
+pub mod order_by_clause;
 use crate::db::table::{Table, Value};
 use crate::cli::ast::SelectStatement;
 use crate::cli::ast::SelectStatementColumns;
@@ -8,7 +9,11 @@ use crate::db::table::common::validate_and_clone_row;
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
     let mut rows = get_initial_rows(table, &statement)?;
-    // Implement order by
+    
+    if let Some(order_by_clause) = statement.order_by_clause {
+        rows = order_by_clause::get_ordered_rows(rows, &order_by_clause)?;
+    }
+
     if let Some(limit_clause) = &statement.limit_clause {
         rows = limit_clause::get_limited_rows(rows, limit_clause)?;
     }
