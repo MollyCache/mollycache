@@ -38,7 +38,7 @@ mod tests {
 
     #[test]
     fn tokenizer_parses_select_statement_v1() {
-        let result = tokenize("SELECT * FROM users WHERE name = \"Fletcher\";");
+        let result = tokenize("SELECT * FROM users WHERE name = \'Fletcher\';");
         let expected = vec![
             token(TokenTypes::Select, "SELECT", 0, 1),
             token(TokenTypes::Asterisk, "*", 7, 1),
@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn tokenizer_raises_error_when_token_cannot_be_matched() {
-        let result = tokenize("Create INSERT TABLE VALUES, (199) \n\"Fletcher\"\";");
+        let result = tokenize("Create INSERT TABLE VALUES, (199) \n\'Fletcher\'\"");
         let expected = vec![
             token(TokenTypes::Create, "Create", 0, 1),
             token(TokenTypes::Insert, "INSERT", 7, 1),
@@ -67,7 +67,7 @@ mod tests {
             token(TokenTypes::IntLiteral, "199", 29, 1),
             token(TokenTypes::RightParen, ")", 32, 1),
             token(TokenTypes::String, "Fletcher", 0, 2),
-            token(TokenTypes::Error, "\";", 10, 2),
+            token(TokenTypes::Error, "\"", 10, 2),
             token(TokenTypes::EOF, "", 0, 0),
         ];
         assert_eq!(expected, result);
@@ -77,7 +77,7 @@ mod tests {
     fn tokens_are_implemented_correctly() {
         let statement = r#"
         CREATE SELECT INSERT TABLE FROM INTO VALUES WHERE
-        UPDATE DELETE DROP INDEX
+        UPDATE DELETE DROP INDEX SET
         INTEGER REAL TEXT BLOB NULL
         PRIMARY KEY NOT UNIQUE DEFAULT AUTOINCREMENT
         ORDER BY GROUP HAVING DISTINCT ALL AS ASC DESC
@@ -89,7 +89,7 @@ mod tests {
         COUNT SUM AVG MIN MAX
         * ; ( ) , .
         + - / %
-        "string" TRUE FALSE
+        'string' TRUE FALSE
         fletchers_table
         "#;
         let result = tokenize(statement);
@@ -106,6 +106,7 @@ mod tests {
             token(TokenTypes::Delete, "DELETE", 15, 3),
             token(TokenTypes::Drop, "DROP", 22, 3),
             token(TokenTypes::Index, "INDEX", 27, 3),
+            token(TokenTypes::Set, "SET", 33, 3),
             token(TokenTypes::Integer, "INTEGER", 8, 4),
             token(TokenTypes::Real, "REAL", 16, 4),
             token(TokenTypes::Text, "TEXT", 21, 4),
@@ -199,6 +200,17 @@ mod tests {
             token(TokenTypes::Error, "X\'Z", 13, 1),
             token(TokenTypes::Identifier, "ZZZZ", 16, 1),
             token(TokenTypes::Error, "\'", 20, 1),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn tokenizer_parses_string_identifiers() {
+        let result = tokenize("'string' \"identifier\"");
+        let expected = vec![
+            token(TokenTypes::String, "string", 0, 1),
+            token(TokenTypes::Identifier, "identifier", 9, 1),
             token(TokenTypes::EOF, "", 0, 0),
         ];
         assert_eq!(expected, result);

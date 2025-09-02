@@ -2,7 +2,7 @@
 pub enum TokenTypes {
     // Keywords
     Create, Select, Insert, Table, From, Into, Values, Where,
-    Update, Delete, Drop, Index,
+    Update, Delete, Drop, Index, Set,
     // Data Types 
     Integer, Real, Text, Blob, Null,
     // Constraints

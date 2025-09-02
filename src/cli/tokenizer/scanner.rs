@@ -75,6 +75,15 @@ impl<'a> Scanner<'a> {
         };
     }
 
+    fn build_string_identifier_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
+        return Token {
+            token_type: token_type,
+            value: &self.input[start+1..self.current-1],
+            col_num: start-self.col_num,
+            line_num: self.line_num,
+        };
+    }
+
     fn build_hex_literal_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
         return match token_type {
             TokenTypes::HexLiteral => {
@@ -92,7 +101,7 @@ impl<'a> Scanner<'a> {
 
     fn read_string(&mut self) -> TokenTypes {
         self.advance();
-        while self.current_char() != '"' {
+        while self.current_char() != '\'' {
             self.advance();
             if self.current >= self.input.len() {
                 self.current = self.input.len() - 1;
@@ -119,6 +128,7 @@ impl<'a> Scanner<'a> {
             slice if slice.eq_ignore_ascii_case("DELETE") => TokenTypes::Delete,
             slice if slice.eq_ignore_ascii_case("DROP") => TokenTypes::Drop,
             slice if slice.eq_ignore_ascii_case("INDEX") => TokenTypes::Index,
+            slice if slice.eq_ignore_ascii_case("SET") => TokenTypes::Set,
             slice if slice.eq_ignore_ascii_case("INTEGER") => TokenTypes::Integer,
             slice if slice.eq_ignore_ascii_case("REAL") => TokenTypes::Real,
             slice if slice.eq_ignore_ascii_case("TEXT") => TokenTypes::Text,
@@ -169,6 +179,16 @@ impl<'a> Scanner<'a> {
         };
     }
 
+    fn read_quoted_identifier(&mut self) -> TokenTypes {
+        while self.current < self.input.len() && self.current_char() != '"' {
+            self.advance();
+        }
+        if self.current >= self.input.len() {
+            return TokenTypes::Error;
+        }
+        return TokenTypes::Identifier;
+    }
+
     fn read_digit(&mut self) -> TokenTypes {
         let mut token_type = TokenTypes::IntLiteral;
         while self.peek_char().is_ascii_digit() || self.peek_char() == '.' || self.peek_char() == 'e' || self.peek_char() == '-' {
@@ -201,9 +221,22 @@ impl<'a> Scanner<'a> {
         }
         let start = self.current;
         return match self.current_char() {
-            '"' => {
+            '\'' => {
                 let token_type = self.read_string();
                 Some(self.build_string_token(start, token_type))
+            }
+            '"' => {
+                if self.peek_char() == '\0' {
+                    return Some(self.build_token(start, TokenTypes::Error));
+                }
+                self.advance();
+
+                let token_type = self.read_quoted_identifier();
+                if token_type == TokenTypes::Error || self.current > self.input.len() {
+                    return Some(self.build_token(start, TokenTypes::Error));
+                }
+                self.advance();
+                Some(self.build_string_identifier_token(start, token_type))
             }
             c if c == 'X' && self.peek_char() == '\'' => {
                 let token_type = self.read_hex_literal();
