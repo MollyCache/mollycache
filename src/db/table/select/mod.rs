@@ -1,5 +1,6 @@
 pub mod where_clause;
 pub mod limit_clause;
+pub mod order_by_clause;
 use crate::db::table::{Table, Value};
 use crate::cli::ast::SelectStatement;
 use crate::cli::ast::SelectStatementColumns;
@@ -8,7 +9,11 @@ use crate::db::table::common::validate_and_clone_row;
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
     let mut rows = get_initial_rows(table, &statement)?;
-    // Implement order by
+    
+    if let Some(order_by_clause) = statement.order_by_clause {
+        rows = order_by_clause::get_ordered_rows(table, rows, &order_by_clause)?;
+    }
+
     if let Some(limit_clause) = &statement.limit_clause {
         rows = limit_clause::get_limited_rows(rows, limit_clause)?;
     }
@@ -56,10 +61,7 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
 mod tests {
     use super::*;
     use crate::db::table::{Table, Value, DataType, ColumnDefinition};
-    use crate::cli::ast::SelectStatementColumns;
-    use crate::cli::ast::Operator;
-    use crate::cli::ast::WhereClause;
-    use crate::cli::ast::LimitClause;
+    use crate::cli::ast::{SelectStatementColumns, WhereClause, LimitClause, OrderByClause, OrderByDirection, Operator};
 
     fn default_table() -> Table {
         Table {
@@ -203,5 +205,26 @@ mod tests {
         let result = select(&table, statement);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Column column_not_included does not exist in table users");
+    }
+
+    #[test]
+    fn select_with_order_by_clause_is_generated_correctly() {
+        let table = default_table();
+        let statement = SelectStatement {
+            table_name: "users".to_string(),
+            columns: SelectStatementColumns::All,
+            where_clause: None,
+            order_by_clause: Some(vec![OrderByClause {column: "money".to_string(), direction: OrderByDirection::Desc}]),
+            limit_clause: None,
+        };
+        let result = select(&table, statement);
+        assert!(result.is_ok());
+        let expected = vec![
+            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
+            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
+            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
+            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
+        ];
+        assert_eq!(expected, result.unwrap());
     }
 }
