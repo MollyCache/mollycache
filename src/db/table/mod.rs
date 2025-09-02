@@ -1,5 +1,7 @@
 use std::cmp::Ordering;
 
+use crate::cli::ast::OrderByDirection;
+
 pub mod select;
 pub mod insert;
 pub mod common;
@@ -46,26 +48,31 @@ impl Value {
         }
     }
 
-    pub fn cmp(&self, other: &Value) -> Ordering {
-        if self.get_type() != other.get_type() {
-            return Ordering::Equal; // Hacky
-        }
-        match self {
-            Value::Integer(_) => {
-                self.cmp(other)
+    pub fn compare(&self, other: &Value, direction: &OrderByDirection) -> Ordering {
+        let result = match (self, other) {
+            (Value::Null, Value::Null) => Ordering::Equal,
+            (Value::Null, _) => Ordering::Less,
+            (_, Value::Null) => Ordering::Greater,
+            (Value::Integer(a), Value::Integer(b)) => a.cmp(b),
+            (Value::Real(a), Value::Real(b)) => {
+                if a > b {
+                    Ordering::Greater
+                } else if a < b {
+                    Ordering::Less
+                } else {
+                    Ordering::Equal
+                }
+            
             },
-            Value::Real(_) => {
-                self.cmp(other)
-            },
-            Value::Text(_) => {
-                self.cmp(other)
-            }
-            Value::Blob(_) => {
-                self.cmp(other)
-            },
-            Value::Null => {
-                Ordering::Equal
-            }
+            (Value::Text(a), Value::Text(b)) => a.cmp(b),
+            (Value::Blob(a), Value::Blob(b)) => a.cmp(b),
+            _ => return Ordering::Equal, // Bad - returns equal if data types are different
+        };
+
+        if direction == &OrderByDirection::Asc {
+            return result;
+        } else {
+            return result.reverse();
         }
     }
 }
@@ -101,5 +108,14 @@ impl Table {
 
     fn width(&self) -> usize {
         self.columns.len()
+    }
+
+    pub fn get_index_of_column(&self, column: &String) -> Result<usize, String> {
+        for (i, c) in self.columns.iter().enumerate() {
+            if c.name == *column {
+                return Ok(i);
+            }
+        }
+        return Err(format!("Column {} does not exist in table {}", column, self.name));
     }
 }
