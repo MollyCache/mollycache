@@ -11,7 +11,7 @@ pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value
     let mut rows = get_initial_rows(table, &statement)?;
     
     if let Some(order_by_clause) = statement.order_by_clause {
-        rows = order_by_clause::get_ordered_rows(rows, &order_by_clause)?;
+        rows = order_by_clause::get_ordered_rows(table, rows, &order_by_clause)?;
     }
 
     if let Some(limit_clause) = &statement.limit_clause {

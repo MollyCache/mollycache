@@ -14,3 +14,12 @@ pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Val
     }
     return Ok(row_values);
 }
+
+pub fn get_index_of_column(table: &Table, column: &String) -> Result<usize, String> {
+    for (i, c) in table.columns.iter().enumerate() {
+        if c.name == *column {
+            return Ok(i);
+        }
+    }
+    return Err(format!("Column {} does not exist in table {}", column, table.name));
+}

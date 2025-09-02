@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 pub mod select;
 pub mod insert;
 pub mod common;
@@ -41,6 +43,29 @@ impl Value {
             Value::Text(_) => DataType::Text,
             Value::Blob(_) => DataType::Blob,
             Value::Null => DataType::Null,
+        }
+    }
+
+    pub fn cmp(&self, other: &Value) -> Ordering {
+        if self.get_type() != other.get_type() {
+            return Ordering::Equal; // Hacky
+        }
+        match self {
+            Value::Integer(_) => {
+                self.cmp(other)
+            },
+            Value::Real(_) => {
+                self.cmp(other)
+            },
+            Value::Text(_) => {
+                self.cmp(other)
+            }
+            Value::Blob(_) => {
+                self.cmp(other)
+            },
+            Value::Null => {
+                Ordering::Equal
+            }
         }
     }
 }
