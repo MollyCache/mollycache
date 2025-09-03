@@ -100,7 +100,7 @@ pub struct WhereTreeEdge {
 pub struct WhereTreeNode {
     pub left: Box<Option<WhereTreeElement>>,
     pub right: Box<Option<WhereTreeElement>>,
-    pub operator: LogicalOperator,
+    pub operator: Option<LogicalOperator>,
     pub negation: bool,
 }
 
@@ -128,7 +128,7 @@ impl WhereTreeElement {
 
 #[derive(Debug, PartialEq)]
 pub enum LogicalOperator {
-    _And,
+    And,
     Or,
 }
 

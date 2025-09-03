@@ -37,7 +37,6 @@ mod tests {
     use crate::cli::ast::WhereTreeNode;
     use crate::cli::ast::WhereTreeElement;
     use crate::cli::ast::WhereTreeEdge;
-    use crate::cli::ast::LogicalOperator;
     use crate::db::table::Value;
 
     #[test]
@@ -96,7 +95,7 @@ mod tests {
                     value: Value::Integer(1),
                 }))),
                 right: Box::new(None),
-                operator: LogicalOperator::Or,
+                operator: None,
                 negation: false,
             }),
             order_by_clause: Some(vec![OrderByClause {

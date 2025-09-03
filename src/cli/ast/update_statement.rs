@@ -63,7 +63,6 @@ mod tests {
     use crate::cli::ast::WhereTreeNode;
     use crate::cli::ast::WhereTreeElement;
     use crate::cli::ast::WhereTreeEdge;
-    use crate::cli::ast::LogicalOperator;
     use crate::cli::ast::test_utils::token;
     
     #[test]
@@ -126,7 +125,7 @@ mod tests {
                     value: Value::Integer(2),
                 }))),
                 right: Box::new(None),
-                operator: LogicalOperator::Or,
+                operator: None,
                 negation: false,
             }),
         });
@@ -177,7 +176,7 @@ mod tests {
                     value: Value::Integer(3),
                 }))),
                 right: Box::new(None),
-                operator: LogicalOperator::Or,
+                operator: None,
                 negation: false,
             }),
             });

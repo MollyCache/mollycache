@@ -72,7 +72,6 @@ mod tests {
     use crate::cli::ast::WhereTreeNode;
     use crate::cli::ast::WhereTreeElement;
     use crate::cli::ast::WhereTreeEdge;
-    use crate::cli::ast::LogicalOperator;
 
     fn default_table() -> Table {
         Table {
@@ -147,7 +146,7 @@ mod tests {
                     value: Value::Text("John".to_string()),
                 }))),
                 right: Box::new(None),
-                operator: LogicalOperator::Or,
+                operator: None,
                 negation: false,
             }),
             order_by_clause: None,
@@ -174,7 +173,7 @@ mod tests {
                     value: Value::Real(1000.0),
                 }))),
                 right: Box::new(None),
-                operator: LogicalOperator::Or,
+                operator: None,
                 negation: false,
             }),
             order_by_clause: None,
@@ -222,7 +221,7 @@ mod tests {
                     value: Value::Text("John".to_string()),
                 }))),
                 right: Box::new(None),
-                operator: LogicalOperator::Or,
+                operator: None,
                 negation: false,
             }),
             order_by_clause: None,
