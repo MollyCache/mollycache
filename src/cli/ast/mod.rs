@@ -8,6 +8,7 @@ mod parser;
 mod select_statement;
 mod update_statement;
 mod delete_statement;
+mod helpers;
 
 #[derive(Debug, PartialEq)]
 pub enum SqlStatement {

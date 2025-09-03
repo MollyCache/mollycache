@@ -1,4 +1,4 @@
-use crate::cli::{ast::{parser::Parser, WhereClause, Operator, OrderByClause, OrderByDirection, LimitClause}, tokenizer::token::TokenTypes};
+use crate::cli::{ast::{parser::Parser, OrderByClause, OrderByDirection, LimitClause}, tokenizer::token::TokenTypes};
 
 use crate::db::table::Value;
 use hex::decode;
@@ -62,40 +62,6 @@ pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     let result = token.value.to_string();
     Ok(result)
 }
-
-pub fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, String> {
-    if expect_token_type(parser, TokenTypes::Where).is_err() {
-        return Ok(None);
-    }
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    expect_token_type(parser, TokenTypes::Identifier)?;
-    let column = token.value.to_string();
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    let operator  = match token.token_type {
-        TokenTypes::Equals => Operator::Equals,
-        TokenTypes::NotEquals => Operator::NotEquals,
-        TokenTypes::LessThan => Operator::LessThan,
-        TokenTypes::LessEquals => Operator::LessEquals,
-        TokenTypes::GreaterThan => Operator::GreaterThan,
-        TokenTypes::GreaterEquals => Operator::GreaterEquals,
-        _ => return Err(parser.format_error()),
-    };
-    parser.advance()?;
-
-    let value = token_to_value(parser)?;
-    parser.advance()?;
-
-    return Ok(Some(WhereClause {
-        column: column,
-        operator: operator,
-        value: value,
-    }));
-}
-
 
 pub fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, String> {
     if expect_token_type(parser, TokenTypes::Order).is_err() {
