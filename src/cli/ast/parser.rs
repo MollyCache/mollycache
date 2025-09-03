@@ -64,6 +64,7 @@ impl<'a> Parser<'a> {
                 TokenTypes::Insert => Some(builder.build_insert(self)),
                 TokenTypes::Select => Some(builder.build_select(self)),
                 TokenTypes::Update => Some(builder.build_update(self)),
+                TokenTypes::Delete => Some(builder.build_delete(self)),
                 TokenTypes::EOF => None,
                 _ => {
                     Some(Err(self.format_error()))
@@ -140,6 +141,10 @@ mod tests {
         }
 
         fn build_update(&self, _parser: &mut Parser) -> Result<SqlStatement, String> {
+            todo!();
+        }
+
+        fn build_delete(&self, _parser: &mut Parser) -> Result<SqlStatement, String> {
             todo!();
         }
     }
