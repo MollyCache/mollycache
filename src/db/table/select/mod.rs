@@ -23,11 +23,10 @@ pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value
 
 pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
-    if let Some(where_tree_node) = &statement.where_clause {
+    if let Some(where_stack) = &statement.where_clause {
         // This will need to be updated once we have multiple conditions working properly
-        let where_tree_element = where_tree_node.left.as_ref();
-        let where_clause = match where_tree_element {
-            Some(where_tree_element) => where_tree_element.get_clause()?,
+        let where_clause = match where_stack.first() {
+            Some(where_clause) => where_clause.get_clause()?,
             _ => return Err(format!("Found nothing when expected edge")),
         };
 
@@ -69,9 +68,8 @@ mod tests {
     use super::*;
     use crate::db::table::{Table, Value, DataType, ColumnDefinition};
     use crate::cli::ast::{SelectStatementColumns, LimitClause, OrderByClause, OrderByDirection, Operator};
-    use crate::cli::ast::WhereTreeNode;
-    use crate::cli::ast::WhereTreeElement;
-    use crate::cli::ast::WhereTreeEdge;
+    use crate::cli::ast::WhereStackElement;
+    use crate::cli::ast::WhereCondition;
 
     fn default_table() -> Table {
         Table {
@@ -139,16 +137,13 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::All,
-            where_clause: Some(WhereTreeNode {
-                left: Box::new(Some(WhereTreeElement::Edge(WhereTreeEdge {
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
                     column: "name".to_string(),
                     operator: Operator::Equals,
                     value: Value::Text("John".to_string()),
-                }))),
-                right: Box::new(None),
-                operator: None,
-                negation: false,
-            }),
+                }),
+            ]),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -166,16 +161,13 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::Specific(vec!["name".to_string(), "age".to_string()]),
-            where_clause: Some(WhereTreeNode {
-                left: Box::new(Some(WhereTreeElement::Edge(WhereTreeEdge {
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
                     column: "money".to_string(),
                     operator: Operator::Equals,
                     value: Value::Real(1000.0),
-                }))),
-                right: Box::new(None),
-                operator: None,
-                negation: false,
-            }),
+                }),
+            ]),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -214,16 +206,13 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::All,
-            where_clause: Some(WhereTreeNode {
-                left: Box::new(Some(WhereTreeElement::Edge(WhereTreeEdge {
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
                     column: "column_not_included".to_string(),
                     operator: Operator::Equals,
                     value: Value::Text("John".to_string()),
-                }))),
-                right: Box::new(None),
-                operator: None,
-                negation: false,
-            }),
+                }),
+            ]),
             order_by_clause: None,
             limit_clause: None,
         };

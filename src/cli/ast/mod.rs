@@ -37,7 +37,7 @@ pub struct InsertIntoStatement {
 pub struct SelectStatement {
     pub table_name: String,
     pub columns: SelectStatementColumns,
-    pub where_clause: Option<WhereTreeNode>,
+    pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
 }
@@ -45,7 +45,7 @@ pub struct SelectStatement {
 #[derive(Debug, PartialEq)]
 pub struct DeleteStatement {
     pub table_name: String,
-    pub where_clause: Option<WhereTreeNode>,
+    pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
 }
@@ -54,7 +54,7 @@ pub struct DeleteStatement {
 pub struct UpdateStatement {
     pub table_name: String,
     pub update_values: Vec<ColumnValue>,
-    pub where_clause: Option<WhereTreeNode>,
+    pub where_clause: Option<Vec<WhereStackElement>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -88,48 +88,33 @@ pub enum Operator {
     GreaterEquals,
 }
 
-// The default truthiness of a Null Node is False
 #[derive(Debug, PartialEq)]
-pub struct WhereTreeEdge {
+pub struct WhereCondition {
     pub column: String,
     pub operator: Operator,
     pub value: Value,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct WhereTreeNode {
-    pub left: Box<Option<WhereTreeElement>>,
-    pub right: Box<Option<WhereTreeElement>>,
-    pub operator: Option<LogicalOperator>,
-    pub negation: bool,
+pub enum WhereStackElement {
+    Condition(WhereCondition),
+    _LogicalOperator(LogicalOperator),
 }
 
-#[derive(Debug, PartialEq)]
-pub enum WhereTreeElement {
-    Edge(WhereTreeEdge),
-    _Node(WhereTreeNode),
-}
-
-impl WhereTreeElement {
-    pub fn get_clause(&self) -> Result<&WhereTreeEdge, String> {
+impl WhereStackElement {
+    pub fn get_clause(&self) -> Result<&WhereCondition, String> {
         match self {
-            WhereTreeElement::Edge(edge) => Ok(edge),
-            _ => Err(format!("Found node when expected edge")),
-        }
-    }
-
-    pub fn _get_node(&self) -> Result<&WhereTreeNode, String> {
-        match self {
-            WhereTreeElement::_Node(node) => Ok(node),
-            _ => Err(format!("Found edge when expected node")),
+            WhereStackElement::Condition(condition) => Ok(condition),
+            WhereStackElement::_LogicalOperator(_) => Err(format!("Logical operator cannot be used as a condition")),
         }
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub enum LogicalOperator {
-    And,
-    Or,
+    _Not,
+    _And,
+    _Or,
 }
 
 #[derive(Debug, PartialEq)]
