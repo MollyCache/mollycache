@@ -1,7 +1,7 @@
-use crate::cli::ast::{parser::Parser, WhereClause, Operator, helpers::common::{expect_token_type, token_to_value}};
+use crate::cli::ast::{parser::Parser, WhereTreeNode, WhereTreeEdge, WhereTreeElement, Operator, LogicalOperator, helpers::common::{expect_token_type, token_to_value}};
 use crate::cli::tokenizer::token::TokenTypes;
 
-pub fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, String> {
+pub fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereTreeNode>, String> {
     if expect_token_type(parser, TokenTypes::Where).is_err() {
         return Ok(None);
     }
@@ -27,10 +27,15 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, Stri
     let value = token_to_value(parser)?;
     parser.advance()?;
 
-    return Ok(Some(WhereClause {
-        column: column,
-        operator: operator,
-        value: value,
+    return Ok(Some(WhereTreeNode {
+        left: Box::new(Some(WhereTreeElement::Edge(WhereTreeEdge {
+            column: column,
+            operator: operator,
+            value: value,
+        }))),
+        right: Box::new(None),
+        operator: LogicalOperator::Or,
+        negation: false,
     }));
 }
 
@@ -63,10 +68,15 @@ mod tests {
         let result = get_where_clause(&mut parser);
         assert!(result.is_ok());
         let where_clause = result.unwrap();
-        let expected = Some(WhereClause {
-            column: "id".to_string(),
-            operator: Operator::Equals,
-            value: Value::Integer(1),
+        let expected = Some(WhereTreeNode {
+            left: Box::new(Some(WhereTreeElement::Edge(WhereTreeEdge {
+                column: "id".to_string(),
+                operator: Operator::Equals,
+                value: Value::Integer(1),
+            }))),
+            right: Box::new(None),
+            operator: LogicalOperator::Or,
+            negation: false,
         });
         assert_eq!(expected, where_clause);
         assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Limit);

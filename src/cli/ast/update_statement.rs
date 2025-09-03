@@ -60,7 +60,10 @@ mod tests {
     use super::*;
     use crate::db::table::Value;
     use crate::cli::ast::Operator;
-    use crate::cli::ast::WhereClause;
+    use crate::cli::ast::WhereTreeNode;
+    use crate::cli::ast::WhereTreeElement;
+    use crate::cli::ast::WhereTreeEdge;
+    use crate::cli::ast::LogicalOperator;
     use crate::cli::ast::test_utils::token;
     
     #[test]
@@ -116,10 +119,15 @@ mod tests {
                 column: "column".to_string(),
                 value: Value::Integer(1),
             }],
-            where_clause: Some(WhereClause {
+            where_clause: Some(WhereTreeNode {
+                left: Box::new(Some(WhereTreeElement::Edge(WhereTreeEdge {
                 column: "id".to_string(),
-                operator: Operator::GreaterThan,
-                value: Value::Integer(2),
+                    operator: Operator::GreaterThan,
+                    value: Value::Integer(2),
+                }))),
+                right: Box::new(None),
+                operator: LogicalOperator::Or,
+                negation: false,
             }),
         });
         assert_eq!(statement, expected);
@@ -162,10 +170,15 @@ mod tests {
                     value: Value::Text("False".to_string()),
                 },
             ],
-            where_clause: Some(WhereClause {
-                column: "id".to_string(),
-                operator: Operator::Equals,
-                value: Value::Integer(3),
+            where_clause: Some(WhereTreeNode {
+                left: Box::new(Some(WhereTreeElement::Edge(WhereTreeEdge {
+                    column: "id".to_string(),
+                    operator: Operator::Equals,
+                    value: Value::Integer(3),
+                }))),
+                right: Box::new(None),
+                operator: LogicalOperator::Or,
+                negation: false,
             }),
             });
         assert_eq!(statement, expected);
