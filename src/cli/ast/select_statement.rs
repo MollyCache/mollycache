@@ -37,20 +37,11 @@ fn get_columns(parser: &mut Parser) -> Result<SelectStatementColumns, String> {
 mod tests {
     use super::*;
     use crate::cli::ast::Operator;
-    use crate::cli::tokenizer::scanner::Token;
     use crate::db::table::Value;
     use crate::cli::ast::OrderByClause;
     use crate::cli::ast::OrderByDirection;
     use crate::cli::ast::LimitClause;
-
-    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: 0,
-            line_num: 1,
-        }
-    }
+    use crate::cli::ast::test_utils::token;
 
     #[test]
     fn select_statement_with_all_tokens_is_generated_correctly() {

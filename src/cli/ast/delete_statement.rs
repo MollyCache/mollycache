@@ -22,22 +22,13 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::tokenizer::scanner::Token;
+    use crate::cli::ast::test_utils::token;
     use crate::cli::ast::OrderByClause;
     use crate::cli::ast::OrderByDirection;
     use crate::cli::ast::LimitClause;
     use crate::cli::ast::Operator;
     use crate::cli::ast::WhereClause;
     use crate::db::table::Value;
-
-    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: 0,
-            line_num: 1,
-        }
-    }
 
     #[test]
     fn delete_statement_with_all_tokens_is_generated_correctly() {

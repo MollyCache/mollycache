@@ -55,19 +55,10 @@ fn get_update_values(parser: &mut Parser) -> Result<Vec<ColumnValue>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::tokenizer::scanner::Token;
     use crate::db::table::Value;
     use crate::cli::ast::Operator;
     use crate::cli::ast::WhereClause;
-
-    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: 0,
-            line_num: 1,
-        }
-    }
+    use crate::cli::ast::test_utils::token;
     
     #[test]
     fn update_statement_with_all_tokens_is_generated_correctly() {

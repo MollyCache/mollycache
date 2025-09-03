@@ -80,15 +80,7 @@ impl<'a> Parser<'a> {
 mod tests {
     use super::*;
     use crate::cli::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns};
-
-    fn token(tt: TokenTypes, val: &'static str, col: usize, line: usize) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: col,
-            line_num: line,
-        }
-    }
+    use crate::cli::ast::test_utils::{token_with_location, token};
 
     #[test]
     fn parser_formats_error_when_at_end_of_input() {
@@ -100,7 +92,7 @@ mod tests {
 
     #[test]
     fn parser_formats_error_when_unexpected_token_type() {
-        let tokens = vec![token(TokenTypes::Insert, "INSERT", 15, 3)];
+        let tokens = vec![token_with_location(TokenTypes::Insert, "INSERT", 15, 3)];
         let parser = Parser::new(tokens);
         let result = parser.format_error();
         assert_eq!(result, "Error at line 3, column 15: Unexpected value: INSERT");
@@ -152,13 +144,13 @@ mod tests {
     #[test]
     fn parser_next_statement_filters_options_correctly_handles_multiple_statements() {
         let tokens = vec![
-            token(TokenTypes::Create, "CREATE", 1, 1),
-            token(TokenTypes::SemiColon, ";", 1, 1),
-            token(TokenTypes::Insert, "INSERT", 1, 1),
-            token(TokenTypes::SemiColon, ";", 1, 1),
-            token(TokenTypes::Select, "SELECT", 1, 1),
-            token(TokenTypes::SemiColon, ";", 1, 1),
-            token(TokenTypes::EOF, "", 1, 1),
+            token(TokenTypes::Create, "CREATE"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
         ];
         let mut parser = Parser::new(tokens);
         let builder : &dyn StatementBuilder = &MockStatementBuilder;
@@ -199,14 +191,14 @@ mod tests {
     #[test]
     fn parser_next_statement_handles_errors_correctly() {
         let tokens = vec![
-            token(TokenTypes::Identifier, "users", 1, 1),
-            token(TokenTypes::SemiColon, ";", 1, 1),
-            token(TokenTypes::EOF, "", 1, 1),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::EOF, ""),
         ];
         let mut parser = Parser::new(tokens);
         let builder : &dyn StatementBuilder = &MockStatementBuilder;
         let result = parser.next_statement(builder);
-        let expected = Some(Err("Error at line 1, column 1: Unexpected value: users".to_string()));
+        let expected = Some(Err("Error at line 1, column 0: Unexpected value: users".to_string()));
         assert_eq!(result, expected);
     }
 }

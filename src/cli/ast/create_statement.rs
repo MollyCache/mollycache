@@ -100,16 +100,7 @@ fn index_statement(_parser: &mut Parser) -> Result<SqlStatement, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::tokenizer::scanner::Token;
-
-    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: 0,
-            line_num: 1,
-        }
-    }
+    use crate::cli::ast::test_utils::token;
 
     #[test]
     fn create_table_generates_proper_statement(){
