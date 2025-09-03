@@ -1,4 +1,4 @@
-use crate::cli::ast::{parser::Parser, SqlStatement, UpdateStatement, ColumnValue, common::{expect_token_type, get_where_clause, token_to_value}};
+use crate::cli::ast::{parser::Parser, SqlStatement, UpdateStatement, ColumnValue, common::{expect_token_type, get_where_clause, token_to_value, get_table_name}};
 use crate::cli::tokenizer::token::TokenTypes;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
@@ -17,14 +17,6 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
         update_values: update_values,
         where_clause: where_clause,
     }));
-}
-
-fn get_table_name(parser: &mut Parser) -> Result<String, String> {
-    parser.advance()?;
-    let token = parser.current_token()?;
-    expect_token_type(parser, TokenTypes::Identifier)?;
-    let result = token.value.to_string();
-    Ok(result)
 }
 
 // We do not currently support conditional updates such as "UPDATE table SET column = column * 1.1;"
