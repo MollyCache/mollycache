@@ -1,4 +1,4 @@
-use crate::cli::{ast::{parser::Parser, OrderByClause, OrderByDirection, LimitClause}, tokenizer::token::TokenTypes};
+use crate::cli::{ast::{parser::Parser}, tokenizer::token::TokenTypes};
 
 use crate::db::table::Value;
 use hex::decode;
@@ -61,81 +61,4 @@ pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     expect_token_type(parser, TokenTypes::Identifier)?;
     let result = token.value.to_string();
     Ok(result)
-}
-
-pub fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, String> {
-    if expect_token_type(parser, TokenTypes::Order).is_err() {
-        return Ok(None);
-    }
-    parser.advance()?;
-
-    expect_token_type(parser, TokenTypes::By)?;
-    parser.advance()?;
-
-    let mut order_by_clauses = vec![];
-    loop {
-        let token = parser.current_token()?;
-        expect_token_type(parser, TokenTypes::Identifier)?;
-        let column = token.value.to_string();
-        parser.advance()?;
-
-        let token = parser.current_token()?;
-        let direction = match token.token_type {
-            TokenTypes::Asc => {
-                parser.advance()?;
-                OrderByDirection::Asc
-            },
-            TokenTypes::Desc => {
-                parser.advance()?;
-                OrderByDirection::Desc
-            },
-            _ => OrderByDirection::Asc,
-        };
-
-        order_by_clauses.push(OrderByClause {
-            column: column,
-            direction: direction,
-        });
-
-        let token = parser.current_token()?;
-        if token.token_type != TokenTypes::Comma {
-            break;
-        }
-        parser.advance()?;
-    }
-    return Ok(Some(order_by_clauses));
-}
-
-pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> { 
-    if expect_token_type(parser, TokenTypes::Limit).is_err() {
-        return Ok(None);
-    }
-    parser.advance()?;
-
-    expect_token_type(parser, TokenTypes::IntLiteral)?;
-    let limit = token_to_value(parser)?;
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    if token.token_type != TokenTypes::Offset {
-        return Ok(Some(LimitClause {
-            limit: limit,
-            offset: None,
-        }));
-    }
-    parser.advance()?;
-
-    expect_token_type(parser, TokenTypes::IntLiteral)?;
-    let offset = token_to_value(parser)?;
-    if let Value::Integer(offset) = offset {
-        if offset < 0 {
-            return Err(parser.format_error());
-        }
-    };
-    parser.advance()?;
-
-    return Ok(Some(LimitClause {
-        limit: limit,
-        offset: Some(offset),
-    }));
 }

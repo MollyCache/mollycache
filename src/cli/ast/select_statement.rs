@@ -1,11 +1,11 @@
 use crate::{cli::{
     ast::{
-        common::{expect_token_type, tokens_to_identifier_list, get_order_by, get_limit, get_table_name}, 
-        parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause
+        common::{expect_token_type, tokens_to_identifier_list, get_table_name}, 
+        parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause,
+        helpers::{order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit}
     }, 
     tokenizer::token::TokenTypes
 }};
-use crate::cli::ast::helpers::where_clause::get_where_clause;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
