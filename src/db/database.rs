@@ -32,6 +32,9 @@ impl Database {
             SqlStatement::UpdateStatement(_statement) => {
                 todo!();
             },
+            SqlStatement::DeleteStatement(_statement) => {
+                todo!();
+            },
         }
     }
 

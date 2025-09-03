@@ -1,9 +1,10 @@
-use crate::{cli::{ast::{common::{expect_token_type, get_where_clause, token_to_value, tokens_to_identifier_list}, parser::Parser, LimitClause, OrderByClause, OrderByDirection, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause}, tokenizer::token::TokenTypes}, db::table::Value};
+use crate::{cli::{ast::{common::{expect_token_type, get_where_clause, tokens_to_identifier_list, get_order_by, get_limit, get_table_name}, parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause}, tokenizer::token::TokenTypes}};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     let columns = get_columns(parser)?;
     let table_name = get_table_name(parser)?;
+    parser.advance()?;
     let where_clause: Option<WhereClause> = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
@@ -31,101 +32,15 @@ fn get_columns(parser: &mut Parser) -> Result<SelectStatementColumns, String> {
     }
 }
 
-fn get_table_name(parser: &mut Parser) -> Result<String, String> {
-    parser.advance()?;
-    let token = parser.current_token()?;
-    expect_token_type(parser, TokenTypes::Identifier)?;
-
-    let result = token.value.to_string();
-    parser.advance()?;
-    Ok(result)
-}
-
-fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, String> {
-    if expect_token_type(parser, TokenTypes::Order).is_err() {
-        return Ok(None);
-    }
-    parser.advance()?;
-
-    expect_token_type(parser, TokenTypes::By)?;
-    parser.advance()?;
-
-    let mut order_by_clauses = vec![];
-    loop {
-        let token = parser.current_token()?;
-        expect_token_type(parser, TokenTypes::Identifier)?;
-        let column = token.value.to_string();
-        parser.advance()?;
-
-        let token = parser.current_token()?;
-        let direction = match token.token_type {
-            TokenTypes::Asc => {
-                parser.advance()?;
-                OrderByDirection::Asc
-            },
-            TokenTypes::Desc => {
-                parser.advance()?;
-                OrderByDirection::Desc
-            },
-            _ => OrderByDirection::Asc,
-        };
-
-        order_by_clauses.push(OrderByClause {
-            column: column,
-            direction: direction,
-        });
-
-        let token = parser.current_token()?;
-        if token.token_type != TokenTypes::Comma {
-            break;
-        }
-        parser.advance()?;
-    }
-    return Ok(Some(order_by_clauses));
-}
-
-fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> { 
-    if expect_token_type(parser, TokenTypes::Limit).is_err() {
-        return Ok(None);
-    }
-    parser.advance()?;
-
-    expect_token_type(parser, TokenTypes::IntLiteral)?;
-    let limit = token_to_value(parser)?;
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    if token.token_type != TokenTypes::Offset {
-        return Ok(Some(LimitClause {
-            limit: limit,
-            offset: None,
-        }));
-    }
-    parser.advance()?;
-
-    expect_token_type(parser, TokenTypes::IntLiteral)?;
-    let offset = token_to_value(parser)?;
-    if let Value::Integer(offset) = offset {
-        if offset < 0 {
-            return Err(parser.format_error());
-        }
-    };
-    parser.advance()?;
-
-    return Ok(Some(LimitClause {
-        limit: limit,
-        offset: Some(offset),
-    }));
-    
-    
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::cli::ast::Operator;
     use crate::cli::tokenizer::scanner::Token;
     use crate::db::table::Value;
+    use crate::cli::ast::OrderByClause;
+    use crate::cli::ast::OrderByDirection;
+    use crate::cli::ast::LimitClause;
 
     fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
         Token {
