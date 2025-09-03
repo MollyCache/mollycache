@@ -6,12 +6,14 @@ mod create_statement;
 mod insert_statement;
 mod parser;
 mod select_statement;
+mod update_statement;
 
 #[derive(Debug, PartialEq)]
 pub enum SqlStatement {
     CreateTable(CreateTableStatement),
     InsertInto(InsertIntoStatement),
     Select(SelectStatement),
+    UpdateStatement(UpdateStatement),
 }
 
 #[derive(Debug, PartialEq)]
@@ -34,6 +36,19 @@ pub struct SelectStatement {
     pub where_clause: Option<WhereClause>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct UpdateStatement {
+    pub table_name: String,
+    update_values: Vec<ColumnValue>,
+    pub where_clause: Option<WhereClause>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ColumnValue {
+    pub column: String,
+    pub value: Value,
 }
 
 #[derive(Debug, PartialEq)]
@@ -90,6 +105,7 @@ pub trait StatementBuilder {
     fn build_create(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
     fn build_insert(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
     fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
 }
 
 pub struct DefaultStatementBuilder;
@@ -105,6 +121,10 @@ impl StatementBuilder for DefaultStatementBuilder {
     
     fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
         select_statement::build(parser)
+    }
+
+    fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        update_statement::build(parser)
     }
 }
 
