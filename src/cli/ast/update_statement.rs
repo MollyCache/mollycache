@@ -1,4 +1,7 @@
-use crate::cli::ast::{parser::Parser, SqlStatement, UpdateStatement, ColumnValue, common::{expect_token_type, token_to_value, get_table_name}};
+use crate::cli::ast::{
+    parser::Parser, SqlStatement, UpdateStatement, ColumnValue, 
+    common::{expect_token_type, token_to_value, get_table_name}
+};
 use crate::cli::ast::helpers::where_clause::get_where_clause;
 use crate::cli::tokenizer::token::TokenTypes;
 

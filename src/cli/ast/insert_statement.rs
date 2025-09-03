@@ -1,4 +1,7 @@
-use crate::cli::{ast::{parser::Parser, common::token_to_value, common::expect_token_type, InsertIntoStatement, SqlStatement::{self, InsertInto}}, tokenizer::token::TokenTypes};
+use crate::cli::{
+    ast::{parser::Parser, common::token_to_value, common::expect_token_type, common::get_table_name, InsertIntoStatement, SqlStatement::{self, InsertInto}}, 
+    tokenizer::token::TokenTypes
+};
 use crate::db::table::Value;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
@@ -22,11 +25,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 }
 
 fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    expect_token_type(parser, TokenTypes::Identifier)?;
-    let table_name = token.value.to_string();
+    let table_name = get_table_name(parser)?;
     parser.advance()?;
 
     let token = parser.current_token()?;

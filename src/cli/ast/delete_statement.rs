@@ -1,4 +1,7 @@
-use crate::cli::ast::{parser::Parser, SqlStatement, DeleteStatement, common::{expect_token_type, get_table_name, get_order_by, get_limit}};
+use crate::cli::ast::{
+    parser::Parser, SqlStatement, DeleteStatement, 
+    common::{expect_token_type, get_table_name, get_order_by, get_limit}
+};
 use crate::cli::ast::helpers::where_clause::get_where_clause;
 use crate::cli::tokenizer::token::TokenTypes;
 

@@ -3,8 +3,6 @@ use crate::cli::{
     tokenizer::scanner::Token, tokenizer::token::TokenTypes,
 };
 
-
-
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     current: usize,
