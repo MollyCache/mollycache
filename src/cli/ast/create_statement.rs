@@ -1,4 +1,10 @@
-use crate::cli::{ast::{parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, common::expect_token_type}, tokenizer::token::TokenTypes};
+use crate::cli::{
+    ast::{
+        parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, 
+        helpers::common::{expect_token_type, get_table_name}
+    }, 
+    tokenizer::token::TokenTypes
+};
 use crate::db::table::{ColumnDefinition, DataType};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
@@ -22,11 +28,8 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 }
 
 fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    expect_token_type(parser, TokenTypes::Identifier)?;
-    let table_name = token.value.to_string();
+    // Get the table name
+    let table_name = get_table_name(parser)?;
     parser.advance()?;
 
     let column_definitions = column_definitions(parser)?;
@@ -100,16 +103,7 @@ fn index_statement(_parser: &mut Parser) -> Result<SqlStatement, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::tokenizer::scanner::Token;
-
-    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: 0,
-            line_num: 1,
-        }
-    }
+    use crate::cli::ast::test_utils::token;
 
     #[test]
     fn create_table_generates_proper_statement(){

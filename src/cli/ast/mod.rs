@@ -1,13 +1,15 @@
 use crate::cli::tokenizer::{scanner::Token, token::TokenTypes};
 use crate::db::table::{ColumnDefinition, Value};
 
-mod common;
 mod create_statement;
 mod insert_statement;
 mod parser;
 mod select_statement;
 mod update_statement;
 mod delete_statement;
+mod helpers;
+#[cfg(test)]
+mod test_utils;
 
 #[derive(Debug, PartialEq)]
 pub enum SqlStatement {
@@ -181,16 +183,7 @@ pub fn generate(tokens: Vec<Token>) -> Vec<Result<SqlStatement, String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::tokenizer::scanner::Token;
-
-    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: 0,
-            line_num: 1,
-        }
-    }
+    use super::test_utils::token;
 
     #[test]
     fn ast_handles_invalid_statements_gracefully() {

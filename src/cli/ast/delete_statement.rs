@@ -1,5 +1,13 @@
-use crate::cli::ast::{parser::Parser, SqlStatement, DeleteStatement, common::{expect_token_type, get_table_name, get_where_clause, get_order_by, get_limit}};
-use crate::cli::tokenizer::token::TokenTypes;
+use crate::cli::{
+    ast::{
+        parser::Parser, SqlStatement, DeleteStatement, 
+        helpers::{
+            common::{expect_token_type, get_table_name},
+            order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit
+        }
+    },
+    tokenizer::token::TokenTypes
+};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
@@ -21,22 +29,13 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::tokenizer::scanner::Token;
+    use crate::cli::ast::test_utils::token;
     use crate::cli::ast::OrderByClause;
     use crate::cli::ast::OrderByDirection;
     use crate::cli::ast::LimitClause;
     use crate::cli::ast::Operator;
     use crate::cli::ast::WhereClause;
     use crate::db::table::Value;
-
-    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: 0,
-            line_num: 1,
-        }
-    }
 
     #[test]
     fn delete_statement_with_all_tokens_is_generated_correctly() {
