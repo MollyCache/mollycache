@@ -1,4 +1,4 @@
-use crate::{cli::{ast::{common::{expect_token_type, token_to_value, tokens_to_identifier_list}, parser::Parser, LimitClause, Operator, OrderByClause, OrderByDirection, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause}, tokenizer::token::TokenTypes}, db::table::Value};
+use crate::{cli::{ast::{common::{expect_token_type, get_where_clause, token_to_value, tokens_to_identifier_list}, parser::Parser, LimitClause, OrderByClause, OrderByDirection, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause}, tokenizer::token::TokenTypes}, db::table::Value};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
@@ -39,39 +39,6 @@ fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     let result = token.value.to_string();
     parser.advance()?;
     Ok(result)
-}
-
-fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, String> {
-    if expect_token_type(parser, TokenTypes::Where).is_err() {
-        return Ok(None);
-    }
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    expect_token_type(parser, TokenTypes::Identifier)?;
-    let column = token.value.to_string();
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    let operator  = match token.token_type {
-        TokenTypes::Equals => Operator::Equals,
-        TokenTypes::NotEquals => Operator::NotEquals,
-        TokenTypes::LessThan => Operator::LessThan,
-        TokenTypes::LessEquals => Operator::LessEquals,
-        TokenTypes::GreaterThan => Operator::GreaterThan,
-        TokenTypes::GreaterEquals => Operator::GreaterEquals,
-        _ => return Err(parser.format_error()),
-    };
-    parser.advance()?;
-
-    let value = token_to_value(parser)?;
-    parser.advance()?;
-
-    return Ok(Some(WhereClause {
-        column: column,
-        operator: operator,
-        value: value,
-    }));
 }
 
 fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, String> {
@@ -156,6 +123,7 @@ fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cli::ast::Operator;
     use crate::cli::tokenizer::scanner::Token;
     use crate::db::table::Value;
 

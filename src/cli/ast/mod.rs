@@ -41,7 +41,7 @@ pub struct SelectStatement {
 #[derive(Debug, PartialEq)]
 pub struct UpdateStatement {
     pub table_name: String,
-    update_values: Vec<ColumnValue>,
+    pub update_values: Vec<ColumnValue>,
     pub where_clause: Option<WhereClause>,
 }
 
