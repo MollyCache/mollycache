@@ -29,6 +29,9 @@ impl Database {
                 let rows = self.select_from_table(statement)?;
                 Ok(Some(rows))
             },
+            SqlStatement::UpdateStatement(_statement) => {
+                todo!();
+            },
         }
     }
 
