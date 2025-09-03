@@ -33,3 +33,58 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, Stri
         value: value,
     }));
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cli::tokenizer::scanner::Token;
+    use crate::db::table::Value;
+
+    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
+        Token {
+            token_type: tt,
+            value: val,
+            col_num: 0,
+            line_num: 1,
+        }
+    }
+
+    #[test]
+    fn where_clause_with_all_tokens_is_generated_correctly() {
+        // WHERE id = 1;
+        let tokens = vec![
+            token(TokenTypes::Where, "WHERE"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Equals, "="),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_where_clause(&mut parser);
+        assert!(result.is_ok());
+        let where_clause = result.unwrap();
+        let expected = Some(WhereClause {
+            column: "id".to_string(),
+            operator: Operator::Equals,
+            value: Value::Integer(1),
+        });
+        assert_eq!(expected, where_clause);
+        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+    }
+
+    #[test]
+    fn not_where_clause_returns_none() {
+        // SELECT * FROM users;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Asterisk, "*"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_where_clause(&mut parser);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Select);
+    }
+}
