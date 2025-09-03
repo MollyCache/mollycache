@@ -1,5 +1,8 @@
 use crate::cli::{
-    ast::{parser::Parser, common::token_to_value, common::expect_token_type, common::get_table_name, InsertIntoStatement, SqlStatement::{self, InsertInto}}, 
+    ast::{ 
+        helpers::common::{token_to_value, expect_token_type, get_table_name}, 
+        parser::Parser, InsertIntoStatement, SqlStatement::{self, InsertInto}
+    }, 
     tokenizer::token::TokenTypes
 };
 use crate::db::table::Value;

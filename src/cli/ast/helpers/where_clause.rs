@@ -1,4 +1,4 @@
-use crate::cli::ast::{parser::Parser, WhereClause, Operator, common::{expect_token_type, token_to_value}};
+use crate::cli::ast::{parser::Parser, WhereClause, Operator, helpers::common::{expect_token_type, token_to_value}};
 use crate::cli::tokenizer::token::TokenTypes;
 
 pub fn get_where_clause(parser: &mut Parser) -> Result<Option<WhereClause>, String> {
@@ -51,13 +51,13 @@ mod tests {
 
     #[test]
     fn where_clause_with_all_tokens_is_generated_correctly() {
-        // WHERE id = 1;
+        // WHERE id = 1 LIMIT...
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
             token(TokenTypes::Identifier, "id"),
             token(TokenTypes::Equals, "="),
             token(TokenTypes::IntLiteral, "1"),
-            token(TokenTypes::SemiColon, ";"),
+            token(TokenTypes::Limit, "LIMIT"),
         ];
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);
@@ -69,17 +69,15 @@ mod tests {
             value: Value::Integer(1),
         });
         assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Limit);
     }
 
     #[test]
     fn not_where_clause_returns_none() {
-        // SELECT * FROM users;
+        // SELECT * ...;
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Asterisk, "*"),
-            token(TokenTypes::From, "FROM"),
-            token(TokenTypes::Identifier, "users"),
         ];
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);

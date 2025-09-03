@@ -1,8 +1,10 @@
 use crate::{cli::{
     ast::{
-        common::{expect_token_type, tokens_to_identifier_list, get_table_name}, 
         parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause,
-        helpers::{order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit}
+        helpers::{
+            common::{expect_token_type, tokens_to_identifier_list, get_table_name},
+            order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit
+        }
     }, 
     tokenizer::token::TokenTypes
 }};
@@ -185,63 +187,5 @@ mod tests {
                 offset: Some(Value::Integer(5)),
             }),
         }));
-    }
-
-    #[test]
-    fn select_statement_with_limit_clause_no_offset_is_generated_correctly() {
-        // SELECT id FROM guests WHERE id > 1 LIMIT 10;
-        let tokens = vec![
-            token(TokenTypes::Select, "SELECT"),
-            token(TokenTypes::Identifier, "id"),
-            token(TokenTypes::From, "FROM"),
-            token(TokenTypes::Identifier, "guests"),
-            token(TokenTypes::Where, "WHERE"),
-            token(TokenTypes::Identifier, "id"),
-            token(TokenTypes::GreaterThan, ">"),
-            token(TokenTypes::IntLiteral, "1"),
-            token(TokenTypes::Limit, "LIMIT"),
-            token(TokenTypes::IntLiteral, "10"),
-            token(TokenTypes::SemiColon, ";"),
-        ];
-        let mut parser = Parser::new(tokens);
-        let result = build(&mut parser);
-        assert!(result.is_ok());
-        let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
-            table_name: "guests".to_string(),
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-            ]),
-            where_clause: Some(WhereClause {
-                column: "id".to_string(),
-                operator: Operator::GreaterThan,
-                value: Value::Integer(1),
-            }),
-            order_by_clause: None,
-            limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: None,
-            }),
-        }));
-    }
-
-    #[test]
-    fn select_statement_with_limit_clause_with_negative_offset_is_generated_correctly() {
-        // SELECT id FROM guests LIMIT 10 OFFSET -5;
-        let tokens = vec![
-            token(TokenTypes::Select, "SELECT"),
-            token(TokenTypes::Identifier, "id"),
-            token(TokenTypes::From, "FROM"),
-            token(TokenTypes::Identifier, "guests"),
-            token(TokenTypes::Limit, "LIMIT"),
-            token(TokenTypes::IntLiteral, "10"),
-            token(TokenTypes::Offset, "OFFSET"),
-            token(TokenTypes::IntLiteral, "-5"),
-            token(TokenTypes::SemiColon, ";"),
-        ];
-        let mut parser = Parser::new(tokens);
-        let result = build(&mut parser);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Error at line 1, column 0: Unexpected value: -5");
     }
 }

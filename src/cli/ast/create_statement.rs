@@ -1,7 +1,7 @@
 use crate::cli::{
     ast::{
         parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, 
-        common::{expect_token_type, get_table_name}
+        helpers::common::{expect_token_type, get_table_name}
     }, 
     tokenizer::token::TokenTypes
 };

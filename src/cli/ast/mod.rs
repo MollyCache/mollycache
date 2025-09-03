@@ -1,7 +1,6 @@
 use crate::cli::tokenizer::{scanner::Token, token::TokenTypes};
 use crate::db::table::{ColumnDefinition, Value};
 
-mod common;
 mod create_statement;
 mod insert_statement;
 mod parser;
