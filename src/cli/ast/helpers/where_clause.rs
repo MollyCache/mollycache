@@ -1,7 +1,7 @@
 use crate::cli::ast::{
     helpers::common::{expect_token_type, token_to_value},
     parser::Parser,
-    Operator, WhereCondition, WhereStackElement,
+    Operator, WhereCondition, WhereStackElement, LogicalOperator,
 };
 use crate::cli::tokenizer::token::TokenTypes;
 
@@ -12,43 +12,84 @@ use crate::cli::tokenizer::token::TokenTypes;
 // WhereConditions are currently represented as 'column operator value'
 // This will later be expanded to replace the WhereConditions with a generalized evaluation function.
 
+enum _ValidTokensforWhereCondition {
+    Identifier,
+    Equals,
+    NotEquals,
+    LessThan,
+    LessEquals,
+    GreaterThan,
+    GreaterEquals,
+    LeftParen,
+    RightParen,
+    Not,
+    And,
+    Or,
+}
+
 pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElement>>, String> {
     if expect_token_type(parser, TokenTypes::Where).is_err() {
         return Ok(None);
     }
     parser.advance()?;
 
-    let where_condition = get_where_clause_edge(parser)?;
+    let where_condition = get_where_condition(parser)?;
 
-    Ok(Some(vec![WhereStackElement::Condition(where_condition)]))
+    Ok(Some(vec![where_condition]))
 }
 
-fn get_where_clause_edge(parser: &mut Parser) -> Result<WhereCondition, String> {
+fn get_where_condition(parser: &mut Parser) -> Result<WhereStackElement, String> {
     let token = parser.current_token()?;
-    expect_token_type(parser, TokenTypes::Identifier)?;
-    let column = token.value.to_string();
-    parser.advance()?;
+    match token.token_type {
+        TokenTypes::And => {
+            parser.advance()?;
+            return Ok(WhereStackElement::LogicalOperator(LogicalOperator::And))
+        },
+        TokenTypes::Or => {
+            parser.advance()?;
+            return Ok(WhereStackElement::LogicalOperator(LogicalOperator::Or))
+        },
+        TokenTypes::Not => {
+            parser.advance()?;
+            return Ok(WhereStackElement::LogicalOperator(LogicalOperator::Not))
+        },
+        TokenTypes::LeftParen => {
+            parser.advance()?;
+            return Ok(WhereStackElement::LogicalOperator(LogicalOperator::LeftParen))
+        },
+        TokenTypes::RightParen => {
+            parser.advance()?;
+            return Ok(WhereStackElement::LogicalOperator(LogicalOperator::RightParen))
+        },
+        TokenTypes::Identifier => {
+            let column = token.value.to_string();
+            parser.advance()?;
 
-    let token = parser.current_token()?;
-    let operator = match token.token_type {
-        TokenTypes::Equals => Operator::Equals,
-        TokenTypes::NotEquals => Operator::NotEquals,
-        TokenTypes::LessThan => Operator::LessThan,
-        TokenTypes::LessEquals => Operator::LessEquals,
-        TokenTypes::GreaterThan => Operator::GreaterThan,
-        TokenTypes::GreaterEquals => Operator::GreaterEquals,
+            let token = parser.current_token()?;
+            let operator = match token.token_type {
+                TokenTypes::Equals => Operator::Equals,
+                TokenTypes::NotEquals => Operator::NotEquals,
+                TokenTypes::LessThan => Operator::LessThan,
+                TokenTypes::LessEquals => Operator::LessEquals,
+                TokenTypes::GreaterThan => Operator::GreaterThan,
+                TokenTypes::GreaterEquals => Operator::GreaterEquals,
+                _ => return Err(parser.format_error()),
+            };
+            parser.advance()?;
+
+            let value = token_to_value(parser)?;
+            parser.advance()?;
+
+            return Ok(WhereStackElement::Condition(
+                WhereCondition {
+                    column,
+                    operator,
+                    value,
+                })
+            );
+        }
         _ => return Err(parser.format_error()),
-    };
-    parser.advance()?;
-
-    let value = token_to_value(parser)?;
-    parser.advance()?;
-
-    Ok(WhereCondition {
-        column,
-        operator,
-        value,
-    })
+    }
 }
 
 #[cfg(test)]
@@ -133,7 +174,7 @@ mod tests {
                 operator: Operator::Equals,
                 value: Value::Text("John".to_string()),
             }),
-            WhereStackElement::_LogicalOperator(LogicalOperator::_And),
+            WhereStackElement::LogicalOperator(LogicalOperator::And),
         ]);
         // TEST IS NOT WORKING YET DUE TO A CHANGE IN THE AST
         // assert_eq!(expected, where_clause);

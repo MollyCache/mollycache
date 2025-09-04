@@ -98,23 +98,16 @@ pub struct WhereCondition {
 #[derive(Debug, PartialEq)]
 pub enum WhereStackElement {
     Condition(WhereCondition),
-    _LogicalOperator(LogicalOperator),
-}
-
-impl WhereStackElement {
-    pub fn get_clause(&self) -> Result<&WhereCondition, String> {
-        match self {
-            WhereStackElement::Condition(condition) => Ok(condition),
-            WhereStackElement::_LogicalOperator(_) => Err(format!("Logical operator cannot be used as a condition")),
-        }
-    }
+    LogicalOperator(LogicalOperator),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum LogicalOperator {
-    _Not,
-    _And,
-    _Or,
+    Not,
+    And,
+    Or,
+    LeftParen,
+    RightParen,
 }
 
 #[derive(Debug, PartialEq)]

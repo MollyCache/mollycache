@@ -2,8 +2,7 @@ pub mod where_clause;
 pub mod limit_clause;
 pub mod order_by_clause;
 use crate::db::table::{Table, Value};
-use crate::cli::ast::SelectStatement;
-use crate::cli::ast::SelectStatementColumns;
+use crate::cli::ast::{SelectStatement, WhereStackElement, SelectStatementColumns};
 use crate::db::table::common::validate_and_clone_row;
 
 
@@ -26,7 +25,7 @@ pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Ve
     if let Some(where_stack) = &statement.where_clause {
         // This will need to be updated once we have multiple conditions working properly
         let where_clause = match where_stack.first() {
-            Some(where_clause) => where_clause.get_clause()?,
+            Some(WhereStackElement::Condition(where_clause)) => where_clause,
             _ => return Err(format!("Found nothing when expected edge")),
         };
 
