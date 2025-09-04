@@ -5,24 +5,12 @@ use crate::cli::ast::{
 };
 use crate::cli::tokenizer::token::TokenTypes;
 
-// This returns a tree of WhereTreeElements, which can be either a WhereTreeEdge or a WhereTreeNode.
-// A WhereTreeNode is meant to represent the conditions in a logical operator.
-// A WhereTreeEdge is meant to represent a single condition with a column, operator, and a value.
-// WhereTreeEdges are only meant to be leaves in the tree, reading the nodes via an in-order traversal
-// represents the tree in the correct order of operations as we are expected to parse.
-
-// To build this tree, we first create a root node which is what is eventually turned into
-// the WhereStack and is then returned to the caller. We use a Stack to represent the current node in the tree.
-// With the root node being the first element in the stack. If we encounter a Logical Operator, the current
-// node's operator is set to the logical operator, and we push a new node to the right arm of the tree with the
-// condition being the left arm of the new node. Encountering a Right Paren '(' causes us to push a node
-// to the right arm of the current node with the old_node being pushed into the stack and then the new node
-// being the new current node. Encountering a Left Paren ')' causes us to pop the stack and set the old_node
-// as the current node. This process repeats until we have read all the conditions in the where clause.
-// Encountering a NOT is done by pushing an additional node with the operator being the negation operator.
-// Only one arm of the negation node contains a condition which is always the left arm.
-
-// The WhereStack is a representation of the tree in the correct order of operations using Reverse Polish Notation.
+// The WhereStack is a the method that is used to store the order of operations with Reverse Polish Notation.
+// This is built from the infix expression of the where clause. Using the shunting yard algorithm. Thanks Djikstra!
+// Operator precedence is given as '()' > 'NOT' > 'AND' > 'OR'
+// This is currently represented as stack of LogicalOperators and WhereConditions.
+// WhereConditions are currently represented as 'column operator value'
+// This will later be expanded to replace the WhereConditions with a generalized evaluation function.
 
 pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElement>>, String> {
     if expect_token_type(parser, TokenTypes::Where).is_err() {
