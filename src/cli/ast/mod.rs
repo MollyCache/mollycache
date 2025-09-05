@@ -99,6 +99,12 @@ pub struct WhereCondition {
 pub enum WhereStackElement {
     Condition(WhereCondition),
     LogicalOperator(LogicalOperator),
+    Parentheses(Parentheses),
+}
+
+pub enum WhereStackOperators {
+    LogicalOperator(LogicalOperator),
+    Parentheses(Parentheses),
 }
 
 #[derive(Debug, PartialEq)]
@@ -106,8 +112,27 @@ pub enum LogicalOperator {
     Not,
     And,
     Or,
-    LeftParen,
-    RightParen,
+}
+
+impl LogicalOperator {
+    pub fn is_greater_precedence(&self, other: &LogicalOperator) -> bool {
+        match (self, other) {
+            (LogicalOperator::Not, LogicalOperator::Not) => false,
+            (LogicalOperator::Not, _) => true,
+            (LogicalOperator::And, LogicalOperator::Not) => false,
+            (LogicalOperator::And, LogicalOperator::And) => false,
+            (LogicalOperator::And, LogicalOperator::Or) => true,
+            (LogicalOperator::Or, LogicalOperator::Not) => false,
+            (LogicalOperator::Or, LogicalOperator::And) => false,
+            (LogicalOperator::Or, LogicalOperator::Or) => false,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Parentheses {
+    Left,
+    Right,
 }
 
 #[derive(Debug, PartialEq)]
