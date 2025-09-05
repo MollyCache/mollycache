@@ -1,5 +1,6 @@
 use crate::cli::{ast::{
-    helpers::common::{expect_token_type, token_to_value, tokens_to_value_list}, parser::Parser, LogicalOperator, Operand, Operator, Parentheses, WhereCondition, WhereStackElement, WhereStackOperators}};
+    helpers::{common::expect_token_type, where_condition::get_condition}, 
+    parser::Parser, LogicalOperator, WhereStackElement, WhereStackOperators, Parentheses}};
 use crate::cli::tokenizer::token::TokenTypes;
 
 // The WhereStack is a the method that is used to store the order of operations with Reverse Polish Notation.
@@ -162,73 +163,10 @@ fn get_where_condition(parser: &mut Parser) -> Result<Option<WhereStackElement>,
     }
 }
 
-fn get_condition(parser: &mut Parser) -> Result<WhereCondition, String> {
-    let l_side = get_operand(parser)?;
-    parser.advance()?;
-
-    let token = parser.current_token()?;
-    let operator = match token.token_type {
-        TokenTypes::Equals => Operator::Equals,
-        TokenTypes::NotEquals => Operator::NotEquals,
-        TokenTypes::LessThan => Operator::LessThan,
-        TokenTypes::LessEquals => Operator::LessEquals,
-        TokenTypes::GreaterThan => Operator::GreaterThan,
-        TokenTypes::GreaterEquals => Operator::GreaterEquals,
-        TokenTypes::In => Operator::In,
-        TokenTypes::Not => Operator::NotIn,
-        _ => return Err(parser.format_error()),
-    };
-    parser.advance()?;
-
-    if operator == Operator::NotIn || operator == Operator::In {
-        if operator == Operator::NotIn {
-            expect_token_type(parser, TokenTypes::In)?;
-            parser.advance()?;
-        }
-        let r_side = get_operand(parser)?;
-        parser.advance()?;
-
-        return Ok(WhereCondition {
-            l_side: l_side,
-            operator: operator,
-            r_side: r_side,
-        });
-    }
-    let r_side = get_operand(parser)?;
-    parser.advance()?;
-
-    return Ok(WhereCondition {
-        l_side: l_side,
-        operator,
-        r_side: r_side,
-    });
-}
-
-fn get_operand(parser: &mut Parser) -> Result<Operand, String> {
-    let token = parser.current_token()?;
-    match token.token_type {
-        TokenTypes::Identifier => Ok(Operand::Identifier(token.value.to_string())),
-        TokenTypes::IntLiteral => Ok(Operand::Value(token_to_value(parser)?)),
-        TokenTypes::RealLiteral => Ok(Operand::Value(token_to_value(parser)?)),
-        TokenTypes::String => Ok(Operand::Value(token_to_value(parser)?)),
-        TokenTypes::Blob => Ok(Operand::Value(token_to_value(parser)?)),
-        TokenTypes::Null => Ok(Operand::Value(token_to_value(parser)?)),
-        TokenTypes::LeftParen => {
-            parser.advance()?;
-
-            let values = tokens_to_value_list(parser)?;
-            expect_token_type(parser, TokenTypes::RightParen)?;
-
-            Ok(Operand::ValueList(values))
-        },
-        _ => return Err(parser.format_error()),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::LogicalOperator;
+    use crate::cli::ast::{LogicalOperator, Operator, WhereCondition, Operand};
     use crate::cli::ast::test_utils::token;
     use crate::db::table::Value;
 
@@ -238,27 +176,6 @@ mod tests {
             operator: operator,
             r_side: Operand::Value(r_side),
         })
-    }
-
-    #[test]
-    fn parses_simple_equality_condition() {
-        // WHERE id = 1 LIMIT...
-        let tokens = vec![
-            token(TokenTypes::Where, "WHERE"),
-            token(TokenTypes::Identifier, "id"),
-            token(TokenTypes::Equals, "="),
-            token(TokenTypes::IntLiteral, "1"),
-            token(TokenTypes::Limit, "LIMIT"),
-        ];
-        let mut parser = Parser::new(tokens);
-        let result = get_where_clause(&mut parser);
-        assert!(result.is_ok());
-        let where_clause = result.unwrap();
-        let expected = Some(vec![
-            simple_condition("id", Operator::Equals, Value::Integer(1)),
-        ]);
-        assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Limit);
     }
 
     #[test]
@@ -527,11 +444,8 @@ mod tests {
     }
 
     #[test]
-    /// Tests error handling when NOT is followed by an invalid token (AND).
-    /// Should return an error since NOT must be followed by a condition
-    /// or opening parenthesis, not another logical operator.
     fn returns_error_for_invalid_not_operator_usage() {
-        // SQL: WHERE NOT AND id = 1; (invalid: NOT followed by AND)
+        // WHERE NOT AND id = 1; (invalid: NOT followed by AND)
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
             token(TokenTypes::Not, "NOT"),
@@ -545,114 +459,5 @@ mod tests {
         let result = get_where_clause(&mut parser);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Error near line 1, column 0");
-    }
-
-    #[test]
-    /// Tests parsing of IN operator with a list of values.
-    /// Verifies that the value list is correctly parsed and stored
-    /// as an Operand::ValueList in the condition.
-    fn parses_in_operator_with_value_list() {
-        // SQL: WHERE id IN (1, 2, 3);
-        let tokens = vec![
-            token(TokenTypes::Where, "WHERE"),
-            token(TokenTypes::Identifier, "id"),
-            token(TokenTypes::In, "IN"),
-            token(TokenTypes::LeftParen, "("),
-            token(TokenTypes::IntLiteral, "1"),
-            token(TokenTypes::Comma, ","),
-            token(TokenTypes::IntLiteral, "2"),
-            token(TokenTypes::Comma, ","),
-            token(TokenTypes::IntLiteral, "3"),
-            token(TokenTypes::RightParen, ")"),
-            token(TokenTypes::SemiColon, ";"),
-        ];
-        let mut parser = Parser::new(tokens);
-        let result = get_where_clause(&mut parser);
-        assert!(result.is_ok());
-        let where_clause = result.unwrap();
-        assert_eq!(where_clause, Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::In,
-                r_side: Operand::ValueList(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]),
-            }),
-        ]));
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
-    }
-
-    #[test]
-    /// Tests parsing WHERE clause comparing two columns instead of column to value.
-    /// Verifies that both operands are correctly identified as column references
-    /// (Operand::Identifier) rather than literal values.
-    fn parses_column_to_column_comparison() {
-        // SQL: WHERE id = name LIMIT...
-        let tokens = vec![
-            token(TokenTypes::Where, "WHERE"),
-            token(TokenTypes::Identifier, "id"),
-            token(TokenTypes::Equals, "="),
-            token(TokenTypes::Identifier, "name"),
-            token(TokenTypes::Limit, "LIMIT"),
-        ];
-        let mut parser = Parser::new(tokens);
-        let result = get_where_clause(&mut parser);
-        assert!(result.is_ok());
-        let where_clause = result.unwrap();
-        let expected = Some(vec![WhereStackElement::Condition(WhereCondition {
-            l_side: Operand::Identifier("id".to_string()),
-            operator: Operator::Equals,
-            r_side: Operand::Identifier("name".to_string()),
-        })]);
-        assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Limit);
-    }
-
-    #[test]
-    fn where_stack_handles_reversed_condition() {
-        // WHERE 1 = id LIMIT...
-        let tokens = vec![
-            token(TokenTypes::Where, "WHERE"),
-            token(TokenTypes::IntLiteral, "1"),
-            token(TokenTypes::Equals, "="),
-            token(TokenTypes::Identifier, "id"),
-            token(TokenTypes::SemiColon, ";"),
-        ];
-        let mut parser = Parser::new(tokens);
-        let result = get_where_clause(&mut parser);
-        assert!(result.is_ok());
-        let where_clause = result.unwrap();
-        let expected = Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Value(Value::Integer(1)),
-                operator: Operator::Equals,
-                r_side: Operand::Identifier("id".to_string()),
-            }),
-        ]); 
-        assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
-    }
-
-    #[test]
-    fn where_stack_handles_conditions_with_two_literals() {
-        // WHERE 1 = 2;...
-        let tokens = vec![
-            token(TokenTypes::Where, "WHERE"),
-            token(TokenTypes::IntLiteral, "1"),
-            token(TokenTypes::Equals, "="),
-            token(TokenTypes::IntLiteral, "2"),
-            token(TokenTypes::SemiColon, ";"),
-        ];
-        let mut parser = Parser::new(tokens);
-        let result = get_where_clause(&mut parser);
-        assert!(result.is_ok());
-        let where_clause = result.unwrap();
-        let expected = Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Value(Value::Integer(1)),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(2)),
-            }),
-        ]);
-        assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
     }
 }

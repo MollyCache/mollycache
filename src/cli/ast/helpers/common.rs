@@ -77,3 +77,23 @@ pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     let result = token.value.to_string();
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cli::ast::test_utils::token;
+    use crate::cli::ast::parser::Parser;
+    use crate::cli::tokenizer::token::TokenTypes;
+
+    #[test]
+    fn value_list_handles_single_value() {
+        // 1);...
+        let tokens = vec![
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::RightParen, ")"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = tokens_to_value_list(&mut parser);
+        assert_eq!(result, Ok(vec![Value::Integer(1)]));
+    }
+}
