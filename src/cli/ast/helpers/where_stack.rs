@@ -214,20 +214,19 @@ fn get_where_condition(parser: &mut Parser) -> Result<Option<WhereStackElement>,
 mod tests {
     use super::*;
     use crate::cli::ast::LogicalOperator;
-    use crate::cli::tokenizer::scanner::Token;
+    use crate::cli::ast::test_utils::token;
     use crate::db::table::Value;
 
-    fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
-        Token {
-            token_type: tt,
-            value: val,
-            col_num: 0,
-            line_num: 1,
-        }
+    fn simple_condition(l_side: &str, operator: Operator, r_side: Value) -> WhereStackElement {
+        WhereStackElement::Condition(WhereCondition {
+            l_side: Operand::Identifier(l_side.to_string()),
+            operator: operator,
+            r_side: Operand::Value(r_side),
+        })
     }
 
     #[test]
-    fn where_clause_with_all_tokens_is_generated_correctly() {
+    fn parses_simple_equality_condition() {
         // WHERE id = 1 LIMIT...
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
@@ -240,18 +239,16 @@ mod tests {
         let result = get_where_clause(&mut parser);
         assert!(result.is_ok());
         let where_clause = result.unwrap();
-        let expected = Some(vec![WhereStackElement::Condition(WhereCondition {
-            l_side: Operand::Identifier("id".to_string()),
-            operator: Operator::Equals,
-            r_side: Operand::Value(Value::Integer(1)),
-        })]);
+        let expected = Some(vec![
+            simple_condition("id", Operator::Equals, Value::Integer(1)),
+        ]);
         assert_eq!(expected, where_clause);
         assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Limit);
     }
 
     #[test]
-    fn not_where_clause_returns_none() {
-        // SELECT * ...;
+    fn returns_none_when_no_where_keyword_present() {
+        // SELECT * ... (no WHERE clause)
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Asterisk, "*"),
@@ -264,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_two_conditions_is_generated_correctly() {
+    fn parses_and_condition_with_correct_rpn_order() {
         // WHERE id = 1 AND name = "John";
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
@@ -280,16 +277,8 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(1)),
-            }),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("name".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            }),
+            simple_condition("id", Operator::Equals, Value::Integer(1)),
+            simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
         ]);
         assert!(result.is_ok());
@@ -299,7 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_not_logical_operators_is_generated_correctly() {
+    fn respects_logical_operator_precedence() {
         // WHERE NOT id = 1 AND name = "John" OR age > 20;
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
@@ -320,23 +309,11 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(1)),
-            }),
+            simple_condition("id", Operator::Equals, Value::Integer(1)),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("name".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            }),
+            simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("age".to_string()),
-                operator: Operator::GreaterThan,
-                r_side: Operand::Value(Value::Integer(20)),
-            }),
+            simple_condition("age", Operator::GreaterThan, Value::Integer(20)),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
         ]);
         assert!(result.is_ok());
@@ -346,7 +323,7 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_different_precedence_is_generated_correctly() {
+    fn handles_complex_operator_precedence_correctly() {
         // WHERE id = 1 OR NOT name = "John" AND NOT age > 20;
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
@@ -368,22 +345,10 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(1)),
-            }),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("name".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            }),
+            simple_condition("id", Operator::Equals, Value::Integer(1)),
+            simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("age".to_string()),
-                operator: Operator::GreaterThan,
-                r_side: Operand::Value(Value::Integer(20)),
-            }),
+            simple_condition("age", Operator::GreaterThan, Value::Integer(20)),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
@@ -395,7 +360,7 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_parentheses_is_generated_correctly() {
+    fn processes_parentheses_grouping_correctly() {
         // WHERE (id = 1 OR name = "John") AND NOT (age > 20 OR active = 0);
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
@@ -424,32 +389,15 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(1)),
-            }),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("name".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            }),
+            simple_condition("id", Operator::Equals, Value::Integer(1)),
+            simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("age".to_string()),
-                operator: Operator::GreaterThan,
-                r_side: Operand::Value(Value::Integer(20)),
-            }),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("active".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(0)),
-            }),
+            simple_condition("age", Operator::GreaterThan, Value::Integer(20)),
+            simple_condition("active", Operator::Equals, Value::Integer(0)),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
         ]);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         assert_eq!(expected, where_clause);
@@ -457,7 +405,7 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_nested_parentheses_and_logical_operators_is_generated_correctly() {
+    fn handles_deeply_nested_parentheses() {
         // WHERE (id = 1 OR NOT (name = "John" AND age > 20));
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
@@ -482,21 +430,9 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(1)),
-            }),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("name".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            }),
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("age".to_string()),
-                operator: Operator::GreaterThan,
-                r_side: Operand::Value(Value::Integer(20)),
-            }),
+            simple_condition("id", Operator::Equals, Value::Integer(1)),
+            simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
+            simple_condition("age", Operator::GreaterThan, Value::Integer(20)),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
@@ -508,8 +444,8 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_invalid_parentheses_is_generated_correctly() {
-        // WHERE (id = 1 OR name = "John";
+    fn returns_error_for_missing_closing_parenthesis() {
+        // WHERE (id = 1 OR name = "John"; (missing closing parenthesis)
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
             token(TokenTypes::LeftParen, "("),
@@ -530,8 +466,8 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_invalid_right_paren_is_generated_correctly() {
-        // WHERE (id = 1 OR name = "John"));
+    fn returns_error_for_extra_closing_parenthesis() {
+        // WHERE (id = 1 OR name = "John")); (extra closing parenthesis)
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
             token(TokenTypes::LeftParen, "("),
@@ -554,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_valid_not_logical_operator_is_generated_correctly() {
+    fn parses_not_operator_in_simple_condition() {
         // WHERE NOT id = 1;
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
@@ -569,19 +505,18 @@ mod tests {
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         assert_eq!(where_clause, Some(vec![
-            WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(1)),
-            }),
+            simple_condition("id", Operator::Equals, Value::Integer(1)),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
         ]));
         assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
     }
 
     #[test]
-    fn where_clause_with_invalid_not_logical_operator_is_generated_correctly() {
-        // WHERE NOT AND id = 1;
+    /// Tests error handling when NOT is followed by an invalid token (AND).
+    /// Should return an error since NOT must be followed by a condition
+    /// or opening parenthesis, not another logical operator.
+    fn returns_error_for_invalid_not_operator_usage() {
+        // SQL: WHERE NOT AND id = 1; (invalid: NOT followed by AND)
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
             token(TokenTypes::Not, "NOT"),
@@ -598,8 +533,11 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_with_in_operator_is_generated_correctly() {
-        // WHERE id IN (1, 2, 3);
+    /// Tests parsing of IN operator with a list of values.
+    /// Verifies that the value list is correctly parsed and stored
+    /// as an Operand::ValueList in the condition.
+    fn parses_in_operator_with_value_list() {
+        // SQL: WHERE id IN (1, 2, 3);
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
             token(TokenTypes::Identifier, "id"),
@@ -628,8 +566,11 @@ mod tests {
     }
 
     #[test]
-    fn where_clause_is_generated_correctly_with_column_equals_column() {
-        // WHERE id = 1 LIMIT...
+    /// Tests parsing WHERE clause comparing two columns instead of column to value.
+    /// Verifies that both operands are correctly identified as column references
+    /// (Operand::Identifier) rather than literal values.
+    fn parses_column_to_column_comparison() {
+        // SQL: WHERE id = name LIMIT...
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
             token(TokenTypes::Identifier, "id"),
