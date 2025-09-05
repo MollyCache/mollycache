@@ -5,23 +5,45 @@ use crate::db::table::DataType;
 
 // This file holds the logic for whether a row matches a where condition.
 pub fn matches_where_clause(table: &Table, row: &Vec<Value>, where_clause: &WhereCondition) -> Result<bool, String> {
+    let l_side = operand_to_value(table, row, &where_clause.l_side)?;
     match where_clause.operator {
         Operator::In | Operator::NotIn => {
-            todo!(); // Todo handle IN and NOT IN.
+            let r_side = match &where_clause.r_side {
+                Operand::ValueList(value_list) => value_list,
+                _ => return Err(format!("Found invalid r_side operand: {:?}", where_clause.r_side)),
+            };
+            if r_side.is_empty() {
+                return Ok(false);
+            }
+            let result = r_side.contains(l_side);
+            if where_clause.operator == Operator::NotIn {
+                return Ok(!result);
+            }
+            return Ok(result);
         },
         Operator::Is | Operator::IsNot => {
-            todo!(); // Todo handle IS and IS NOT.
+            let r_side = operand_to_value(table, row, &where_clause.r_side)?;
+            expect_same_type(l_side, r_side)?;
+            
+            match (l_side, r_side, &where_clause.operator) {
+                (Value::Null, Value::Null, Operator::Is) => return Ok(true),
+                (Value::Null, Value::Null, Operator::IsNot) => return Ok(false),
+                (Value::Null, _, Operator::Is) | (_, Value::Null, Operator::Is) => return Ok(false),
+                (Value::Null, _, Operator::IsNot) | (_, Value::Null, Operator::IsNot) => return Ok(true),
+                (_, _, Operator::Is) => return Ok(l_side == r_side),
+                (_, _, Operator::IsNot) => return Ok(l_side != r_side),
+                _ => unreachable!(),
+            }
         },
         _ => {},
     }
-    let l_side = operand_to_value(table, row, &where_clause.l_side)?;
+    
     let r_side = operand_to_value(table, row, &where_clause.r_side)?;
     if l_side.get_type() == DataType::Null || r_side.get_type() == DataType::Null {
         return Ok(false);
     }
-    if l_side.get_type() != r_side.get_type() {
-        return Err(format!("Found different data types for column and value: {:?} and {:?}", l_side.get_type(), r_side.get_type()));
-    }
+
+    expect_same_type(l_side, r_side)?;
 
     match where_clause.operator {
         Operator::Equals => {
@@ -72,6 +94,13 @@ fn operand_to_value<'a>(table: &'a Table, row: &'a Vec<Value>, operand: &'a Oper
     }
 }
 
+fn expect_same_type(l_side: &Value, r_side: &Value) -> Result<(), String> {
+    if l_side.get_type() != r_side.get_type() && l_side.get_type() != DataType::Null && r_side.get_type() != DataType::Null {
+        return Err(format!("Found different data types for l_side and r_side: {:?} and {:?}", l_side.get_type(), r_side.get_type()));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,7 +146,7 @@ mod tests {
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Text("Fletcher".to_string()))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_err());
-        let expected_error = "Found different data types for column and value: Integer and Text";
+        let expected_error = "Found different data types for l_side and r_side: Integer and Text";
         assert_eq!(expected_error, result.err().unwrap());
     }
 
@@ -212,6 +241,60 @@ mod tests {
         ]);
         let row = vec![Value::Null];
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && !result.unwrap());
+    }
+
+    #[test]
+    fn matches_where_clause_handles_is_and_is_not_operators() {
+        let table = Table::new("users".to_string(), vec![
+            ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
+        ]);
+        let row = vec![Value::Integer(1)];
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Is,r_side: Operand::Value(Value::Null)};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && !result.unwrap());
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::IsNot,r_side: Operand::Value(Value::Null)};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && result.unwrap());
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Is,r_side: Operand::Value(Value::Integer(1))};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && result.unwrap());
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::IsNot,r_side: Operand::Value(Value::Integer(1))};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && !result.unwrap());
+    }
+
+    #[test]
+    fn matches_where_clause_handles_in_and_not_in_operators() {
+        let table = Table::new("users".to_string(), vec![
+            ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
+        ]);
+        let row = vec![Value::Integer(1)];
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::In,r_side: Operand::ValueList(vec![Value::Integer(1)])};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && result.unwrap());
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::NotIn,r_side: Operand::ValueList(vec![Value::Integer(1)])};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && !result.unwrap());
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::In,r_side: Operand::ValueList(vec![Value::Integer(2), Value::Integer(3)])};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && !result.unwrap());
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::NotIn,r_side: Operand::ValueList(vec![Value::Integer(2), Value::Integer(3)])};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && result.unwrap());
+    }
+
+    #[test]
+    fn matches_where_clause_handles_in_with_diff_data_types() {
+        let table = Table::new("users".to_string(), vec![
+            ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
+        ]);
+        let row = vec![Value::Text("hello".to_string())];
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::In,r_side: Operand::ValueList(vec![Value::Integer(2), Value::Text("hello".to_string())])};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && result.unwrap());
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::NotIn,r_side: Operand::ValueList(vec![Value::Integer(2), Value::Text("hello".to_string())])};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && !result.unwrap());
     }
