@@ -36,6 +36,7 @@ mod tests {
     use crate::cli::ast::Operator;
     use crate::cli::ast::WhereStackElement;
     use crate::cli::ast::WhereCondition;
+    use crate::cli::ast::Operand;
     use crate::db::table::Value;
 
     #[test]
@@ -89,9 +90,9 @@ mod tests {
             table_name: "users".to_string(),
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
-                    column: "id".to_string(),
+                    l_side: Operand::Identifier("id".to_string()),
                     operator: Operator::Equals,
-                    value: Value::Integer(1),
+                    r_side: Operand::Value(Value::Integer(1)),
                 })
             ]),
             order_by_clause: Some(vec![

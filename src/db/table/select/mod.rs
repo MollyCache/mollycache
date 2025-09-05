@@ -2,7 +2,7 @@ pub mod where_clause;
 pub mod limit_clause;
 pub mod order_by_clause;
 use crate::db::table::{Table, Value};
-use crate::cli::ast::{SelectStatement, WhereStackElement, SelectStatementColumns};
+use crate::cli::ast::{Operand, SelectStatement, SelectStatementColumns, WhereStackElement};
 use crate::db::table::common::validate_and_clone_row;
 
 
@@ -29,8 +29,14 @@ pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Ve
             _ => return Err(format!("Found nothing when expected edge")),
         };
 
-        if !table.has_column(&where_clause.column) {
-            return Err(format!("Column {} does not exist in table {}", where_clause.column, table.name));
+        // Will need to update once the where clause supports multiple conditions
+        let l_side = match &where_clause.l_side {
+            Operand::Identifier(column) => column,
+            _ => return Err(format!("Found invalid left side of where clause: {:?}", where_clause.l_side)),
+        };
+
+        if !table.has_column(&l_side) {
+            return Err(format!("Column {} does not exist in table {}", l_side, table.name));
 
         }
         for row in table.rows.iter() {
@@ -69,6 +75,7 @@ mod tests {
     use crate::cli::ast::{SelectStatementColumns, LimitClause, OrderByClause, OrderByDirection, Operator};
     use crate::cli::ast::WhereStackElement;
     use crate::cli::ast::WhereCondition;
+    use crate::cli::ast::Operand;
 
     fn default_table() -> Table {
         Table {
@@ -138,9 +145,9 @@ mod tests {
             columns: SelectStatementColumns::All,
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
-                    column: "name".to_string(),
+                    l_side: Operand::Identifier("name".to_string()),
                     operator: Operator::Equals,
-                    value: Value::Text("John".to_string()),
+                    r_side: Operand::Value(Value::Text("John".to_string())),
                 }),
             ]),
             order_by_clause: None,
@@ -162,9 +169,9 @@ mod tests {
             columns: SelectStatementColumns::Specific(vec!["name".to_string(), "age".to_string()]),
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
-                    column: "money".to_string(),
+                    l_side: Operand::Identifier("money".to_string()),
                     operator: Operator::Equals,
-                    value: Value::Real(1000.0),
+                    r_side: Operand::Value(Value::Real(1000.0)),
                 }),
             ]),
             order_by_clause: None,
@@ -207,9 +214,9 @@ mod tests {
             columns: SelectStatementColumns::All,
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
-                    column: "column_not_included".to_string(),
+                    l_side: Operand::Identifier("column_not_included".to_string()),
                     operator: Operator::Equals,
-                    value: Value::Text("John".to_string()),
+                    r_side: Operand::Value(Value::Text("John".to_string())),
                 }),
             ]),
             order_by_clause: None,

@@ -1,8 +1,5 @@
-use crate::cli::ast::{
-    helpers::common::{expect_token_type, token_to_value},
-    parser::Parser,
-    Operator, WhereCondition, WhereStackElement, LogicalOperator, Parentheses, WhereStackOperators,
-};
+use crate::cli::{ast::{
+    helpers::common::{expect_token_type, token_to_value, tokens_to_value_list}, parser::Parser, LogicalOperator, Operand, Operator, Parentheses, WhereCondition, WhereStackElement, WhereStackOperators}};
 use crate::cli::tokenizer::token::TokenTypes;
 
 // The WhereStack is a the method that is used to store the order of operations with Reverse Polish Notation.
@@ -168,18 +165,44 @@ fn get_where_condition(parser: &mut Parser) -> Result<Option<WhereStackElement>,
                 TokenTypes::LessEquals => Operator::LessEquals,
                 TokenTypes::GreaterThan => Operator::GreaterThan,
                 TokenTypes::GreaterEquals => Operator::GreaterEquals,
+                TokenTypes::In => Operator::In,
+                TokenTypes::Not => Operator::NotIn,
                 _ => return Err(parser.format_error()),
             };
             parser.advance()?;
 
-            let value = token_to_value(parser)?;
+            if operator == Operator::NotIn || operator == Operator::In {
+                if operator == Operator::NotIn {
+                    expect_token_type(parser, TokenTypes::In)?;
+                    parser.advance()?;
+                }
+                expect_token_type(parser, TokenTypes::LeftParen)?;
+                parser.advance()?;
+
+                let values = tokens_to_value_list(parser)?;
+                expect_token_type(parser, TokenTypes::RightParen)?;
+                parser.advance()?;
+
+                return Ok(Some(WhereStackElement::Condition(
+                    WhereCondition {
+                        l_side: Operand::Identifier(column),
+                        operator: operator,
+                        r_side: Operand::ValueList(values),
+                    })
+                ));
+            }
+            let token = parser.current_token()?;
+            let r_side = match token.token_type {
+                TokenTypes::Identifier => Operand::Identifier(token.value.to_string()),
+                _ => Operand::Value(token_to_value(parser)?)
+            };
             parser.advance()?;
 
             return Ok(Some(WhereStackElement::Condition(
                 WhereCondition {
-                    column,
+                    l_side: Operand::Identifier(column),
                     operator,
-                    value,
+                    r_side: r_side,
                 })
             ));
         }
@@ -218,9 +241,9 @@ mod tests {
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         let expected = Some(vec![WhereStackElement::Condition(WhereCondition {
-            column: "id".to_string(),
+            l_side: Operand::Identifier("id".to_string()),
             operator: Operator::Equals,
-            value: Value::Integer(1),
+            r_side: Operand::Value(Value::Integer(1)),
         })]);
         assert_eq!(expected, where_clause);
         assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Limit);
@@ -258,14 +281,14 @@ mod tests {
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
             WhereStackElement::Condition(WhereCondition {
-                column: "id".to_string(),
+                l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
-                value: Value::Integer(1),
+                r_side: Operand::Value(Value::Integer(1)),
             }),
             WhereStackElement::Condition(WhereCondition {
-                column: "name".to_string(),
+                l_side: Operand::Identifier("name".to_string()),
                 operator: Operator::Equals,
-                value: Value::Text("John".to_string()),
+                r_side: Operand::Value(Value::Text("John".to_string())),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
         ]);
@@ -298,21 +321,21 @@ mod tests {
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
             WhereStackElement::Condition(WhereCondition {
-                column: "id".to_string(),
+                l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
-                value: Value::Integer(1),
+                r_side: Operand::Value(Value::Integer(1)),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
             WhereStackElement::Condition(WhereCondition {
-                column: "name".to_string(),
+                l_side: Operand::Identifier("name".to_string()),
                 operator: Operator::Equals,
-                value: Value::Text("John".to_string()),
+                r_side: Operand::Value(Value::Text("John".to_string())),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
             WhereStackElement::Condition(WhereCondition {
-                column: "age".to_string(),
+                l_side: Operand::Identifier("age".to_string()),
                 operator: Operator::GreaterThan,
-                value: Value::Integer(20),
+                r_side: Operand::Value(Value::Integer(20)),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
         ]);
@@ -346,20 +369,20 @@ mod tests {
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
             WhereStackElement::Condition(WhereCondition {
-                column: "id".to_string(),
+                l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
-                value: Value::Integer(1),
+                r_side: Operand::Value(Value::Integer(1)),
             }),
             WhereStackElement::Condition(WhereCondition {
-                column: "name".to_string(),
+                l_side: Operand::Identifier("name".to_string()),
                 operator: Operator::Equals,
-                value: Value::Text("John".to_string()),
+                r_side: Operand::Value(Value::Text("John".to_string())),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
             WhereStackElement::Condition(WhereCondition {
-                column: "age".to_string(),
+                l_side: Operand::Identifier("age".to_string()),
                 operator: Operator::GreaterThan,
-                value: Value::Integer(20),
+                r_side: Operand::Value(Value::Integer(20)),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
@@ -402,25 +425,25 @@ mod tests {
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
             WhereStackElement::Condition(WhereCondition {
-                column: "id".to_string(),
+                l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
-                value: Value::Integer(1),
+                r_side: Operand::Value(Value::Integer(1)),
             }),
             WhereStackElement::Condition(WhereCondition {
-                column: "name".to_string(),
+                l_side: Operand::Identifier("name".to_string()),
                 operator: Operator::Equals,
-                value: Value::Text("John".to_string()),
+                r_side: Operand::Value(Value::Text("John".to_string())),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
             WhereStackElement::Condition(WhereCondition {
-                column: "age".to_string(),
+                l_side: Operand::Identifier("age".to_string()),
                 operator: Operator::GreaterThan,
-                value: Value::Integer(20),
+                r_side: Operand::Value(Value::Integer(20)),
             }),
             WhereStackElement::Condition(WhereCondition {
-                column: "active".to_string(),
+                l_side: Operand::Identifier("active".to_string()),
                 operator: Operator::Equals,
-                value: Value::Integer(0),
+                r_side: Operand::Value(Value::Integer(0)),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
@@ -460,19 +483,19 @@ mod tests {
         let result = get_where_clause(&mut parser);
         let expected = Some(vec![
             WhereStackElement::Condition(WhereCondition {
-                column: "id".to_string(),
+                l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
-                value: Value::Integer(1),
+                r_side: Operand::Value(Value::Integer(1)),
             }),
             WhereStackElement::Condition(WhereCondition {
-                column: "name".to_string(),
+                l_side: Operand::Identifier("name".to_string()),
                 operator: Operator::Equals,
-                value: Value::Text("John".to_string()),
+                r_side: Operand::Value(Value::Text("John".to_string())),
             }),
             WhereStackElement::Condition(WhereCondition {
-                column: "age".to_string(),
+                l_side: Operand::Identifier("age".to_string()),
                 operator: Operator::GreaterThan,
-                value: Value::Integer(20),
+                r_side: Operand::Value(Value::Integer(20)),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::And),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
@@ -547,9 +570,9 @@ mod tests {
         let where_clause = result.unwrap();
         assert_eq!(where_clause, Some(vec![
             WhereStackElement::Condition(WhereCondition {
-                column: "id".to_string(),
+                l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
-                value: Value::Integer(1),
+                r_side: Operand::Value(Value::Integer(1)),
             }),
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
         ]));
@@ -572,5 +595,58 @@ mod tests {
         let result = get_where_clause(&mut parser);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Error near line 1, column 0");
+    }
+
+    #[test]
+    fn where_clause_with_in_operator_is_generated_correctly() {
+        // WHERE id IN (1, 2, 3);
+        let tokens = vec![
+            token(TokenTypes::Where, "WHERE"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::In, "IN"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::IntLiteral, "2"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::IntLiteral, "3"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_where_clause(&mut parser);
+        assert!(result.is_ok());
+        let where_clause = result.unwrap();
+        assert_eq!(where_clause, Some(vec![
+            WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("id".to_string()),
+                operator: Operator::In,
+                r_side: Operand::ValueList(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]),
+            }),
+        ]));
+        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+    }
+
+    #[test]
+    fn where_clause_is_generated_correctly_with_column_equals_column() {
+        // WHERE id = 1 LIMIT...
+        let tokens = vec![
+            token(TokenTypes::Where, "WHERE"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Equals, "="),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Limit, "LIMIT"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_where_clause(&mut parser);
+        assert!(result.is_ok());
+        let where_clause = result.unwrap();
+        let expected = Some(vec![WhereStackElement::Condition(WhereCondition {
+            l_side: Operand::Identifier("id".to_string()),
+            operator: Operator::Equals,
+            r_side: Operand::Identifier("name".to_string()),
+        })]);
+        assert_eq!(expected, where_clause);
+        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Limit);
     }
 }

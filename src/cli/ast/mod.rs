@@ -86,14 +86,25 @@ pub enum Operator {
     GreaterThan,
     LessEquals,
     GreaterEquals,
+    In,
+    NotIn,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct WhereCondition {
-    pub column: String,
+    pub l_side: Operand,
     pub operator: Operator,
-    pub value: Value,
+    pub r_side: Operand,
 }
+
+
+#[derive(Debug, PartialEq)]
+pub enum Operand {
+    Value(Value),
+    ValueList(Vec<Value>),
+    Identifier(String),
+}
+
 
 #[derive(Debug, PartialEq)]
 pub enum WhereStackElement {
