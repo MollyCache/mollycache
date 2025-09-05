@@ -8,7 +8,7 @@ pub fn get_condition(parser: &mut Parser) -> Result<WhereCondition, String> {
     parser.advance()?;
 
     let token = parser.current_token()?;
-    let operator = match token.token_type {
+    let mut operator = match token.token_type {
         TokenTypes::Equals => Operator::Equals,
         TokenTypes::NotEquals => Operator::NotEquals,
         TokenTypes::LessThan => Operator::LessThan,
@@ -17,6 +17,7 @@ pub fn get_condition(parser: &mut Parser) -> Result<WhereCondition, String> {
         TokenTypes::GreaterEquals => Operator::GreaterEquals,
         TokenTypes::In => Operator::In,
         TokenTypes::Not => Operator::NotIn,
+        TokenTypes::Is => Operator::Is,
         _ => return Err(parser.format_error()),
     };
     parser.advance()?;
@@ -35,6 +36,12 @@ pub fn get_condition(parser: &mut Parser) -> Result<WhereCondition, String> {
             r_side: r_side,
         });
     }
+
+    if operator == Operator::Is && parser.current_token()?.token_type == TokenTypes::Not {
+        operator = Operator::IsNot;
+        parser.advance()?;
+    }
+
     let r_side = get_operand(parser)?;
     parser.advance()?;
 
@@ -218,5 +225,44 @@ mod tests {
         let result = get_condition(&mut parser);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Error at line 1, column 0: Unexpected value: (");
+    }
+
+    #[test]
+    fn where_condition_handles_is_operator() {
+        // id IS NULL;...
+        let tokens = vec![
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Is, "IS"),
+            token(TokenTypes::Null, "NULL"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_condition(&mut parser);
+        let expected = WhereCondition {
+            l_side: Operand::Identifier("id".to_string()),
+            operator: Operator::Is,
+            r_side: Operand::Value(Value::Null),
+        };
+        assert_where_condition(result, expected, &mut parser);
+    }
+
+    #[test]
+    fn where_condition_handles_is_not_operator() {
+        // id IS NOT name;...
+        let tokens = vec![
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Is, "IS"),
+            token(TokenTypes::Not, "NOT"),
+            token(TokenTypes::Null, "NULL"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_condition(&mut parser);
+        let expected = WhereCondition {
+            l_side: Operand::Identifier("id".to_string()),
+            operator: Operator::IsNot,
+            r_side: Operand::Value(Value::Null),
+        };
+        assert_where_condition(result, expected, &mut parser);
     }
 }

@@ -168,6 +168,7 @@ impl<'a> Scanner<'a> {
             slice if slice.eq_ignore_ascii_case("THEN") => TokenTypes::Then,
             slice if slice.eq_ignore_ascii_case("ELSE") => TokenTypes::Else,
             slice if slice.eq_ignore_ascii_case("END") => TokenTypes::End,
+            slice if slice.eq_ignore_ascii_case("IS") => TokenTypes::Is,
             slice if slice.eq_ignore_ascii_case("COUNT") => TokenTypes::Count,
             slice if slice.eq_ignore_ascii_case("SUM") => TokenTypes::Sum,
             slice if slice.eq_ignore_ascii_case("AVG") => TokenTypes::Avg,
