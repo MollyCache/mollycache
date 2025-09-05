@@ -238,4 +238,100 @@ mod tests {
         assert_eq!(expected, where_clause);
         assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
     }
+
+    #[test]
+    fn where_clause_with_not_logical_operators_is_generated_correctly() {
+        // WHERE NOT id = 1 AND name = "John" OR age > 20;
+        let tokens = vec![
+            token(TokenTypes::Where, "WHERE"),
+            token(TokenTypes::Not, "NOT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Equals, "="),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::And, "AND"),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Equals, "="),
+            token(TokenTypes::String, "John"),
+            token(TokenTypes::Or, "OR"),
+            token(TokenTypes::Identifier, "age"),
+            token(TokenTypes::GreaterThan, ">"),
+            token(TokenTypes::IntLiteral, "20"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_where_clause(&mut parser);
+        assert!(result.is_ok());
+        let where_clause = result.unwrap();
+        let expected = Some(vec![
+            WhereStackElement::Condition(WhereCondition {
+                column: "id".to_string(),
+                operator: Operator::Equals,
+                value: Value::Integer(1),
+            }),
+            WhereStackElement::LogicalOperator(LogicalOperator::Not),
+            WhereStackElement::Condition(WhereCondition {
+                column: "name".to_string(),
+                operator: Operator::Equals,
+                value: Value::Text("John".to_string()),
+            }),
+            WhereStackElement::LogicalOperator(LogicalOperator::And),
+            WhereStackElement::Condition(WhereCondition {
+                column: "age".to_string(),
+                operator: Operator::GreaterThan,
+                value: Value::Integer(20),
+            }),
+            WhereStackElement::LogicalOperator(LogicalOperator::Or),
+        ]);
+        assert_eq!(expected, where_clause);
+        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+    }
+
+    #[test]
+    fn where_clause_with_parentheses_is_generated_correctly() {
+        // WHERE id = 1 OR NOT name = "John" AND NOT age > 20;
+        let tokens = vec![
+            token(TokenTypes::Where, "WHERE"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Equals, "="),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::Or, "OR"),
+            token(TokenTypes::Not, "NOT"),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Equals, "="),
+            token(TokenTypes::String, "John"),
+            token(TokenTypes::And, "AND"),
+            token(TokenTypes::Not, "NOT"),
+            token(TokenTypes::Identifier, "age"),
+            token(TokenTypes::GreaterThan, ">"),
+            token(TokenTypes::IntLiteral, "20"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_where_clause(&mut parser);
+        assert!(result.is_ok());
+        let where_clause = result.unwrap();
+        let expected = Some(vec![
+            WhereStackElement::Condition(WhereCondition {
+                column: "id".to_string(),
+                operator: Operator::Equals,
+                value: Value::Integer(1),
+            }),
+            WhereStackElement::Condition(WhereCondition {
+                column: "name".to_string(),
+                operator: Operator::Equals,
+                value: Value::Text("John".to_string()),
+            }),
+            WhereStackElement::LogicalOperator(LogicalOperator::Not),
+            WhereStackElement::Condition(WhereCondition {
+                column: "age".to_string(),
+                operator: Operator::GreaterThan,
+                value: Value::Integer(20),
+            }),
+            WhereStackElement::LogicalOperator(LogicalOperator::Not),
+            WhereStackElement::LogicalOperator(LogicalOperator::And),
+            WhereStackElement::LogicalOperator(LogicalOperator::Or),
+        ]);
+        assert_eq!(expected, where_clause);
+        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+    }
 }
