@@ -1,8 +1,8 @@
-pub mod where_clause;
+pub mod where_stack;
 pub mod limit_clause;
 pub mod order_by_clause;
 use crate::db::table::{Table, Value};
-use crate::cli::ast::{Operand, SelectStatement, SelectStatementColumns, WhereStackElement};
+use crate::cli::ast::{SelectStatement, SelectStatementColumns};
 use crate::db::table::common::validate_and_clone_row;
 
 
@@ -23,24 +23,8 @@ pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value
 pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
     if let Some(where_stack) = &statement.where_clause {
-        // This will need to be updated once we have multiple conditions working properly
-        let where_clause = match where_stack.first() {
-            Some(WhereStackElement::Condition(where_clause)) => where_clause,
-            _ => return Err(format!("Found nothing when expected edge")),
-        };
-
-        // Will need to update once the where clause supports multiple conditions
-        let l_side = match &where_clause.l_side {
-            Operand::Identifier(column) => column,
-            _ => return Err(format!("Found invalid left side of where clause: {:?}", where_clause.l_side)),
-        };
-
-        if !table.has_column(&l_side) {
-            return Err(format!("Column {} does not exist in table {}", l_side, table.name));
-
-        }
         for row in table.rows.iter() {
-            if where_clause::matches_where_clause(table, &row, &where_clause) {
+            if where_stack::matches_where_stack(table, &row, &where_stack)? {
                 rows.push(get_columns_from_row(table, &row, &statement.columns)?);
             }
         }
