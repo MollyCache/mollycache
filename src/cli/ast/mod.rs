@@ -88,6 +88,8 @@ pub enum Operator {
     GreaterEquals,
     In,
     NotIn,
+    Is,
+    IsNot,
 }
 
 #[derive(Debug, PartialEq)]

@@ -13,7 +13,7 @@ pub enum TokenTypes {
     Limit, Offset,
     // Logical Operators
     And, Or, In, Exists,
-    Case, When, Then, Else, End,    
+    Case, When, Then, Else, End, Is,
     Equals, NotEquals, LessThan, LessEquals, GreaterThan, GreaterEquals,
     // Aggregate Functions
     Count, Sum, Avg, Min, Max,
