@@ -316,4 +316,15 @@ mod tests {
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && !result.unwrap());
     }
+
+    #[test]
+    fn matches_where_clause_handles_value_to_value_comparison() {
+        let table = Table::new("users".to_string(), vec![
+            ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
+        ]);
+        let row = vec![Value::Integer(1)];
+        let where_clause = WhereCondition {l_side: Operand::Value(Value::Integer(1)),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && result.unwrap());
+    }
 }
