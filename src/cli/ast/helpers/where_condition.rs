@@ -125,6 +125,28 @@ mod tests {
     }
 
     #[test]
+    fn parses_not_in_operator_with_value_list() {
+        // id NOT IN (1);...
+        let tokens = vec![
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Not, "NOT"),
+            token(TokenTypes::In, "IN"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_condition(&mut parser);
+        let expected = WhereCondition {
+            l_side: Operand::Identifier("id".to_string()),
+            operator: Operator::NotIn,
+            r_side: Operand::ValueList(vec![Value::Integer(1)]),
+        };
+        assert_where_condition(result, expected, &mut parser);
+    }
+
+    #[test]
     fn parses_column_to_column_comparison() {
         // id = name;...
         let tokens = vec![
@@ -183,9 +205,9 @@ mod tests {
 
     #[test]
     fn where_condition_handles_invalid_not_in_statement() {
-        // id NOT (1);...
+        // X'00' NOT (1);...
         let tokens = vec![
-            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Blob, "00"),
             token(TokenTypes::Not, "NOT"),
             token(TokenTypes::LeftParen, "("),
             token(TokenTypes::IntLiteral, "1"),
