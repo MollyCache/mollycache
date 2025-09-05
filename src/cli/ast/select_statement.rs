@@ -3,7 +3,7 @@ use crate::{cli::{
         parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereStackElement,
         helpers::{
             common::{expect_token_type, tokens_to_identifier_list, get_table_name},
-            order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit
+            order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
         }
     }, 
     tokenizer::token::TokenTypes
