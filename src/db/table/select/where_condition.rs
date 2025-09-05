@@ -9,14 +9,14 @@ pub fn matches_where_clause(table: &Table, row: &Vec<Value>, where_clause: &Wher
         Operator::In | Operator::NotIn => {
             todo!(); // Todo handle IN and NOT IN.
         },
+        Operator::Is | Operator::IsNot => {
+            todo!(); // Todo handle IS and IS NOT.
+        },
         _ => {},
     }
     let l_side = operand_to_value(table, row, &where_clause.l_side)?;
     let r_side = operand_to_value(table, row, &where_clause.r_side)?;
-    if l_side.get_type() == DataType::Null && r_side.get_type() == DataType::Null {
-        return Ok(true);
-    }
-    else if l_side.get_type() == DataType::Null || r_side.get_type() == DataType::Null {
+    if l_side.get_type() == DataType::Null || r_side.get_type() == DataType::Null {
         return Ok(false);
     }
     if l_side.get_type() != r_side.get_type() {
@@ -192,5 +192,27 @@ mod tests {
         assert!(result.is_err());
         let expected_error = "Found invalid operator: GreaterEquals for data type: Blob";
         assert_eq!(expected_error, result.err().unwrap());
+    }
+
+    #[test]
+    fn matches_where_clause_handles_null_equality() {
+        let table = Table::new("users".to_string(), vec![
+            ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
+        ]);
+        let row = vec![Value::Null];
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Null)};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && !result.unwrap());
+    }
+
+    #[test]
+    fn matches_where_clause_handles_single_null_equality() {
+        let table = Table::new("users".to_string(), vec![
+            ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
+        ]);
+        let row = vec![Value::Null];
+        let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
+        let result = matches_where_clause(&table, &row, &where_clause);
+        assert!(result.is_ok() && !result.unwrap());
     }
 }
