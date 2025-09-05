@@ -63,6 +63,7 @@ mod tests {
     use crate::cli::ast::WhereStackElement;
     use crate::cli::ast::WhereCondition;
     use crate::cli::ast::test_utils::token;
+    use crate::cli::ast::Operand;
     
     #[test]
     fn update_statement_with_all_tokens_is_generated_correctly() {
@@ -119,9 +120,9 @@ mod tests {
             }],
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
-                    column: "id".to_string(),
+                    l_side: Operand::Identifier("id".to_string()),
                     operator: Operator::GreaterThan,
-                    value: Value::Integer(2),
+                    r_side: Operand::Value(Value::Integer(2)),
                 }),
             ]),
         });
@@ -167,9 +168,9 @@ mod tests {
             ],
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
-                    column: "id".to_string(),
+                    l_side: Operand::Identifier("id".to_string()),
                     operator: Operator::Equals,
-                    value: Value::Integer(3),
+                    r_side: Operand::Value(Value::Integer(3)),
                 }),
             ]),
         });

@@ -37,6 +37,21 @@ pub fn token_to_value(parser: &Parser) -> Result<Value, String> {
     }
 }
 
+// Returns a list of Values from the tokens when they are formated as "value, value, ..."
+pub fn tokens_to_value_list(parser: &mut Parser) -> Result<Vec<Value>, String> {
+    let mut values: Vec<Value> = vec![];
+    loop {
+        values.push(token_to_value(parser)?);
+        parser.advance()?;
+        let token = parser.current_token()?;
+        if token.token_type != TokenTypes::Comma {
+            break;
+        }
+        parser.advance()?;
+    }
+    return Ok(values);
+}
+
 // Returns a list of Strings from the tokens when they are formated as "identifier, identifier, ..."
 pub fn tokens_to_identifier_list(parser: &mut Parser) -> Result<Vec<String>, String> {
     let mut identifiers: Vec<String> = vec![];
