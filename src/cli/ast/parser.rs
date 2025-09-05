@@ -55,6 +55,18 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn format_error_nearby(&self) -> String {
+        if self.current < self.tokens.len() {
+            let token = &self.tokens[self.current];
+            return format!(
+                "Error near line {:?}, column {:?}",
+                token.line_num, token.col_num
+            );
+        } else {
+            return "Error at end of input.".to_string();
+        }
+    }
+
     pub fn next_statement(&mut self, builder: &dyn StatementBuilder) -> Option<Result<SqlStatement, String>> {
         match self.current_token() {
             Ok(token) => match token.token_type {

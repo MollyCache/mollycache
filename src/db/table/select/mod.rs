@@ -2,8 +2,7 @@ pub mod where_clause;
 pub mod limit_clause;
 pub mod order_by_clause;
 use crate::db::table::{Table, Value};
-use crate::cli::ast::SelectStatement;
-use crate::cli::ast::SelectStatementColumns;
+use crate::cli::ast::{SelectStatement, WhereStackElement, SelectStatementColumns};
 use crate::db::table::common::validate_and_clone_row;
 
 
@@ -23,7 +22,13 @@ pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value
 
 pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
-    if let Some(where_clause) = &statement.where_clause {
+    if let Some(where_stack) = &statement.where_clause {
+        // This will need to be updated once we have multiple conditions working properly
+        let where_clause = match where_stack.first() {
+            Some(WhereStackElement::Condition(where_clause)) => where_clause,
+            _ => return Err(format!("Found nothing when expected edge")),
+        };
+
         if !table.has_column(&where_clause.column) {
             return Err(format!("Column {} does not exist in table {}", where_clause.column, table.name));
 
@@ -61,7 +66,9 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
 mod tests {
     use super::*;
     use crate::db::table::{Table, Value, DataType, ColumnDefinition};
-    use crate::cli::ast::{SelectStatementColumns, WhereClause, LimitClause, OrderByClause, OrderByDirection, Operator};
+    use crate::cli::ast::{SelectStatementColumns, LimitClause, OrderByClause, OrderByDirection, Operator};
+    use crate::cli::ast::WhereStackElement;
+    use crate::cli::ast::WhereCondition;
 
     fn default_table() -> Table {
         Table {
@@ -129,11 +136,13 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::All,
-            where_clause: Some(WhereClause {
-                column: "name".to_string(),
-                operator: Operator::Equals,
-                value: Value::Text("John".to_string()),
-            }),
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
+                    column: "name".to_string(),
+                    operator: Operator::Equals,
+                    value: Value::Text("John".to_string()),
+                }),
+            ]),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -151,11 +160,13 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::Specific(vec!["name".to_string(), "age".to_string()]),
-            where_clause: Some(WhereClause {
-                column: "money".to_string(),
-                operator: Operator::Equals,
-                value: Value::Real(1000.0),
-            }),
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
+                    column: "money".to_string(),
+                    operator: Operator::Equals,
+                    value: Value::Real(1000.0),
+                }),
+            ]),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -194,11 +205,13 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::All,
-            where_clause: Some(WhereClause {
-                column: "column_not_included".to_string(),
-                operator: Operator::Equals,
-                value: Value::Text("John".to_string()),
-            }),
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
+                    column: "column_not_included".to_string(),
+                    operator: Operator::Equals,
+                    value: Value::Text("John".to_string()),
+                }),
+            ]),
             order_by_clause: None,
             limit_clause: None,
         };

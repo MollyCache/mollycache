@@ -60,7 +60,8 @@ mod tests {
     use super::*;
     use crate::db::table::Value;
     use crate::cli::ast::Operator;
-    use crate::cli::ast::WhereClause;
+    use crate::cli::ast::WhereStackElement;
+    use crate::cli::ast::WhereCondition;
     use crate::cli::ast::test_utils::token;
     
     #[test]
@@ -116,11 +117,13 @@ mod tests {
                 column: "column".to_string(),
                 value: Value::Integer(1),
             }],
-            where_clause: Some(WhereClause {
-                column: "id".to_string(),
-                operator: Operator::GreaterThan,
-                value: Value::Integer(2),
-            }),
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
+                    column: "id".to_string(),
+                    operator: Operator::GreaterThan,
+                    value: Value::Integer(2),
+                }),
+            ]),
         });
         assert_eq!(statement, expected);
     }
@@ -162,12 +165,14 @@ mod tests {
                     value: Value::Text("False".to_string()),
                 },
             ],
-            where_clause: Some(WhereClause {
-                column: "id".to_string(),
-                operator: Operator::Equals,
-                value: Value::Integer(3),
-            }),
-            });
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
+                    column: "id".to_string(),
+                    operator: Operator::Equals,
+                    value: Value::Integer(3),
+                }),
+            ]),
+        });
         assert_eq!(statement, expected);
     }
 }

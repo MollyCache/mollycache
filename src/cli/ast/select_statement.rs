@@ -1,6 +1,6 @@
 use crate::{cli::{
     ast::{
-        parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereClause,
+        parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereStackElement,
         helpers::{
             common::{expect_token_type, tokens_to_identifier_list, get_table_name},
             order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit
@@ -14,7 +14,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     let columns = get_columns(parser)?;
     let table_name = get_table_name(parser)?;
     parser.advance()?;
-    let where_clause: Option<WhereClause> = get_where_clause(parser)?;
+    let where_clause: Option<Vec<WhereStackElement>> = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
     
@@ -49,6 +49,8 @@ mod tests {
     use crate::cli::ast::OrderByClause;
     use crate::cli::ast::OrderByDirection;
     use crate::cli::ast::LimitClause;
+    use crate::cli::ast::WhereStackElement;
+    use crate::cli::ast::WhereCondition;
     use crate::cli::ast::test_utils::token;
 
     #[test]
@@ -163,11 +165,13 @@ mod tests {
             columns: SelectStatementColumns::Specific(vec![
                 "id".to_string(),
             ]),
-            where_clause: Some(WhereClause {
-                column: "id".to_string(),
-                operator: Operator::Equals,
-                value: Value::Integer(1),
-            }),
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
+                    column: "id".to_string(),
+                    operator: Operator::Equals,
+                    value: Value::Integer(1),
+                }),
+            ]),
             order_by_clause: Some(vec![
                 OrderByClause {
                     column: "id".to_string(),

@@ -34,7 +34,8 @@ mod tests {
     use crate::cli::ast::OrderByDirection;
     use crate::cli::ast::LimitClause;
     use crate::cli::ast::Operator;
-    use crate::cli::ast::WhereClause;
+    use crate::cli::ast::WhereStackElement;
+    use crate::cli::ast::WhereCondition;
     use crate::db::table::Value;
 
     #[test]
@@ -86,15 +87,19 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::DeleteStatement(DeleteStatement {  
             table_name: "users".to_string(),
-            where_clause: Some(WhereClause {
-                column: "id".to_string(),
-                operator: Operator::Equals,
-                value: Value::Integer(1),
-            }),
-            order_by_clause: Some(vec![OrderByClause {
-                column: "id".to_string(),
-                direction: OrderByDirection::Asc,
-            }]),
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
+                    column: "id".to_string(),
+                    operator: Operator::Equals,
+                    value: Value::Integer(1),
+                })
+            ]),
+            order_by_clause: Some(vec![
+                OrderByClause {
+                    column: "id".to_string(),
+                    direction: OrderByDirection::Asc,
+                }
+            ]),
             limit_clause: Some(LimitClause {
                 limit: Value::Integer(10),
                 offset: Some(Value::Integer(5)),

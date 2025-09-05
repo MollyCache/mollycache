@@ -37,7 +37,7 @@ pub struct InsertIntoStatement {
 pub struct SelectStatement {
     pub table_name: String,
     pub columns: SelectStatementColumns,
-    pub where_clause: Option<WhereClause>,
+    pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
 }
@@ -45,7 +45,7 @@ pub struct SelectStatement {
 #[derive(Debug, PartialEq)]
 pub struct DeleteStatement {
     pub table_name: String,
-    pub where_clause: Option<WhereClause>,
+    pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
 }
@@ -54,7 +54,7 @@ pub struct DeleteStatement {
 pub struct UpdateStatement {
     pub table_name: String,
     pub update_values: Vec<ColumnValue>,
-    pub where_clause: Option<WhereClause>,
+    pub where_clause: Option<Vec<WhereStackElement>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -89,10 +89,50 @@ pub enum Operator {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct WhereClause {
+pub struct WhereCondition {
     pub column: String,
     pub operator: Operator,
     pub value: Value,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum WhereStackElement {
+    Condition(WhereCondition),
+    LogicalOperator(LogicalOperator),
+    Parentheses(Parentheses),
+}
+
+pub enum WhereStackOperators {
+    LogicalOperator(LogicalOperator),
+    Parentheses(Parentheses),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum LogicalOperator {
+    Not,
+    And,
+    Or,
+}
+
+impl LogicalOperator {
+    pub fn is_greater_precedence(&self, other: &LogicalOperator) -> bool {
+        match (self, other) {
+            (LogicalOperator::Not, LogicalOperator::Not) => false,
+            (LogicalOperator::Not, _) => true,
+            (LogicalOperator::And, LogicalOperator::Not) => false,
+            (LogicalOperator::And, LogicalOperator::And) => false,
+            (LogicalOperator::And, LogicalOperator::Or) => true,
+            (LogicalOperator::Or, LogicalOperator::Not) => false,
+            (LogicalOperator::Or, LogicalOperator::And) => false,
+            (LogicalOperator::Or, LogicalOperator::Or) => false,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Parentheses {
+    Left,
+    Right,
 }
 
 #[derive(Debug, PartialEq)]
