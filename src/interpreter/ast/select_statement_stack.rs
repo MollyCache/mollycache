@@ -16,6 +16,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
             }
             TokenTypes::LeftParen => {
                 set_operator_stack.push(SelectStackOperators::Parentheses(Parentheses::Left));
+                parser.advance()?;
             }
             TokenTypes::RightParen => {
                 while let Some(current_set_operator) = set_operator_stack.pop() {
@@ -29,6 +30,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
                         return Err("Mismatched parentheses found.".to_string());
                     }
                 }
+                parser.advance()?;
             }
             TokenTypes::Union | TokenTypes::Except => {
                 let set_operator = get_set_operator(parser)?;
@@ -39,7 +41,6 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
                     }
                     else if let SelectStackOperators::SetOperator(current_set_operator) = current_set_operator {
                         select_statement_stack.push(SelectStatementStackElement::SetOperator(current_set_operator));
-                        break;
                     }
                 }
                 set_operator_stack.push(SelectStackOperators::SetOperator(set_operator));
@@ -47,13 +48,13 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
             TokenTypes::Intersect => {
                 let set_operator = get_set_operator(parser)?;
                 while let Some(current_set_operator) = set_operator_stack.pop() {
-                    if let SelectStackOperators::SetOperator(set_operator) = current_set_operator {
-                        if set_operator.is_greater_precedence(&set_operator) {
-                            set_operator_stack.push(SelectStackOperators::SetOperator(set_operator));
+                    if let SelectStackOperators::SetOperator(current_set_operator) = current_set_operator {
+                        if set_operator.is_greater_precedence(&current_set_operator) {
+                            set_operator_stack.push(SelectStackOperators::SetOperator(current_set_operator));
                             break;
                         }
                         else {
-                            select_statement_stack.push(SelectStatementStackElement::SetOperator(set_operator));
+                            select_statement_stack.push(SelectStatementStackElement::SetOperator(current_set_operator));
                         }
                     }
                     else {
@@ -68,6 +69,15 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
         }
     }
 
+    while let Some(current_set_operator) = set_operator_stack.pop() {
+        if let SelectStackOperators::SetOperator(set_operator) = current_set_operator {
+            select_statement_stack.push(SelectStatementStackElement::SetOperator(set_operator));
+        }
+        else {
+            return Err("Mismatched parentheses found.".to_string());
+        }
+    }
+
     return Ok(SqlStatement::Select(SelectStatementStack {
         elements: select_statement_stack,
     }));
@@ -78,6 +88,7 @@ fn get_set_operator(parser: &mut Parser) -> Result<SetOperator, String> {
     let set_operator = match token.token_type {
         TokenTypes::Union => {
             if parser.peek_token()?.token_type == TokenTypes::All {
+                parser.advance()?;
                 Ok(SetOperator::UnionAll)
             } else {
                 Ok(SetOperator::Union)
@@ -140,6 +151,7 @@ mod tests {
 
     #[test]
     fn simple_select_statement_is_generated_correctly() {
+        // SELECT * FROM users WHERE id = 1;
         let mut tokens = simple_select_statement_tokens("1");
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
@@ -154,19 +166,51 @@ mod tests {
 
     #[test]
     fn select_statement_with_set_operator_is_generated_correctly() {
+        // SELECT * FROM users WHERE id = 1 UNION ALL SELECT * FROM users WHERE id = 2;
         let mut tokens = simple_select_statement_tokens("1");
         tokens.append(&mut vec![token(TokenTypes::Union, "UNION"), token(TokenTypes::All, "ALL")]);
         tokens.append(&mut simple_select_statement_tokens("2"));
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
+        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
             elements: vec![
                 expected_simple_select_statement(1),
-                SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
                 expected_simple_select_statement(2),
+                SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
+            ],
+        });
+        assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_multiple_set_operators_is_generated_correctly() {
+        // SELECT 1 ... UNION ALL SELECT 2 ... INTERSECT SELECT 3 ... EXCEPT SELECT 4 ...;
+        let mut tokens = simple_select_statement_tokens("1");
+        tokens.append(&mut vec![token(TokenTypes::Union, "UNION")]);
+        tokens.append(&mut simple_select_statement_tokens("2"));
+        tokens.append(&mut vec![token(TokenTypes::Intersect, "INTERSECT")]);
+        tokens.append(&mut simple_select_statement_tokens("3"));
+        tokens.append(&mut vec![token(TokenTypes::Except, "EXCEPT")]);
+        tokens.append(&mut simple_select_statement_tokens("4"));
+        tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SqlStatement::Select(SelectStatementStack {
+            elements: vec![
+                expected_simple_select_statement(1),
+                expected_simple_select_statement(2),
+                expected_simple_select_statement(3),
+                SelectStatementStackElement::SetOperator(SetOperator::Intersect),
+                SelectStatementStackElement::SetOperator(SetOperator::Union),
+                expected_simple_select_statement(4),
+                SelectStatementStackElement::SetOperator(SetOperator::Except),
             ],
         });
         assert_eq!(expected, statement);

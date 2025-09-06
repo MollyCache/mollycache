@@ -2,7 +2,7 @@ use crate::{interpreter::{
     ast::{
         parser::Parser, SelectStatement, SelectStatementColumns, WhereStackElement,
         helpers::{
-            common::{expect_token_type, tokens_to_identifier_list, get_table_name},
+            common::{tokens_to_identifier_list, get_table_name},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
         }
     }, 
@@ -18,8 +18,6 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
     
-    // Ensure SemiColon
-    expect_token_type(parser, TokenTypes::SemiColon)?;
     return Ok(SelectStatement {
             table_name: table_name,
             columns: columns,
