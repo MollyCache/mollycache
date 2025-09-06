@@ -6,6 +6,8 @@ pub mod select;
 pub mod insert;
 pub mod delete;
 pub mod helpers;
+#[cfg(test)]
+pub mod test_utils;
 
 
 #[derive(Debug, PartialEq)]
@@ -37,7 +39,6 @@ pub enum Value {
     Blob(Vec<u8>),
     Null
 }
-
 
 impl Value {
     pub fn get_type(&self) -> DataType {

@@ -1,49 +1,36 @@
 use crate::db::table::{Table, Value};
 use crate::cli::ast::{SelectStatement};
-use crate::db::table::helpers::{common::get_initial_rows, order_by_clause::get_ordered_rows, limit_clause::get_limited_rows};
+use crate::db::table::helpers::{
+    common::{get_row_columns_from_indicies, get_row_indicies_matching_where_clause},
+    order_by_clause::get_ordered_row_indicies, 
+    limit_clause::get_limited_row_indicies
+};
 
 
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-    let mut rows = get_initial_rows(table, statement.where_clause, Some(&statement.columns))?;
+    let mut row_indicies = get_row_indicies_matching_where_clause(table, statement.where_clause)?;
     
     if let Some(order_by_clause) = statement.order_by_clause {
-        rows = get_ordered_rows(table, rows, &order_by_clause)?;
+        row_indicies = get_ordered_row_indicies(table, row_indicies, &order_by_clause)?;
     }
 
     if let Some(limit_clause) = &statement.limit_clause {
-        rows = get_limited_rows(rows, limit_clause)?;
+        row_indicies = get_limited_row_indicies(row_indicies, limit_clause)?;
     }
     
-    return Ok(rows);
+    return Ok(get_row_columns_from_indicies(table, row_indicies, Some(&statement.columns))?);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{Table, Value, DataType, ColumnDefinition};
+    use crate::db::table::Value;
     use crate::cli::ast::{SelectStatementColumns, LimitClause, OrderByClause, OrderByDirection, Operator};
     use crate::cli::ast::WhereStackElement;
     use crate::cli::ast::WhereCondition;
     use crate::cli::ast::Operand;
-
-    fn default_table() -> Table {
-        Table {
-            name: "users".to_string(),
-            columns: vec![
-                ColumnDefinition {name: "id".to_string(), data_type: DataType::Integer, constraints: vec![]},
-                ColumnDefinition {name: "name".to_string(), data_type: DataType::Text, constraints: vec![]},
-                ColumnDefinition {name: "age".to_string(), data_type: DataType::Integer, constraints: vec![]},
-                ColumnDefinition {name: "money".to_string(), data_type: DataType::Real, constraints: vec![]},
-            ],
-            rows: vec![
-                vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-                vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-                vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-                vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
-            ],
-        }
-    }
+    use crate::db::table::test_utils::default_table;
 
     #[test]
     fn select_with_all_tokens_is_generated_correctly() {

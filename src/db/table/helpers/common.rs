@@ -17,30 +17,33 @@ pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Val
     return Ok(row_values);
 }
 
-pub fn get_initial_rows(table: &Table, where_clause: Option<Vec<WhereStackElement>>, columns: Option<&SelectStatementColumns>) -> Result<Vec<Vec<Value>>, String> {
+pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, columns: Option<&SelectStatementColumns>) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
-    if let Some(where_stack) = &where_clause {
-        for row in table.rows.iter() {
-            if matches_where_stack(table, &row, &where_stack)? {
-                if let Some(columns) = &columns {
-                    rows.push(get_columns_from_row(table, &row, &columns)?);
-                }
-                else {
-                    rows.push(validate_and_clone_row(table, &row)?);
-                }
-            }
+    for index in row_indicies {
+        let row = table.rows[index].clone();
+        if let Some(columns) = columns {
+            rows.push(get_columns_from_row(table, &row, columns)?);
         }
-    } else {
-        for row in table.rows.iter() {
-            if let Some(columns) = &columns {
-                rows.push(get_columns_from_row(table, &row, &columns)?);
-            }
-            else {
-                rows.push(validate_and_clone_row(table, &row)?);
-            }
+        else {
+            rows.push(validate_and_clone_row(table, &row)?);
         }
     }
     Ok(rows)
+}
+
+pub fn get_row_indicies_matching_where_clause(table: &Table, where_clause: Option<Vec<WhereStackElement>>) -> Result<Vec<usize>, String> {
+    if let Some(where_clause) = where_clause {
+        let mut row_indicies: Vec<usize> = vec![];
+        for (i, row) in table.rows.iter().enumerate() {
+            if matches_where_stack(table, &row, &where_clause)? {
+                row_indicies.push(i);
+            }
+        }
+        return Ok(row_indicies);
+    }
+    else {
+        return Ok((0..table.rows.len()).collect());
+    }
 }
 
 pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
