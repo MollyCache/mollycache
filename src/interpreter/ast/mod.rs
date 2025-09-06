@@ -15,7 +15,7 @@ mod test_utils;
 pub enum SqlStatement {
     CreateTable(CreateTableStatement),
     InsertInto(InsertIntoStatement),
-    Select(SelectStatement),
+    Select(SelectStatementStack),
     UpdateStatement(UpdateStatement),
     DeleteStatement(DeleteStatement),
 }
@@ -31,6 +31,24 @@ pub struct InsertIntoStatement {
     pub table_name: String,
     pub columns: Option<Vec<String>>,
     pub values: Vec<Vec<Value>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SelectStatementStack {
+    pub elements: Vec<SelectStatementStackElement>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SelectStatementStackElement {
+    SelectStatement(SelectStatement),
+    SetOperator(SetOperator),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SetOperator {
+    Union,
+    Intersect,
+    Except,
 }
 
 #[derive(Debug, PartialEq)]
@@ -284,12 +302,14 @@ mod tests {
         assert!(result[0].is_ok());
         assert!(result[1].is_ok());
         let expected = vec![
-            Ok(SqlStatement::Select(SelectStatement {
-                table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
-                where_clause: None,
-                order_by_clause: None,
-                limit_clause: None,
+            Ok(SqlStatement::Select(SelectStatementStack {
+                elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                    table_name: "users".to_string(),
+                    columns: SelectStatementColumns::All,
+                    where_clause: None,
+                    order_by_clause: None,
+                    limit_clause: None,
+                })],
             })),
             Ok(SqlStatement::InsertInto(InsertIntoStatement {
                 table_name: "users".to_string(),
@@ -362,12 +382,14 @@ mod tests {
         assert!(result[0].is_ok());
         assert!(result[1].is_ok());
         let expected = vec![
-            Ok(SqlStatement::Select(SelectStatement {
-                table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
-                where_clause: None,
-                order_by_clause: None,
-                limit_clause: None,
+            Ok(SqlStatement::Select(SelectStatementStack {
+                elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                    table_name: "users".to_string(),
+                    columns: SelectStatementColumns::All,
+                    where_clause: None,
+                    order_by_clause: None,
+                    limit_clause: None,
+                })],
             })),
             Ok(SqlStatement::InsertInto(InsertIntoStatement {
                 table_name: "users".to_string(),

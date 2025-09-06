@@ -1,5 +1,5 @@
 use crate::db::table::{Table, Value};
-use crate::interpreter::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement, DeleteStatement, UpdateStatement};
+use crate::interpreter::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement, DeleteStatement, UpdateStatement, SelectStatementStackElement};
 use crate::db::table::select;
 use crate::db::table::insert;
 use crate::db::table::delete;
@@ -27,9 +27,19 @@ impl Database {
                 self.insert_into_table(statement)?;
                 Ok(None)
             },
-            SqlStatement::Select(statement) => {
-                let rows = self.select_from_table(statement)?;
-                Ok(Some(rows))
+            SqlStatement::Select(mut statement) => {
+                let select_statement = statement.elements.pop();
+                if let Some(select_statement) = select_statement {
+                    match select_statement {
+                        SelectStatementStackElement::SelectStatement(select_statement) => {
+                            let rows = self.select_from_table(select_statement)?;
+                            Ok(Some(rows))
+                        }
+                        _ => Err(format!("Expected select statement, got {:?}", select_statement)),
+                    }
+                } else {
+                    Ok(None)
+                }
             },
             SqlStatement::UpdateStatement(statement) => {
                 self.update_table(statement)?;

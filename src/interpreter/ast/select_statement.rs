@@ -1,6 +1,6 @@
 use crate::{interpreter::{
     ast::{
-        parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereStackElement,
+        parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereStackElement, SelectStatementStack, SelectStatementStackElement,
         helpers::{
             common::{expect_token_type, tokens_to_identifier_list, get_table_name},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
@@ -20,12 +20,14 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     
     // Ensure SemiColon
     expect_token_type(parser, TokenTypes::SemiColon)?;
-    return Ok(SqlStatement::Select(SelectStatement {
-        table_name: table_name,
-        columns: columns,
-        where_clause: where_clause,
-        order_by_clause: order_by_clause,
-        limit_clause: limit_clause,
+    return Ok(SqlStatement::Select(SelectStatementStack {
+        elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+            table_name: table_name,
+            columns: columns,
+            where_clause: where_clause,
+            order_by_clause: order_by_clause,
+            limit_clause: limit_clause,
+        })],
     }));
 }
 
@@ -68,12 +70,14 @@ mod tests {
         let result = build(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
-            table_name: "users".to_string(),
-            columns: SelectStatementColumns::All,
-            where_clause: None,
-            order_by_clause: None,
-            limit_clause: None,
+        assert_eq!(statement, SqlStatement::Select(SelectStatementStack {
+            elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                table_name: "users".to_string(),
+                columns: SelectStatementColumns::All,
+                where_clause: None,
+                order_by_clause: None,
+                limit_clause: None,
+            })],
         }));
     }
 
@@ -91,14 +95,16 @@ mod tests {
         let result = build(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
-            table_name: "guests".to_string(),
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-            ]),
-            where_clause: None,
-            order_by_clause: None,
-            limit_clause: None,
+        assert_eq!(statement, SqlStatement::Select(SelectStatementStack {
+            elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                table_name: "guests".to_string(),
+                columns: SelectStatementColumns::Specific(vec![
+                    "id".to_string(),
+                ]),
+                where_clause: None,
+                order_by_clause: None,
+                limit_clause: None,
+            })],
         }));
     }
 
@@ -118,15 +124,17 @@ mod tests {
         let result = build(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
-            table_name: "users".to_string(),
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-                "name".to_string(),
-            ]),
-            where_clause: None,
-            order_by_clause: None,
-            limit_clause: None,
+        assert_eq!(statement, SqlStatement::Select(SelectStatementStack {
+            elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                table_name: "users".to_string(),
+                columns: SelectStatementColumns::Specific(vec![
+                    "id".to_string(),
+                    "name".to_string(),
+                ]),
+                where_clause: None,
+                order_by_clause: None,
+                limit_clause: None,
+            })],
         }));
     }
 
@@ -161,36 +169,39 @@ mod tests {
         let result = build(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
-            table_name: "guests".to_string(),
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-            ]),
-            where_clause: Some(vec![
-                WhereStackElement::Condition(WhereCondition {
-                    l_side: Operand::Identifier("id".to_string()),
-                    operator: Operator::Equals,
-                    r_side: Operand::Value(Value::Integer(1)),
+        let expected = SqlStatement::Select(SelectStatementStack {
+            elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                table_name: "guests".to_string(),
+                columns: SelectStatementColumns::Specific(vec![
+                    "id".to_string(),
+                ]),
+                where_clause: Some(vec![
+                    WhereStackElement::Condition(WhereCondition {
+                        l_side: Operand::Identifier("id".to_string()),
+                        operator: Operator::Equals,
+                        r_side: Operand::Value(Value::Integer(1)),
+                    }),
+                ]),
+                order_by_clause: Some(vec![
+                    OrderByClause {
+                        column: "id".to_string(),
+                        direction: OrderByDirection::Asc,
+                    },
+                    OrderByClause {
+                        column: "name".to_string(),
+                        direction: OrderByDirection::Desc,
+                    },
+                    OrderByClause {
+                        column: "age".to_string(),
+                        direction: OrderByDirection::Asc,
+                    }
+                ]),
+                limit_clause: Some(LimitClause {
+                    limit: Value::Integer(10),
+                    offset: Some(Value::Integer(5)),
                 }),
-            ]),
-            order_by_clause: Some(vec![
-                OrderByClause {
-                    column: "id".to_string(),
-                    direction: OrderByDirection::Asc,
-                },
-                OrderByClause {
-                    column: "name".to_string(),
-                    direction: OrderByDirection::Desc,
-                },
-                OrderByClause {
-                    column: "age".to_string(),
-                    direction: OrderByDirection::Asc,
-                }
-            ]),
-            limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(5)),
-            }),
-        }));
+            })],
+        });
+        assert_eq!(expected, statement);
     }
 }

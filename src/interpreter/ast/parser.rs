@@ -89,7 +89,7 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns};
+    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns, SelectStatementStack, SelectStatementStackElement};
     use crate::interpreter::ast::test_utils::{token_with_location, token};
 
     #[test]
@@ -133,12 +133,14 @@ mod tests {
         fn build_select(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
             parser.advance()?;
             parser.advance_past_semicolon()?;
-            return Ok(SqlStatement::Select(SelectStatement {
-                table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
-                where_clause: None,
-                order_by_clause: None,
-                limit_clause: None,
+            return Ok(SqlStatement::Select(SelectStatementStack {
+                elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                    table_name: "users".to_string(),
+                    columns: SelectStatementColumns::All,
+                    where_clause: None,
+                    order_by_clause: None,
+                    limit_clause: None,
+                })],
             }));
         }
 
@@ -183,12 +185,14 @@ mod tests {
 
         // Select
         let result = parser.next_statement(builder);
-        let expected = Some(Ok(SqlStatement::Select(SelectStatement {
-            table_name: "users".to_string(),
-            columns: SelectStatementColumns::All,
-            where_clause: None,
-            order_by_clause: None,
-            limit_clause: None,
+        let expected = Some(Ok(SqlStatement::Select(SelectStatementStack {
+            elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                table_name: "users".to_string(),
+                columns: SelectStatementColumns::All,
+                where_clause: None,
+                order_by_clause: None,
+                limit_clause: None,
+            })],
         })));
         assert_eq!(result, expected);
 
