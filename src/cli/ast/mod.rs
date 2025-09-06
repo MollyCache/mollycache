@@ -55,6 +55,8 @@ pub struct UpdateStatement {
     pub table_name: String,
     pub update_values: Vec<ColumnValue>,
     pub where_clause: Option<Vec<WhereStackElement>>,
+    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub limit_clause: Option<LimitClause>,
 }
 
 #[derive(Debug, PartialEq)]
