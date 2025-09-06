@@ -1,7 +1,7 @@
 #[cfg(test)]
 use crate::db::table::{Table, Value, DataType, ColumnDefinition};
 #[cfg(test)]
-use crate::cli::ast::OrderByDirection;
+use crate::interpreter::ast::OrderByDirection;
 #[cfg(test)]
 use std::cmp::Ordering;
 

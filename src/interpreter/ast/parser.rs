@@ -1,4 +1,4 @@
-use crate::cli::{
+use crate::interpreter::{
     ast::{SqlStatement, StatementBuilder},
     tokenizer::scanner::Token, tokenizer::token::TokenTypes,
 };
@@ -89,8 +89,8 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns};
-    use crate::cli::ast::test_utils::{token_with_location, token};
+    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns};
+    use crate::interpreter::ast::test_utils::{token_with_location, token};
 
     #[test]
     fn parser_formats_error_when_at_end_of_input() {

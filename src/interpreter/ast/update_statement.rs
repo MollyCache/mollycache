@@ -1,10 +1,10 @@
-use crate::cli::ast::{
+use crate::interpreter::ast::{
     parser::Parser, SqlStatement, UpdateStatement, ColumnValue, 
     helpers::common::{expect_token_type, token_to_value, get_table_name},
     helpers::{order_by_clause::get_order_by, limit_clause::get_limit},
 };
-use crate::cli::ast::helpers::where_stack::get_where_clause;
-use crate::cli::tokenizer::token::TokenTypes;
+use crate::interpreter::ast::helpers::where_stack::get_where_clause;
+use crate::interpreter::tokenizer::token::TokenTypes;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     
@@ -64,14 +64,14 @@ fn get_update_values(parser: &mut Parser) -> Result<Vec<ColumnValue>, String> {
 mod tests {
     use super::*;
     use crate::db::table::Value;
-    use crate::cli::ast::Operator;
-    use crate::cli::ast::WhereStackElement;
-    use crate::cli::ast::WhereCondition;
-    use crate::cli::ast::test_utils::token;
-    use crate::cli::ast::Operand;
-    use crate::cli::ast::OrderByClause;
-    use crate::cli::ast::OrderByDirection;
-    use crate::cli::ast::LimitClause;
+    use crate::interpreter::ast::Operator;
+    use crate::interpreter::ast::WhereStackElement;
+    use crate::interpreter::ast::WhereCondition;
+    use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::Operand;
+    use crate::interpreter::ast::OrderByClause;
+    use crate::interpreter::ast::OrderByDirection;
+    use crate::interpreter::ast::LimitClause;
     
     #[test]
     fn update_statement_with_all_tokens_is_generated_correctly() {

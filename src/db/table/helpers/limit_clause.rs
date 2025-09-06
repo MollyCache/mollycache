@@ -1,6 +1,6 @@
 use std::cmp::min;
 
-use crate::cli::ast::LimitClause;
+use crate::interpreter::ast::LimitClause;
 use crate::db::table::Value;
 
 

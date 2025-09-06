@@ -1,4 +1,4 @@
-use crate::cli::ast::{WhereStackElement, LogicalOperator};
+use crate::interpreter::ast::{WhereStackElement, LogicalOperator};
 use crate::db::table::{Table, Value};
 use crate::db::table::helpers::where_condition::matches_where_clause;
 
@@ -52,8 +52,8 @@ pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<Wh
 mod tests {
     use super::*;
     use crate::db::table::{Table, Value, ColumnDefinition, DataType};
-    use crate::cli::ast::{WhereStackElement, LogicalOperator};
-    use crate::cli::ast::{Operator, Operand, WhereCondition};
+    use crate::interpreter::ast::{WhereStackElement, LogicalOperator};
+    use crate::interpreter::ast::{Operator, Operand, WhereCondition};
 
     fn simple_condition(l_side: &str, operator: Operator, r_side: Value) -> WhereStackElement {
         WhereStackElement::Condition(WhereCondition {l_side: Operand::Identifier(l_side.to_string()), operator, r_side: Operand::Value(r_side)})

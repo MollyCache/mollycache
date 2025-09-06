@@ -1,7 +1,7 @@
-use crate::cli::ast::{parser::Parser, LimitClause};
-use crate::cli::tokenizer::token::TokenTypes;
+use crate::interpreter::ast::{parser::Parser, LimitClause};
+use crate::interpreter::tokenizer::token::TokenTypes;
 use crate::db::table::Value;
-use crate::cli::ast::helpers::common::{expect_token_type, token_to_value};
+use crate::interpreter::ast::helpers::common::{expect_token_type, token_to_value};
 
 pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> { 
     if expect_token_type(parser, TokenTypes::Limit).is_err() {
@@ -40,7 +40,7 @@ pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::test_utils::token;
+    use crate::interpreter::ast::test_utils::token;
 
     #[test]
     fn limit_clause_is_generated_correctly() {

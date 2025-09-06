@@ -1,6 +1,6 @@
 pub mod scanner;
 pub mod token;
-use crate::cli::tokenizer::scanner::Token;
+use crate::interpreter::tokenizer::scanner::Token;
 
 pub fn tokenize<'a>(line: &'a str) -> Vec<Token<'a>> {
     let mut tokens: Vec<Token<'a>> = vec![];

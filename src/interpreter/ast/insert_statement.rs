@@ -1,4 +1,4 @@
-use crate::cli::{
+use crate::interpreter::{
     ast::{ 
         helpers::common::{token_to_value, expect_token_type, get_table_name}, 
         parser::Parser, InsertIntoStatement, SqlStatement::{self, InsertInto}
@@ -136,7 +136,7 @@ fn or_statement(_parser: &mut Parser) -> Result<SqlStatement, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::test_utils::token;
+    use crate::interpreter::ast::test_utils::token;
 
     #[test]
     fn single_row_insert_statement_is_generated_correctly() {

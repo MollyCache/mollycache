@@ -1,5 +1,5 @@
 use crate::db::table::Table;
-use crate::cli::ast::{UpdateStatement, ColumnValue};
+use crate::interpreter::ast::{UpdateStatement, ColumnValue};
 use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 use crate::db::table::DataType;
 
@@ -26,9 +26,9 @@ fn update_rows_from_indicies(table: &mut Table, row_indicies: Vec<usize>, update
 mod tests {
     use super::*;
     use crate::db::table::{Value, DataType, ColumnDefinition};
-    use crate::cli::ast::ColumnValue;
+    use crate::interpreter::ast::ColumnValue;
     use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
-    use crate::cli::ast::{WhereStackElement, WhereCondition, Operand, Operator, OrderByClause, OrderByDirection, LimitClause};
+    use crate::interpreter::ast::{WhereStackElement, WhereCondition, Operand, Operator, OrderByClause, OrderByDirection, LimitClause};
 
     #[test]
     fn update_works_correctly() {

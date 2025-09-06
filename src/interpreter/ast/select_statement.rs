@@ -1,4 +1,4 @@
-use crate::{cli::{
+use crate::{interpreter::{
     ast::{
         parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereStackElement,
         helpers::{
@@ -44,15 +44,15 @@ fn get_columns(parser: &mut Parser) -> Result<SelectStatementColumns, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::Operator;
+    use crate::interpreter::ast::Operator;
     use crate::db::table::Value;
-    use crate::cli::ast::OrderByClause;
-    use crate::cli::ast::OrderByDirection;
-    use crate::cli::ast::LimitClause;
-    use crate::cli::ast::WhereStackElement;
-    use crate::cli::ast::WhereCondition;
-    use crate::cli::ast::test_utils::token;
-    use crate::cli::ast::Operand;
+    use crate::interpreter::ast::OrderByClause;
+    use crate::interpreter::ast::OrderByDirection;
+    use crate::interpreter::ast::LimitClause;
+    use crate::interpreter::ast::WhereStackElement;
+    use crate::interpreter::ast::WhereCondition;
+    use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::Operand;
 
     #[test]
     fn select_statement_with_all_tokens_is_generated_correctly() {

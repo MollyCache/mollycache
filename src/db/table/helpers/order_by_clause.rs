@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::cli::ast::OrderByClause;
+use crate::interpreter::ast::OrderByClause;
 use crate::db::table::Table;
 use crate::db::table::Value;
 
@@ -36,7 +36,7 @@ fn perform_comparions(table: &Table, row1: &Vec<Value>, row2: &Vec<Value>, order
 mod tests {
     use super::*;
     use crate::db::table::{Table, Value, DataType, ColumnDefinition};
-    use crate::cli::ast::OrderByDirection;
+    use crate::interpreter::ast::OrderByDirection;
 
     fn default_table() -> Table {
         Table {

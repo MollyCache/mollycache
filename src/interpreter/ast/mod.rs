@@ -1,4 +1,4 @@
-use crate::cli::tokenizer::{scanner::Token, token::TokenTypes};
+use crate::interpreter::tokenizer::{scanner::Token, token::TokenTypes};
 use crate::db::table::{ColumnDefinition, Value};
 
 mod create_statement;

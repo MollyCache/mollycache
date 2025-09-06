@@ -1,5 +1,5 @@
 use crate::db::table::{Table, Value};
-use crate::cli::ast::{SelectStatement};
+use crate::interpreter::ast::{SelectStatement};
 use crate::db::table::helpers::common::{get_row_indicies_matching_clauses, get_row_columns_from_indicies};
 
 
@@ -14,10 +14,10 @@ pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value
 mod tests {
     use super::*;
     use crate::db::table::Value;
-    use crate::cli::ast::{SelectStatementColumns, LimitClause, OrderByClause, OrderByDirection, Operator};
-    use crate::cli::ast::WhereStackElement;
-    use crate::cli::ast::WhereCondition;
-    use crate::cli::ast::Operand;
+    use crate::interpreter::ast::{SelectStatementColumns, LimitClause, OrderByClause, OrderByDirection, Operator};
+    use crate::interpreter::ast::WhereStackElement;
+    use crate::interpreter::ast::WhereCondition;
+    use crate::interpreter::ast::Operand;
     use crate::db::table::test_utils::default_table;
 
     #[test]

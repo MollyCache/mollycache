@@ -1,7 +1,7 @@
-use crate::cli::{ast::{
+use crate::interpreter::{ast::{
     helpers::{common::expect_token_type, where_condition::get_condition}, 
     parser::Parser, LogicalOperator, WhereStackElement, WhereStackOperators, Parentheses}};
-use crate::cli::tokenizer::token::TokenTypes;
+use crate::interpreter::tokenizer::token::TokenTypes;
 
 // The WhereStack is a the method that is used to store the order of operations with Reverse Polish Notation.
 // This is built from the infix expression of the where clause. Using the shunting yard algorithm. Thanks Djikstra!
@@ -166,8 +166,8 @@ fn get_where_condition(parser: &mut Parser) -> Result<Option<WhereStackElement>,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::{LogicalOperator, Operator, WhereCondition, Operand};
-    use crate::cli::ast::test_utils::token;
+    use crate::interpreter::ast::{LogicalOperator, Operator, WhereCondition, Operand};
+    use crate::interpreter::ast::test_utils::token;
     use crate::db::table::Value;
 
     fn simple_condition(l_side: &str, operator: Operator, r_side: Value) -> WhereStackElement {
