@@ -3,11 +3,12 @@ use crate::db::table::Value;
 pub mod ast;
 mod tokenizer;
 
-pub fn run_sql(database: &mut db::database::Database, sql: &str) -> Result<Option<Vec<Vec<Value>>>, String> {
+pub fn run_sql(database: &mut db::database::Database, sql: &str) -> Vec<Result<Option<Vec<Vec<Value>>>, String>> {
     let tokens = tokenizer::tokenize(sql);
     // println!("{:?}", tokens);
     let ast = ast::generate(tokens);
 
+    let mut sql_results = vec![];
     for sql_statement in ast {
         // println!("{:?}", sql_statement);
         match sql_statement {
@@ -15,20 +16,20 @@ pub fn run_sql(database: &mut db::database::Database, sql: &str) -> Result<Optio
                 let result = database.execute(statement);
                 if let Ok(values) = result {
                     if let Some(rows) = values {
-                        return Ok(Some(rows));
+                        sql_results.push(Ok(Some(rows)));
                     }
                     else {
-                        return Ok(None);
+                        sql_results.push(Ok(None));
                     }
                 }
                 else {
-                    return Err(result.unwrap_err());
+                    sql_results.push(Err(result.unwrap_err()));
                 }
             },
             Err(error) => {
-                return Err(error);
+                sql_results.push(Err(error));
             },
         }
     }
-    return Ok(None);
+    return sql_results;
 }

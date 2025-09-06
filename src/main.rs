@@ -1,6 +1,4 @@
-mod interpreter;
-mod cli;
-mod db;
+use mollydb::*;
 
 fn main() {
     let mut database = db::database::Database::new();

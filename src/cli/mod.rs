@@ -27,17 +27,19 @@ pub fn cli(database: &mut db::database::Database) {
             continue;
         }
 
-        let result = run_sql(database, input);
-        if let Ok(Some(rows)) = result {
-            for row in rows {
-                println!("{:?}", row);
+        let results = run_sql(database, input);
+        for result in results {
+            if let Ok(Some(rows)) = result {
+                for row in rows {
+                    println!("{:?}", row);
+                }
             }
-        }
-        else if let Ok(None) = result {
-            println!("Executed Successfully");
-        }
-        else {
-            println!("Error: {}", result.unwrap_err());
+            else if let Ok(None) = result {
+                println!("Executed Successfully");
+            }
+            else {
+                println!("Error: {}", result.unwrap_err());
+            }
         }
     }
 }
