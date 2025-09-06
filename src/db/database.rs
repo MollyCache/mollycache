@@ -1,7 +1,8 @@
 use crate::db::table::{Table, Value};
-use crate::cli::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement};
+use crate::cli::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement, DeleteStatement};
 use crate::db::table::select;
 use crate::db::table::insert;
+use crate::db::table::delete;
 use std::collections::HashMap;
 
 pub struct Database {
@@ -32,8 +33,9 @@ impl Database {
             SqlStatement::UpdateStatement(_statement) => {
                 todo!();
             },
-            SqlStatement::DeleteStatement(_statement) => {
-                todo!();
+            SqlStatement::DeleteStatement(statement) => {
+                self.delete_from_table(statement)?;
+                Ok(None)
             },
         }
     }
@@ -57,6 +59,12 @@ impl Database {
         let table = self.get_table(&statement.table_name)?;
         let rows = select::select(table, statement)?;
         Ok(rows)
+    }
+
+    fn delete_from_table(&mut self, statement: DeleteStatement) -> Result<(), String> {
+        let table = self.get_table_mut(&statement.table_name)?;
+        delete::delete(table, statement)?;
+        Ok(())
     }
 
     fn has_table(&self, table_name: &str) -> bool {

@@ -1,56 +1,21 @@
-pub mod where_stack;
-pub mod where_condition;
-pub mod limit_clause;
-pub mod order_by_clause;
 use crate::db::table::{Table, Value};
-use crate::cli::ast::{SelectStatement, SelectStatementColumns};
-use crate::db::table::common::validate_and_clone_row;
+use crate::cli::ast::{SelectStatement};
+use crate::db::table::helpers::{common::get_initial_rows, order_by_clause::get_ordered_rows, limit_clause::get_limited_rows};
+
 
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
     let mut rows = get_initial_rows(table, &statement)?;
     
     if let Some(order_by_clause) = statement.order_by_clause {
-        rows = order_by_clause::get_ordered_rows(table, rows, &order_by_clause)?;
+        rows = get_ordered_rows(table, rows, &order_by_clause)?;
     }
 
     if let Some(limit_clause) = &statement.limit_clause {
-        rows = limit_clause::get_limited_rows(rows, limit_clause)?;
+        rows = get_limited_rows(rows, limit_clause)?;
     }
     
     return Ok(rows);
-}
-
-pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-    let mut rows: Vec<Vec<Value>> = vec![];
-    if let Some(where_stack) = &statement.where_clause {
-        for row in table.rows.iter() {
-            if where_stack::matches_where_stack(table, &row, &where_stack)? {
-                rows.push(get_columns_from_row(table, &row, &statement.columns)?);
-            }
-        }
-    } else {
-        for row in table.rows.iter() {
-            rows.push(get_columns_from_row(table, &row, &statement.columns)?);
-        }
-    }
-    Ok(rows)
-}
-
-
-pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
-    let mut row_values: Vec<Value> = vec![];
-    if *selected_columns == SelectStatementColumns::All {
-        return Ok(validate_and_clone_row(table, row)?);
-    } else {
-        let specific_selected_columns = selected_columns.columns()?;
-        for (i, column) in table.columns.iter().enumerate() {
-            if (*specific_selected_columns).contains(&column.name) {
-                row_values.push(row[i].clone());
-            }
-        }
-    }
-    return Ok(row_values);
 }
 
 #[cfg(test)]

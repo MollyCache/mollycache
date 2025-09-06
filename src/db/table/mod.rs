@@ -4,7 +4,9 @@ use crate::cli::ast::OrderByDirection;
 
 pub mod select;
 pub mod insert;
-pub mod common;
+pub mod delete;
+pub mod helpers;
+
 
 #[derive(Debug, PartialEq)]
 pub enum DataType {
