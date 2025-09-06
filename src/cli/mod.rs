@@ -1,13 +1,11 @@
 use std::io;
 use crate::db;
-pub mod ast;
-mod tokenizer;
+use crate::interpreter::run_sql;
 
-pub fn cli() {
+pub fn cli(database: &mut db::database::Database) {
     clear_screen();
     println!("Welcome to the MollyDB CLI");
     let mut line_count = 1;
-    let mut database = db::database::Database::new();
 
     loop {
         print!("({:03}) > ", line_count);
@@ -29,35 +27,23 @@ pub fn cli() {
             continue;
         }
 
-        let tokens = tokenizer::tokenize(input);
-        // println!("{:?}", tokens);
-        let ast = ast::generate(tokens);
-        for sql_statement in ast {
-            // println!("{:?}", sql_statement);
-            match sql_statement {
-                Ok(statement) => {
-                    let result = database.execute(statement);
-                    if let Ok(values) = result {
-                        if let Some(rows) = values {
-                            for row in rows {
-                                println!("{:?}", row);
-                            }
-                        }
-                        else {
-                            println!("Executed Successfully");
-                        }
-                    }
-                    else {
-                        println!("Error: {}", result.unwrap_err());
-                    }
-                },
-                Err(error) => {
-                    println!("Error: {}", error);
-                },
+        let results = run_sql(database, input);
+        for result in results {
+            if let Ok(Some(rows)) = result {
+                for row in rows {
+                    println!("{:?}", row);
+                }
+            }
+            else if let Ok(None) = result {
+                println!("Executed Successfully");
+            }
+            else {
+                println!("Error: {}", result.unwrap_err());
             }
         }
     }
 }
+
 fn clear_screen() {
     // Clear screen and move cursor to top-left
     print!("\x1B[2J\x1B[1;1H");

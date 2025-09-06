@@ -1,8 +1,8 @@
 
 #[cfg(test)]
-use crate::cli::tokenizer::token::TokenTypes;
+use crate::interpreter::tokenizer::token::TokenTypes;
 #[cfg(test)]
-use crate::cli::tokenizer::scanner::Token;
+use crate::interpreter::tokenizer::scanner::Token;
 
 #[cfg(test)]
 pub fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {

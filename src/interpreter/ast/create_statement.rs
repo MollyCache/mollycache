@@ -1,4 +1,4 @@
-use crate::cli::{
+use crate::interpreter::{
     ast::{
         parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, 
         helpers::common::{expect_token_type, get_table_name}
@@ -103,7 +103,7 @@ fn index_statement(_parser: &mut Parser) -> Result<SqlStatement, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::test_utils::token;
+    use crate::interpreter::ast::test_utils::token;
 
     #[test]
     fn create_table_generates_proper_statement(){

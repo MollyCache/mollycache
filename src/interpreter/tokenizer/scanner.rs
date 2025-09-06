@@ -1,4 +1,4 @@
-use crate::cli::tokenizer::token::{TokenTypes};
+use crate::interpreter::tokenizer::token::{TokenTypes};
 
 #[derive(Debug, PartialEq)]
 pub struct Token<'a> {

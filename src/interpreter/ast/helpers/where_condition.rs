@@ -1,6 +1,6 @@
-use crate::cli::ast::{parser::Parser, WhereCondition, Operand, Operator};
-use crate::cli::tokenizer::token::TokenTypes;
-use crate::cli::ast::helpers::common::{expect_token_type, token_to_value, tokens_to_value_list};
+use crate::interpreter::ast::{parser::Parser, WhereCondition, Operand, Operator};
+use crate::interpreter::tokenizer::token::TokenTypes;
+use crate::interpreter::ast::helpers::common::{expect_token_type, token_to_value, tokens_to_value_list};
 
 
 pub fn get_condition(parser: &mut Parser) -> Result<WhereCondition, String> {
@@ -76,8 +76,8 @@ pub fn get_operand(parser: &mut Parser) -> Result<Operand, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::{Operator, WhereCondition, Operand};
-    use crate::cli::ast::test_utils::token;
+    use crate::interpreter::ast::{Operator, WhereCondition, Operand};
+    use crate::interpreter::ast::test_utils::token;
     use crate::db::table::Value;
 
     fn assert_where_condition(result: Result<WhereCondition, String>, expected: WhereCondition, parser: &mut Parser) {

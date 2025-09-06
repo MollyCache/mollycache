@@ -1,5 +1,5 @@
 use crate::db::table::{Table, Value};
-use crate::cli::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement, DeleteStatement, UpdateStatement};
+use crate::interpreter::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement, DeleteStatement, UpdateStatement};
 use crate::db::table::select;
 use crate::db::table::insert;
 use crate::db::table::delete;
@@ -97,7 +97,7 @@ impl Database {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::CreateTableStatement;
+    use crate::interpreter::ast::CreateTableStatement;
     use crate::db::table::{ColumnDefinition, DataType};
 
 

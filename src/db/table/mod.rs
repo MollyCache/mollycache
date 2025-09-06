@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::cli::ast::OrderByDirection;
+use crate::interpreter::ast::OrderByDirection;
 
 pub mod select;
 pub mod insert;

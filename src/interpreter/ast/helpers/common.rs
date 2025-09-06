@@ -1,4 +1,4 @@
-use crate::cli::{ast::{parser::Parser}, tokenizer::token::TokenTypes};
+use crate::interpreter::{ast::{parser::Parser}, tokenizer::token::TokenTypes};
 
 use crate::db::table::Value;
 
@@ -91,9 +91,9 @@ fn decode(hex: &str) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::test_utils::token;
-    use crate::cli::ast::parser::Parser;
-    use crate::cli::tokenizer::token::TokenTypes;
+    use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::parser::Parser;
+    use crate::interpreter::tokenizer::token::TokenTypes;
 
     #[test]
     fn value_list_handles_single_value() {

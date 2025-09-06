@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::db::table::Table;
-use crate::cli::ast::DeleteStatement;
+use crate::interpreter::ast::DeleteStatement;
 use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 
 
@@ -44,9 +44,9 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: Vec<usize>) -> Result<(), S
 mod tests {
     use super::*;
     use crate::db::table::Value;
-    use crate::cli::ast::{WhereStackElement, Operator, Operand, WhereCondition, OrderByDirection, OrderByClause};
+    use crate::interpreter::ast::{WhereStackElement, Operator, Operand, WhereCondition, OrderByDirection, OrderByClause};
     use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
-    use crate::cli::ast::LimitClause;
+    use crate::interpreter::ast::LimitClause;
 
     #[test]
     fn delete_from_table_works_correctly() {

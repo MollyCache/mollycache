@@ -1,7 +1,7 @@
-use crate::cli::ast::{parser::Parser, OrderByClause, OrderByDirection};
-use crate::cli::tokenizer::token::TokenTypes;
+use crate::interpreter::ast::{parser::Parser, OrderByClause, OrderByDirection};
+use crate::interpreter::tokenizer::token::TokenTypes;
 
-use crate::cli::ast::helpers::common::expect_token_type;
+use crate::interpreter::ast::helpers::common::expect_token_type;
 
 pub fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, String> {
     if expect_token_type(parser, TokenTypes::Order).is_err() {
@@ -49,7 +49,7 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::ast::test_utils::token;
+    use crate::interpreter::ast::test_utils::token;
 
     #[test]
     fn order_by_clause_is_generated_correctly() {
