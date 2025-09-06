@@ -106,4 +106,25 @@ mod tests {
         let result = tokens_to_value_list(&mut parser);
         assert_eq!(result, Ok(vec![Value::Integer(1)]));
     }
+
+    #[test]
+    fn decode_handles_valid_hex_string() {
+        let result = decode("0A1A3F");
+        assert!(result.is_ok());
+        let expected = vec![0x0A, 0x1A, 0x3F];
+        assert_eq!(expected, result.unwrap());
+    }
+
+    #[test]
+    fn decode_handles_invalid_hex_string() {
+        let result = decode("0AZA3A");
+        assert!(result.is_err());
+        let expected = "Invalid hex at 2: invalid digit found in string";
+        assert_eq!(expected, result.err().unwrap());
+        
+        let result = decode("0A1");
+        assert!(result.is_err());
+        let expected = "Hex string must have even length";
+        assert_eq!(expected, result.err().unwrap());
+    }
 }
