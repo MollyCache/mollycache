@@ -2,7 +2,7 @@ use std::collections::{HashMap, VecDeque};
 
 use crate::db::table::{Table, Value};
 use crate::cli::ast::InsertIntoStatement;
-use crate::db::table::common::validate_and_clone_row;
+use crate::db::table::helpers::common::validate_and_clone_row;
 
 
 pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<(), String> {

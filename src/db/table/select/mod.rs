@@ -1,84 +1,36 @@
-pub mod where_stack;
-pub mod where_condition;
-pub mod limit_clause;
-pub mod order_by_clause;
 use crate::db::table::{Table, Value};
-use crate::cli::ast::{SelectStatement, SelectStatementColumns};
-use crate::db::table::common::validate_and_clone_row;
+use crate::cli::ast::{SelectStatement};
+use crate::db::table::helpers::{
+    common::{get_row_columns_from_indicies, get_row_indicies_matching_where_clause},
+    order_by_clause::get_ordered_row_indicies, 
+    limit_clause::get_limited_row_indicies
+};
+
 
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-    let mut rows = get_initial_rows(table, &statement)?;
+    let mut row_indicies = get_row_indicies_matching_where_clause(table, statement.where_clause)?;
     
     if let Some(order_by_clause) = statement.order_by_clause {
-        rows = order_by_clause::get_ordered_rows(table, rows, &order_by_clause)?;
+        row_indicies = get_ordered_row_indicies(table, row_indicies, &order_by_clause)?;
     }
 
     if let Some(limit_clause) = &statement.limit_clause {
-        rows = limit_clause::get_limited_rows(rows, limit_clause)?;
+        row_indicies = get_limited_row_indicies(row_indicies, limit_clause)?;
     }
     
-    return Ok(rows);
-}
-
-pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-    let mut rows: Vec<Vec<Value>> = vec![];
-    if let Some(where_stack) = &statement.where_clause {
-        for row in table.rows.iter() {
-            if where_stack::matches_where_stack(table, &row, &where_stack)? {
-                rows.push(get_columns_from_row(table, &row, &statement.columns)?);
-            }
-        }
-    } else {
-        for row in table.rows.iter() {
-            rows.push(get_columns_from_row(table, &row, &statement.columns)?);
-        }
-    }
-    Ok(rows)
-}
-
-
-pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
-    let mut row_values: Vec<Value> = vec![];
-    if *selected_columns == SelectStatementColumns::All {
-        return Ok(validate_and_clone_row(table, row)?);
-    } else {
-        let specific_selected_columns = selected_columns.columns()?;
-        for (i, column) in table.columns.iter().enumerate() {
-            if (*specific_selected_columns).contains(&column.name) {
-                row_values.push(row[i].clone());
-            }
-        }
-    }
-    return Ok(row_values);
+    return Ok(get_row_columns_from_indicies(table, row_indicies, Some(&statement.columns))?);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{Table, Value, DataType, ColumnDefinition};
+    use crate::db::table::Value;
     use crate::cli::ast::{SelectStatementColumns, LimitClause, OrderByClause, OrderByDirection, Operator};
     use crate::cli::ast::WhereStackElement;
     use crate::cli::ast::WhereCondition;
     use crate::cli::ast::Operand;
-
-    fn default_table() -> Table {
-        Table {
-            name: "users".to_string(),
-            columns: vec![
-                ColumnDefinition {name: "id".to_string(), data_type: DataType::Integer, constraints: vec![]},
-                ColumnDefinition {name: "name".to_string(), data_type: DataType::Text, constraints: vec![]},
-                ColumnDefinition {name: "age".to_string(), data_type: DataType::Integer, constraints: vec![]},
-                ColumnDefinition {name: "money".to_string(), data_type: DataType::Real, constraints: vec![]},
-            ],
-            rows: vec![
-                vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-                vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-                vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-                vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
-            ],
-        }
-    }
+    use crate::db::table::test_utils::default_table;
 
     #[test]
     fn select_with_all_tokens_is_generated_correctly() {
