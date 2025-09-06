@@ -215,4 +215,39 @@ mod tests {
         });
         assert_eq!(expected, statement);
     }
+
+    #[test]
+    fn select_statement_with_multiple_set_operators_and_parentheses_is_generated_correctly() {
+        // (SELECT 1 ... UNION ALL SELECT 2 ...) INTERSECT (SELECT 3 ... EXCEPT SELECT 4 ...);
+        let mut tokens = vec![token(TokenTypes::LeftParen, "(")];
+        tokens.append(&mut simple_select_statement_tokens("1"));
+        tokens.append(&mut vec![token(TokenTypes::Union, "UNION")]);
+        tokens.append(&mut vec![token(TokenTypes::All, "ALL")]);
+        tokens.append(&mut simple_select_statement_tokens("2"));
+        tokens.append(&mut vec![token(TokenTypes::RightParen, ")")]);
+        tokens.append(&mut vec![token(TokenTypes::Intersect, "INTERSECT")]);
+        tokens.append(&mut vec![token(TokenTypes::LeftParen, "(")]);
+        tokens.append(&mut simple_select_statement_tokens("3"));
+        tokens.append(&mut vec![token(TokenTypes::Except, "EXCEPT")]);
+        tokens.append(&mut simple_select_statement_tokens("4"));
+        tokens.append(&mut vec![token(TokenTypes::RightParen, ")")]);
+        tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SqlStatement::Select(SelectStatementStack {
+            elements: vec![
+                expected_simple_select_statement(1),
+                expected_simple_select_statement(2),
+                SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
+                expected_simple_select_statement(3),
+                expected_simple_select_statement(4),
+                SelectStatementStackElement::SetOperator(SetOperator::Except),
+                SelectStatementStackElement::SetOperator(SetOperator::Intersect),
+            ],
+        });
+        assert_eq!(expected, statement);
+    }
 }

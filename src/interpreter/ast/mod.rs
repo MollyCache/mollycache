@@ -44,6 +44,7 @@ pub enum SelectStatementStackElement {
     SetOperator(SetOperator),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum SelectStackOperators {
     SetOperator(SetOperator),
     Parentheses(Parentheses),
