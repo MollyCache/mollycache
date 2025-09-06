@@ -1,6 +1,8 @@
 # MollyDB
 MollyDB is built to be a high-performance, in-memory SQL database designed for complete compatibility with SQLite. This is built for applications that require speed over persistence.
 
+[![wakatime](https://wakatime.com/badge/user/9641004b-568b-4c27-99c5-a34ace36b886/project/2668a03d-d729-4e59-8fc8-bafe3d194ee1.svg)](https://wakatime.com/badge/user/9641004b-568b-4c27-99c5-a34ace36b886/project/2668a03d-d729-4e59-8fc8-bafe3d194ee1)
+
 ## Current Implementation Status
 MollyDB is currently in early development with many of the listed features yet to be implemented.
 - A CLI has been developed which can be used to play around with the implemented features.
