@@ -1,6 +1,6 @@
 use crate::db::table::Table;
 use crate::cli::ast::DeleteStatement;
-// use crate::db::table::helpers::common::get_initial_rows;
+use crate::db::table::helpers::common::get_initial_rows;
 
 
 pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<(), String> {
@@ -9,7 +9,7 @@ pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<(), Strin
 }
 
 
-fn get_row_indexes_to_delete(_table: &mut Table, _statement: DeleteStatement) -> Result<Vec<usize>, String> {
-    // let rows = get_initial_rows(table, &statement)?;
+fn get_row_indexes_to_delete(table: &mut Table, statement: DeleteStatement) -> Result<Vec<usize>, String> {
+    let _rows = get_initial_rows(table, statement.where_clause, None)?;
     Ok(vec![])
 }

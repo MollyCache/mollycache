@@ -1,5 +1,5 @@
 use crate::db::table::{Table, Value, DataType};
-use crate::cli::ast::{SelectStatement, SelectStatementColumns};
+use crate::cli::ast::{SelectStatementColumns, WhereStackElement};
 use crate::db::table::helpers::where_stack::matches_where_stack;
 
 pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Value>, String> {
@@ -17,17 +17,27 @@ pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Val
     return Ok(row_values);
 }
 
-pub fn get_initial_rows(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
+pub fn get_initial_rows(table: &Table, where_clause: Option<Vec<WhereStackElement>>, columns: Option<&SelectStatementColumns>) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
-    if let Some(where_stack) = &statement.where_clause {
+    if let Some(where_stack) = &where_clause {
         for row in table.rows.iter() {
             if matches_where_stack(table, &row, &where_stack)? {
-                rows.push(get_columns_from_row(table, &row, &statement.columns)?);
+                if let Some(columns) = &columns {
+                    rows.push(get_columns_from_row(table, &row, &columns)?);
+                }
+                else {
+                    rows.push(validate_and_clone_row(table, &row)?);
+                }
             }
         }
     } else {
         for row in table.rows.iter() {
-            rows.push(get_columns_from_row(table, &row, &statement.columns)?);
+            if let Some(columns) = &columns {
+                rows.push(get_columns_from_row(table, &row, &columns)?);
+            }
+            else {
+                rows.push(validate_and_clone_row(table, &row)?);
+            }
         }
     }
     Ok(rows)

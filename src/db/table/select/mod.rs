@@ -5,7 +5,7 @@ use crate::db::table::helpers::{common::get_initial_rows, order_by_clause::get_o
 
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-    let mut rows = get_initial_rows(table, &statement)?;
+    let mut rows = get_initial_rows(table, statement.where_clause, Some(&statement.columns))?;
     
     if let Some(order_by_clause) = statement.order_by_clause {
         rows = get_ordered_rows(table, rows, &order_by_clause)?;
