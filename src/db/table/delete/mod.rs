@@ -31,6 +31,12 @@ fn get_row_indicies_to_delete(table: &mut Table, statement: DeleteStatement) -> 
 }
 
 fn swap_remove_bulk(table: &mut Table, row_indicies: Vec<usize>) -> Result<(), String> {
+    if table.rows.len() == 0 {
+        if row_indicies.len() != 0 {
+            unreachable!();
+        }
+        return Ok(());
+    }
     let table_len = table.rows.len()-1;
     let mut row_indicies_set = row_indicies.iter().collect::<HashSet<&usize>>();
     let mut right_pointer = 0;
@@ -137,6 +143,22 @@ mod tests {
     #[test]
     fn delete_all_rows_works_correctly() {
         let mut table = default_table();
+        let statement = DeleteStatement {
+            table_name: "users".to_string(),
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        let result = delete(&mut table, statement);
+        assert!(result.is_ok());
+        let expected = vec![];
+        assert_table_rows_eq_unordered(expected, table.rows);
+    }
+
+    #[test]
+    fn delete_from_empty_table_works_correctly() {
+        let mut table = default_table();
+        table.rows = vec![];
         let statement = DeleteStatement {
             table_name: "users".to_string(),
             where_clause: None,
