@@ -4,7 +4,7 @@ use crate::db::table::{ColumnDefinition, Value};
 mod create_statement;
 mod insert_statement;
 mod parser;
-mod select_statement;
+mod select_statement_stack;
 mod update_statement;
 mod delete_statement;
 mod helpers;
@@ -15,7 +15,7 @@ mod test_utils;
 pub enum SqlStatement {
     CreateTable(CreateTableStatement),
     InsertInto(InsertIntoStatement),
-    Select(SelectStatement),
+    Select(SelectStatementStack),
     UpdateStatement(UpdateStatement),
     DeleteStatement(DeleteStatement),
 }
@@ -31,6 +31,41 @@ pub struct InsertIntoStatement {
     pub table_name: String,
     pub columns: Option<Vec<String>>,
     pub values: Vec<Vec<Value>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SelectStatementStack {
+    pub elements: Vec<SelectStatementStackElement>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SelectStatementStackElement {
+    SelectStatement(SelectStatement),
+    SetOperator(SetOperator),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SelectStackOperators {
+    SetOperator(SetOperator),
+    Parentheses(Parentheses),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SetOperator {
+    Union,
+    UnionAll,
+    Intersect,
+    Except,
+}
+
+impl SetOperator {
+    pub fn is_greater_precedence(&self, other: &SetOperator) -> bool {
+        match (self, other) {
+            (SetOperator::Intersect, SetOperator::Intersect) => false,
+            (SetOperator::Intersect, _) => true,
+            (_, _) => false,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -188,7 +223,7 @@ impl StatementBuilder for DefaultStatementBuilder {
     }
     
     fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        select_statement::build(parser)
+        select_statement_stack::build(parser)
     }
 
     fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
@@ -284,12 +319,14 @@ mod tests {
         assert!(result[0].is_ok());
         assert!(result[1].is_ok());
         let expected = vec![
-            Ok(SqlStatement::Select(SelectStatement {
-                table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
-                where_clause: None,
-                order_by_clause: None,
-                limit_clause: None,
+            Ok(SqlStatement::Select(SelectStatementStack {
+                elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                    table_name: "users".to_string(),
+                    columns: SelectStatementColumns::All,
+                    where_clause: None,
+                    order_by_clause: None,
+                    limit_clause: None,
+                })],
             })),
             Ok(SqlStatement::InsertInto(InsertIntoStatement {
                 table_name: "users".to_string(),
@@ -362,12 +399,14 @@ mod tests {
         assert!(result[0].is_ok());
         assert!(result[1].is_ok());
         let expected = vec![
-            Ok(SqlStatement::Select(SelectStatement {
-                table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
-                where_clause: None,
-                order_by_clause: None,
-                limit_clause: None,
+            Ok(SqlStatement::Select(SelectStatementStack {
+                elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                    table_name: "users".to_string(),
+                    columns: SelectStatementColumns::All,
+                    where_clause: None,
+                    order_by_clause: None,
+                    limit_clause: None,
+                })],
             })),
             Ok(SqlStatement::InsertInto(InsertIntoStatement {
                 table_name: "users".to_string(),

@@ -1,15 +1,15 @@
 use crate::{interpreter::{
     ast::{
-        parser::Parser, SelectStatement, SelectStatementColumns, SqlStatement, WhereStackElement,
+        parser::Parser, SelectStatement, SelectStatementColumns, WhereStackElement,
         helpers::{
-            common::{expect_token_type, tokens_to_identifier_list, get_table_name},
+            common::{tokens_to_identifier_list, get_table_name},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
         }
     }, 
     tokenizer::token::TokenTypes
 }};
 
-pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
+pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     parser.advance()?;
     let columns = get_columns(parser)?;
     let table_name = get_table_name(parser)?;
@@ -18,15 +18,13 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
     
-    // Ensure SemiColon
-    expect_token_type(parser, TokenTypes::SemiColon)?;
-    return Ok(SqlStatement::Select(SelectStatement {
-        table_name: table_name,
-        columns: columns,
-        where_clause: where_clause,
-        order_by_clause: order_by_clause,
-        limit_clause: limit_clause,
-    }));
+    return Ok(SelectStatement {
+            table_name: table_name,
+            columns: columns,
+            where_clause: where_clause,
+            order_by_clause: order_by_clause,
+            limit_clause: limit_clause,
+    });
 }
 
 fn get_columns(parser: &mut Parser) -> Result<SelectStatementColumns, String> {
@@ -65,16 +63,16 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
         ];
         let mut parser = Parser::new(tokens);
-        let result = build(&mut parser);
+        let result = get_statement(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
+        assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::All,
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
-        }));
+        });
     }
 
     #[test]
@@ -88,10 +86,10 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
         ];
         let mut parser = Parser::new(tokens);
-        let result = build(&mut parser);
+        let result = get_statement(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
+        assert_eq!(statement, SelectStatement {
             table_name: "guests".to_string(),
             columns: SelectStatementColumns::Specific(vec![
                 "id".to_string(),
@@ -99,7 +97,7 @@ mod tests {
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
-        }));
+        });
     }
 
     #[test]
@@ -115,10 +113,10 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
         ];
         let mut parser = Parser::new(tokens);
-        let result = build(&mut parser);
+        let result = get_statement(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
+        assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
             columns: SelectStatementColumns::Specific(vec![
                 "id".to_string(),
@@ -127,7 +125,7 @@ mod tests {
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
-        }));
+        });
     }
 
     #[test]
@@ -158,10 +156,10 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
         ];
         let mut parser = Parser::new(tokens);
-        let result = build(&mut parser);
+        let result = get_statement(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::Select(SelectStatement {
+        let expected = SelectStatement {
             table_name: "guests".to_string(),
             columns: SelectStatementColumns::Specific(vec![
                 "id".to_string(),
@@ -191,6 +189,7 @@ mod tests {
                 limit: Value::Integer(10),
                 offset: Some(Value::Integer(5)),
             }),
-        }));
+        };
+        assert_eq!(expected, statement);
     }
 }

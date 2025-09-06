@@ -27,7 +27,7 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
     let mut expected_next_token = WhereClauseExpectedNextToken::ConditionLeftParenNot;
 
     loop {
-        let where_condition = get_where_condition(parser)?;
+        let where_condition = get_where_condition(parser, &operator_stack)?;
         match where_condition {
             Some(where_stack_element) => {
                 match where_stack_element {
@@ -131,7 +131,7 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
     Ok(Some(where_stack))
 }
 
-fn get_where_condition(parser: &mut Parser) -> Result<Option<WhereStackElement>, String> {
+fn get_where_condition(parser: &mut Parser, operator_stack: &Vec<WhereStackOperators>) -> Result<Option<WhereStackElement>, String> {
     let token = parser.current_token()?;
     match token.token_type {
         // Logical operators and parentheses
@@ -152,8 +152,18 @@ fn get_where_condition(parser: &mut Parser) -> Result<Option<WhereStackElement>,
             return Ok(Some(WhereStackElement::Parentheses(Parentheses::Left)))
         },
         TokenTypes::RightParen => {
-            parser.advance()?;
-            return Ok(Some(WhereStackElement::Parentheses(Parentheses::Right)))
+            // TODO improve this check.
+            let has_matching_left_paren = operator_stack.iter().any(|op| {
+                matches!(op, WhereStackOperators::Parentheses(Parentheses::Left))
+            });
+            
+            if has_matching_left_paren {
+                parser.advance()?;
+                return Ok(Some(WhereStackElement::Parentheses(Parentheses::Right)))
+            } else {
+                // We may have a mismatched parenthesis from the UNION STATEMENTs causing this.
+                return Ok(None);
+            }
         },
         // Conditions
         TokenTypes::Identifier | TokenTypes::IntLiteral | TokenTypes::RealLiteral | TokenTypes::String | TokenTypes::Blob | TokenTypes::Null => {
@@ -398,7 +408,8 @@ mod tests {
     }
 
     #[test]
-    fn returns_error_for_extra_closing_parenthesis() {
+    fn does_not_return_error_for_extra_closing_parenthesis() {
+        // This extra closing parenthesis could be from the UNION STATEMENTs and would error on that level.
         // WHERE (id = 1 OR name = "John")); (extra closing parenthesis)
         let tokens = vec![
             token(TokenTypes::Where, "WHERE"),
@@ -416,9 +427,13 @@ mod tests {
         ];
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Mismatched parentheses found.");
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Some(vec![
+            simple_condition("id", Operator::Equals, Value::Integer(1)),
+            simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
+            WhereStackElement::LogicalOperator(LogicalOperator::Or),
+        ]));
+        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::RightParen);
     }
 
     #[test]
