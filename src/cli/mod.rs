@@ -30,10 +30,10 @@ pub fn cli() {
         }
 
         let tokens = tokenizer::tokenize(input);
-        println!("{:?}", tokens);
+        // println!("{:?}", tokens);
         let ast = ast::generate(tokens);
         for sql_statement in ast {
-            println!("{:?}", sql_statement);
+            // println!("{:?}", sql_statement);
             match sql_statement {
                 Ok(statement) => {
                     let result = database.execute(statement);

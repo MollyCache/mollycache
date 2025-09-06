@@ -238,7 +238,7 @@ mod tests {
         let result = build(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::InsertInto(InsertIntoStatement {
+        let expected = SqlStatement::InsertInto(InsertIntoStatement {
             table_name: "users".to_string(),
             columns: Some(vec![
                 "id".to_string(),
@@ -252,7 +252,8 @@ mod tests {
                     Value::Null,
                 ]
             ],
-        }));       
+        });
+        assert_eq!(expected, statement);
     }
 
     #[test]

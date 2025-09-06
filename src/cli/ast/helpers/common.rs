@@ -1,7 +1,6 @@
 use crate::cli::{ast::{parser::Parser}, tokenizer::token::TokenTypes};
 
 use crate::db::table::Value;
-use hex::decode;
 
 // Returns an error if the current token does not match the given token type
 pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), String> {
@@ -76,6 +75,17 @@ pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     expect_token_type(parser, TokenTypes::Identifier)?;
     let result = token.value.to_string();
     Ok(result)
+}
+
+fn decode(hex: &str) -> Result<Vec<u8>, String> {
+    if hex.len() % 2 != 0 {
+        return Err("Hex string must have even length".to_string());
+    }
+
+    (0..hex.len()).step_by(2).map(|i| {
+            u8::from_str_radix(&hex[i..i + 2], 16)
+                .map_err(|e| format!("Invalid hex at {}: {}", i, e))
+        }).collect()
 }
 
 #[cfg(test)]
