@@ -23,6 +23,13 @@ impl<'a> Parser<'a> {
         return Ok(&self.tokens[self.current]);
     }
 
+    pub fn peek_token(&self) -> Result<&Token<'a>, String> {
+        if self.current + 1 >= self.tokens.len() {
+            return Err(self.format_error());
+        }
+        return Ok(&self.tokens[self.current + 1]);
+    }
+
     pub fn advance(&mut self) -> Result<(), String> {
         if let Ok(token) = self.current_token() {
             if token.token_type == TokenTypes::SemiColon {
@@ -68,19 +75,22 @@ impl<'a> Parser<'a> {
     }
 
     pub fn next_statement(&mut self, builder: &dyn StatementBuilder) -> Option<Result<SqlStatement, String>> {
-        match self.current_token() {
-            Ok(token) => match token.token_type {
-                TokenTypes::Create => Some(builder.build_create(self)),
-                TokenTypes::Insert => Some(builder.build_insert(self)),
-                TokenTypes::Select => Some(builder.build_select(self)),
-                TokenTypes::Update => Some(builder.build_update(self)),
-                TokenTypes::Delete => Some(builder.build_delete(self)),
-                TokenTypes::EOF => None,
+        match (&self.current_token(), &self.peek_token()) {
+            (Ok(token), Ok(peek_token)) => match (&token.token_type, &peek_token.token_type) {
+                (TokenTypes::Create, _) => Some(builder.build_create(self)),
+                (TokenTypes::Insert, _) => Some(builder.build_insert(self)),
+                (TokenTypes::Select, _) | (TokenTypes::LeftParen, TokenTypes::Select) => Some(builder.build_select(self)),
+                (TokenTypes::Update, _) => Some(builder.build_update(self)),
+                (TokenTypes::Delete, _) => Some(builder.build_delete(self)),
                 _ => {
                     Some(Err(self.format_error()))
                 }
             },
-            Err(error) => Some(Err(error)),
+            (Ok(token), Err(_)) => match token.token_type {
+                TokenTypes::EOF => None,
+                _ => Some(Err(self.format_error_nearby())),
+            },
+            _ => Some(Err(self.format_error())),
         }
     }
 }

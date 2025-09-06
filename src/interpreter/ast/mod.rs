@@ -44,11 +44,27 @@ pub enum SelectStatementStackElement {
     SetOperator(SetOperator),
 }
 
+pub enum SelectStackOperators {
+    SetOperator(SetOperator),
+    Parentheses(Parentheses),
+}
+
 #[derive(Debug, PartialEq)]
 pub enum SetOperator {
     Union,
+    UnionAll,
     Intersect,
     Except,
+}
+
+impl SetOperator {
+    pub fn is_greater_precedence(&self, other: &SetOperator) -> bool {
+        match (self, other) {
+            (SetOperator::Intersect, SetOperator::Intersect) => false,
+            (SetOperator::Intersect, _) => true,
+            (_, _) => false,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
