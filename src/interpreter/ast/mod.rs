@@ -5,6 +5,7 @@ mod create_statement;
 mod insert_statement;
 mod parser;
 mod select_statement;
+mod select_statement_stack;
 mod update_statement;
 mod delete_statement;
 mod helpers;
@@ -206,7 +207,7 @@ impl StatementBuilder for DefaultStatementBuilder {
     }
     
     fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        select_statement::build(parser)
+        select_statement_stack::build(parser)
     }
 
     fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
