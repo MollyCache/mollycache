@@ -3,6 +3,7 @@ use crate::interpreter::ast::helpers::select_statement;
 use crate::interpreter::ast::Parentheses;
 use crate::interpreter::tokenizer::token::TokenTypes;
 
+// Returns a SelectStatementStack which is an RPN representation of the SELECT statements and set operators.
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     let mut select_statement_stack: Vec<SelectStatementStackElement> = vec![];
     let mut set_operator_stack: Vec<SelectStackOperators> = vec![];
