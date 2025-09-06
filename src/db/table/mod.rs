@@ -5,6 +5,7 @@ use crate::cli::ast::OrderByDirection;
 pub mod select;
 pub mod insert;
 pub mod delete;
+pub mod update;
 pub mod helpers;
 #[cfg(test)]
 pub mod test_utils;

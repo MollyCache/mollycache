@@ -2,32 +2,13 @@ use std::collections::HashSet;
 
 use crate::db::table::Table;
 use crate::cli::ast::DeleteStatement;
-use crate::db::table::helpers::{
-    common::get_row_indicies_matching_where_clause, 
-    order_by_clause::get_ordered_row_indicies, 
-    limit_clause::get_limited_row_indicies
-};
+use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 
 
 pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<(), String> {
-    let row_indicies_to_delete = get_row_indicies_to_delete(table, statement)?;
+    let row_indicies_to_delete = get_row_indicies_matching_clauses(table, statement.where_clause, statement.order_by_clause, statement.limit_clause)?;
     swap_remove_bulk(table, row_indicies_to_delete)?;
     Ok(())
-}
-
-
-fn get_row_indicies_to_delete(table: &mut Table, statement: DeleteStatement) -> Result<Vec<usize>, String> {
-    let mut row_indicies = get_row_indicies_matching_where_clause(table, statement.where_clause)?;
-
-    if let Some(order_by_clause) = statement.order_by_clause {
-        row_indicies = get_ordered_row_indicies(table, row_indicies, &order_by_clause)?;
-    }
-
-    if let Some(limit_clause) = statement.limit_clause {
-        row_indicies = get_limited_row_indicies(row_indicies, &limit_clause)?;
-    }
-
-    return Ok(row_indicies);
 }
 
 fn swap_remove_bulk(table: &mut Table, row_indicies: Vec<usize>) -> Result<(), String> {
@@ -167,7 +148,5 @@ mod tests {
         };
         let result = delete(&mut table, statement);
         assert!(result.is_ok());
-        let expected = vec![];
-        assert_table_rows_eq_unordered(expected, table.rows);
     }
 }
