@@ -1,6 +1,7 @@
 use crate::db::table::{Table, Value, DataType};
-use crate::cli::ast::{SelectStatementColumns, WhereStackElement};
+use crate::cli::ast::{SelectStatementColumns, WhereStackElement, OrderByClause, LimitClause};
 use crate::db::table::helpers::where_stack::matches_where_stack;
+use crate::db::table::helpers::{order_by_clause::get_ordered_row_indicies, limit_clause::get_limited_row_indicies};
 
 pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Value>, String> {
     if row.len() != table.width() {
@@ -59,4 +60,18 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
         }
     }
     return Ok(row_values);
+}
+
+pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: Option<Vec<WhereStackElement>>, order_by_clause: Option<Vec<OrderByClause>>, limit_clause: Option<LimitClause>) -> Result<Vec<usize>, String> {
+    let mut row_indicies = get_row_indicies_matching_where_clause(table, where_clause)?;
+
+    if let Some(order_by_clause) = order_by_clause {
+        row_indicies = get_ordered_row_indicies(table, row_indicies, &order_by_clause)?;
+    }
+
+    if let Some(limit_clause) = limit_clause {
+        row_indicies = get_limited_row_indicies(row_indicies, &limit_clause)?;
+    }
+
+    return Ok(row_indicies);
 }

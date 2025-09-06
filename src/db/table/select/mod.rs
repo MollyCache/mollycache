@@ -1,23 +1,11 @@
 use crate::db::table::{Table, Value};
 use crate::cli::ast::{SelectStatement};
-use crate::db::table::helpers::{
-    common::{get_row_columns_from_indicies, get_row_indicies_matching_where_clause},
-    order_by_clause::get_ordered_row_indicies, 
-    limit_clause::get_limited_row_indicies
-};
+use crate::db::table::helpers::common::{get_row_indicies_matching_clauses, get_row_columns_from_indicies};
 
 
 
 pub fn select(table: &Table, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-    let mut row_indicies = get_row_indicies_matching_where_clause(table, statement.where_clause)?;
-    
-    if let Some(order_by_clause) = statement.order_by_clause {
-        row_indicies = get_ordered_row_indicies(table, row_indicies, &order_by_clause)?;
-    }
-
-    if let Some(limit_clause) = &statement.limit_clause {
-        row_indicies = get_limited_row_indicies(row_indicies, limit_clause)?;
-    }
+    let row_indicies = get_row_indicies_matching_clauses(table, statement.where_clause, statement.order_by_clause, statement.limit_clause)?;
     
     return Ok(get_row_columns_from_indicies(table, row_indicies, Some(&statement.columns))?);
 }
