@@ -4,7 +4,6 @@ use crate::db::table::{ColumnDefinition, Value};
 mod create_statement;
 mod insert_statement;
 mod parser;
-mod select_statement;
 mod select_statement_stack;
 mod update_statement;
 mod delete_statement;
