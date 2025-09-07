@@ -4,9 +4,7 @@ use crate::db::{database::Database, table::Value};
 use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement};
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
-    let mut evaluator = set_operator_evaluator::SetOperatorEvaluator {
-        stack: vec![],
-    };
+    let mut evaluator = set_operator_evaluator::SetOperatorEvaluator::new();
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
@@ -17,16 +15,16 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
             SelectStatementStackElement::SetOperator(set_operator) => {
                 match set_operator {
                     SetOperator::UnionAll => {
-                        evaluator.union_all();
+                        evaluator.union_all()?;
                     }
                     SetOperator::Union => {
-                        evaluator.union();
+                        evaluator.union()?;
                     }
                     SetOperator::Intersect => {
-                        evaluator.intersect();
+                        evaluator.intersect()?;
                     }
                     SetOperator::Except => {
-                        evaluator.except();
+                        evaluator.except()?;
                     }
                 }
             }
