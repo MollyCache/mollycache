@@ -1,5 +1,11 @@
 # MollyDB
-MollyDB is built to be a high-performance, in-memory SQL database designed for complete compatibility with SQLite. This is built for applications that require speed over persistence.
+MollyDB is built to be a high-performance, in-memory SQL database designed for complete compatibility with SQLite.
+
+### Features Implemented To-Date:
+- Basic CRUD operations (CREATE TABLE, SELECT, UPDATE, DELETE).
+- A SQL tokenizer and parser for generating AST representations of CRUD operations.
+- A lightweight in-memory representation of a SQLite database. 
+- A CLI functioning as a UI for the database.
 
 ## Stats  
 
@@ -10,18 +16,26 @@ MollyDB is built to be a high-performance, in-memory SQL database designed for c
 ## Current Implementation Status
 MollyDB is currently in early development with many of the listed features yet to be implemented.
 - A CLI has been developed which can be used to play around with the implemented features.
-- Contributions and ideas are welcome! Feel free to open pull requests with improvements. Test coverage requirements for contributed files is mandatory.
+    - Installing Rust and running `cargo build && cargo run` within the repository will start the CLI.
+- Contributions and ideas are welcome! Current progress is tracked using the issues tab on github.
 
 ## Core Design Philosophy:
-1. MollyDB is built to be significantly more performant than traditional SQL databases.
-2. MollyDB is meant to live in-memory, disk I/O should only be performed at direct request of the user.
-3. MollyDB is replacement for SQLite, queries should have complete parity and compatibility.
-4. MollyDB maintains a test coverage of >80%.
+1. MollyDB is built to be significantly more performant than traditional Disk-based SQL databases (MySQL, Postgres, SQLite) and should be similar in performance to in-memory cache stores (Memcached, Redis).
+2. MollyDB is meant to live in-memory, disk I/O should only be performed at direct request of the user (i.e. snapshotting).
+3. MollyDB maintain complete parity with SQLite, queries should have full compatibility and produce the same results.
+4. MollyDB maintains a test coverage of >75%.
 
 ## Features:
-1. Row caching: The core feature of MollyDB is the idea of row caching. Similar to a query cache, once a query to a database is performed the result rows are cached into a MollyDB instance. Once a cache is warm, subsequent queries can be specified to be run against MollyDB instead of the database. However because MollyDB stores results as rows in a database you can perform new queries against the cache instead of fetching exact queries. This sacrifices accuracy / completeness of the results in exchange for better performance.
-
-This works off the idea that there exists queries that are complete subsets of one or more other queries. By storing the results in a row cache instead of query cache you can leverage this to increase cache hits.
+1. **Row Based Caching**:
+- MollyDBs primary use case is to function as a modified query cache. Unlike traditional query caches, MollyDB caches and evicts individual rows in it's In-Memory database, the advantage of row based caching is the idea that many queries exist as subsets of one or more other queries.
+- Imagine you have a query for a products preview page which performs the following search upon loading: 
+    `SELECT id, name, image, price ORDER BY created_at desc LIMIT 10; `
+A user then clicks on a product taking them to a product view page running this query:
+    `SELECT name, image, price WHERE id = 123;`
+In a traditional query cache these would be stored as two seperate objects despite the second query's results being a subset of the first.
+- With MollyDB, the results of the first query would be cached therefore making the second query a cache hit.
+- MollyDB increase the number of cache hits by increasing the total amount of data able to be cached within a memory constraint by completely preventing the duplication of database rows.
+- MollyDB also improves the number of cache hits by increasing the total number of possible queries that can be hits which leads to rarer queries being cache hits with the same memory requirements.
 
 2. Snapshotting: Complete parity with SQLite allows you to load schemas and data from a SQLite database to use as a datasource specifying snapshot backup intervals and fetching intervals. 
 
