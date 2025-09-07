@@ -2,7 +2,7 @@ use crate::{interpreter::{
     ast::{
         parser::Parser, SelectStatement, SelectStatementColumns, WhereStackElement,
         helpers::{
-            common::{tokens_to_identifier_list, get_table_name},
+            common::{tokens_to_identifier_list, get_table_name, expect_token_type},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
         }
     }, 
@@ -12,6 +12,7 @@ use crate::{interpreter::{
 pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     parser.advance()?;
     let columns = get_columns(parser)?;
+    expect_token_type(parser, TokenTypes::From)?;
     let table_name = get_table_name(parser)?;
     parser.advance()?;
     let where_clause: Option<Vec<WhereStackElement>> = get_where_clause(parser)?;

@@ -12,6 +12,13 @@ mod helpers;
 mod test_utils;
 
 #[derive(Debug, PartialEq)]
+pub struct DatabaseSqlStatement {
+    pub sql_statement: SqlStatement,
+    pub line_num: usize,
+    pub statement_text: String,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum SqlStatement {
     CreateTable(CreateTableStatement),
     InsertInto(InsertIntoStatement),
@@ -235,34 +242,59 @@ impl StatementBuilder for DefaultStatementBuilder {
     }
 }
 
-pub fn generate(tokens: Vec<Token>) -> Vec<Result<SqlStatement, String>> {
-    let mut results: Vec<Result<SqlStatement, String>> = vec![];
+pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>> {
+    let mut results: Vec<Result<DatabaseSqlStatement, String>> = vec![];
     let mut parser = parser::Parser::new(tokens);
     let builder : &dyn StatementBuilder = &DefaultStatementBuilder;
     loop {
+        let line_num = match parser.line_num() {
+            Ok(line_num) => line_num,
+            Err(err) => {
+                results.push(Err(err));
+                break;
+            }
+        };
         let next_statement = parser.next_statement(builder);
         if let Some(next_statement) = next_statement {
-            if next_statement.is_err() {
-                loop {
-                    if let Ok(token) = parser.current_token() {
-                        if token.token_type != TokenTypes::EOF && token.token_type != TokenTypes::SemiColon {
-                           let _ = parser.advance();
+            match next_statement {
+                Err(error) => {
+                    results.push(Err(error));
+                    // If we encountered a parsing error, skip until we find a semicolon or EOF
+                    loop {
+                        if let Ok(token) = parser.current_token() {
+                            if token.token_type == TokenTypes::EOF {
+                                break;
+                            }
+                            else if token.token_type == TokenTypes::SemiColon {
+                                let _ = parser.advance_past_semicolon();
+                                break;
+                            }
+                            else {
+                                if parser.advance().is_err() {
+                                    return results;
+                                }
+                            }
                         }
                         else {
                             break;
                         }
                     }
-                    else {
-                        break;
+                }
+                Ok(sql_statement) => {
+                    let parser_advance_result = parser.advance_past_semicolon();
+                    if parser_advance_result.is_err() {
+                        results.push(Err(parser_advance_result.err().unwrap()));
+                        return results;
                     }
+                    results.push(
+                        Ok(DatabaseSqlStatement {
+                            sql_statement: sql_statement,
+                            line_num: line_num,
+                            statement_text: "".to_string(),
+                        })
+                    );
                 }
             }
-            let parser_advance_result = parser.advance_past_semicolon();
-            if parser_advance_result.is_err() {
-                results.push(Err(parser_advance_result.err().unwrap()));
-                return results;
-            }
-            results.push(next_statement);
         } else {
             break;
         }
@@ -319,22 +351,30 @@ mod tests {
         assert!(result[0].is_ok());
         assert!(result[1].is_ok());
         let expected = vec![
-            Ok(SqlStatement::Select(SelectStatementStack {
-                elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
-                    columns: SelectStatementColumns::All,
-                    where_clause: None,
-                    order_by_clause: None,
-                    limit_clause: None,
-                })],
-            })),
-            Ok(SqlStatement::InsertInto(InsertIntoStatement {
-                table_name: "users".to_string(),
-                columns: None,
-                values: vec![
-                    vec![Value::Integer(1), Value::Text("Alice".to_string())],
-                ],
-            })),
+            Ok(DatabaseSqlStatement {
+                sql_statement: SqlStatement::Select(SelectStatementStack {
+                    elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                        table_name: "users".to_string(),
+                        columns: SelectStatementColumns::All,
+                        where_clause: None,
+                        order_by_clause: None,
+                        limit_clause: None,
+                    })],
+                }),
+                line_num: 1,
+                statement_text: "".to_string(),
+            }),
+            Ok(DatabaseSqlStatement {
+                    sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
+                        table_name: "users".to_string(),
+                        columns: None,
+                        values: vec![
+                            vec![Value::Integer(1), Value::Text("Alice".to_string())],
+                        ],
+                }),
+                    line_num: 1,
+                    statement_text: "".to_string(),
+            }),
         ];
         assert_eq!(expected, result);
     }
@@ -363,14 +403,17 @@ mod tests {
         assert!(result[1].is_ok());
         let expected = vec![
             Err("Error at line 1, column 0: Unexpected value: ;".to_string()),
-            Ok(SqlStatement::InsertInto(InsertIntoStatement {
-        
-                table_name: "users".to_string(),
-                columns: None,
-                values: vec![
-                    vec![Value::Integer(1), Value::Text("Alice".to_string())],
-                ],
-            })),
+            Ok(DatabaseSqlStatement {
+                sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
+                    table_name: "users".to_string(),
+                    columns: None,
+                    values: vec![
+                        vec![Value::Integer(1), Value::Text("Alice".to_string())],
+                    ],
+                }),
+                line_num: 1,
+                statement_text: "".to_string(),
+            }),
         ];
         assert_eq!(expected, result);
     }
@@ -399,22 +442,30 @@ mod tests {
         assert!(result[0].is_ok());
         assert!(result[1].is_ok());
         let expected = vec![
-            Ok(SqlStatement::Select(SelectStatementStack {
-                elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+            Ok(DatabaseSqlStatement {
+                sql_statement: SqlStatement::Select(SelectStatementStack {
+                    elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
+                        table_name: "users".to_string(),
+                        columns: SelectStatementColumns::All,
+                        where_clause: None,
+                        order_by_clause: None,
+                        limit_clause: None,
+                    })],
+                }),
+                line_num: 1,
+                statement_text: "".to_string(),
+            }),
+            Ok(DatabaseSqlStatement {
+                sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
                     table_name: "users".to_string(),
-                    columns: SelectStatementColumns::All,
-                    where_clause: None,
-                    order_by_clause: None,
-                    limit_clause: None,
-                })],
-            })),
-            Ok(SqlStatement::InsertInto(InsertIntoStatement {
-                table_name: "users".to_string(),
-                columns: None,
-                values: vec![
-                    vec![Value::Integer(1), Value::Text("Alice".to_string())],
-                ],
-            })),
+                    columns: None,
+                    values: vec![
+                        vec![Value::Integer(1), Value::Text("Alice".to_string())],
+                    ],
+                }),
+                line_num: 1,
+                statement_text: "".to_string(),
+            }),
         ];
         assert_eq!(expected, result);
     }

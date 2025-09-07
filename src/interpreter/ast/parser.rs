@@ -15,6 +15,10 @@ impl<'a> Parser<'a> {
             current: 0, 
         };
     }
+
+    pub fn line_num(&self) -> Result<usize, String> {
+        return Ok(self.current_token()?.line_num);
+    }
     
     pub fn current_token(&self) -> Result<&Token<'a>, String> {
         if self.current >= self.tokens.len() {
