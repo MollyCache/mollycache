@@ -13,21 +13,23 @@ pub fn run_sql(database: &mut db::database::Database, sql: &str) -> Vec<Result<O
         // println!("{:?}", sql_statement);
         match sql_statement {
             Ok(statement) => {
-                let result = database.execute(statement);
-                if let Ok(values) = result {
-                    if let Some(rows) = values {
-                        sql_results.push(Ok(Some(rows)));
+                let result = database.execute(statement.sql_statement);
+                match result {
+                    Ok(values) => {
+                        if let Some(rows) = values {
+                            sql_results.push(Ok(Some(rows)));
+                        }
+                        else {
+                            sql_results.push(Ok(None));
+                        }
                     }
-                    else {
-                        sql_results.push(Ok(None));
+                    Err(error) => {
+                        sql_results.push(Err(format!("Execution Error with statement starting on line {} \n Error: {}", statement.line_num, error)));
                     }
-                }
-                else {
-                    sql_results.push(Err(result.unwrap_err()));
                 }
             },
-            Err(error) => {
-                sql_results.push(Err(error));
+            Err(parser_error) => {
+                sql_results.push(Err(format!("Parsing Error: {}", parser_error)));
             },
         }
     }
