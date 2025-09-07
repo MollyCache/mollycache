@@ -155,6 +155,8 @@ mod tests {
                     order_by_clause: None,
                     limit_clause: None,
                 })],
+                order_by_clause: None,
+                limit_clause: None,
             }));
         }
 
@@ -207,6 +209,8 @@ mod tests {
                 order_by_clause: None,
                 limit_clause: None,
             })],
+            order_by_clause: None,
+            limit_clause: None,
         })));
         assert_eq!(result, expected);
 
