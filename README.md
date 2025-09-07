@@ -28,15 +28,17 @@ MollyDB is currently in early development with many of the listed features yet t
 ## Features:
 1. **Row Based Caching**:
 - MollyDBs primary use case is to function as a modified query cache. Unlike traditional query caches, MollyDB caches and evicts individual rows in it's In-Memory database, the advantage of row based caching is the idea that many queries exist as subsets of one or more other queries.
-- Imagine you have a query for a products preview page which performs the following search upon loading: 
-    `SELECT id, name, image, price ORDER BY created_at desc LIMIT 10; `
-A user then clicks on a product taking them to a product view page running this query:
-    `SELECT name, image, price WHERE id = 123;`
-In a traditional query cache these would be stored as two seperate objects despite the second query's results being a subset of the first.
-- With MollyDB, the results of the first query would be cached therefore making the second query a cache hit.
+    - Imagine you have a query for a products preview page which performs the following search upon loading: 
+    `SELECT id, name, price ORDER BY created_at desc LIMIT 10; ` and hovering over the first row of product runs the following query `SELECT image, colors WHERE id IN (123, 124, 125);`.
+    - A user then clicks on a product taking them to a product view page running this query:
+    `SELECT name, image, price, colors WHERE id = 123;`
+    - In a traditional query cache these would be stored as three seperate objects despite the third query's results being a subset of the first two.
+- With MollyDB, the results of the first and second query would be cached therefore making the third query a cache hit.
 - MollyDB increase the number of cache hits by increasing the total amount of data able to be cached within a memory constraint by completely preventing the duplication of database rows.
 - MollyDB also improves the number of cache hits by increasing the total number of possible queries that can be hits which leads to rarer queries being cache hits with the same memory requirements.
 
-2. Snapshotting: Complete parity with SQLite allows you to load schemas and data from a SQLite database to use as a datasource specifying snapshot backup intervals and fetching intervals. 
+2. **Snapshotting:** 
+- Complete parity with SQLite allows you to load schemas and data from a SQLite database to use as a datasource specifying snapshot backup intervals and fetching intervals. 
 
-3. Concurrent Reads: The entire database is built to be atomic and thread safe allowing for concurrent reads to the database. Forking is also supported at the risk of loss of data synchronization between forks.
+3. **Concurrent Reads:** 
+- The entire database is built to be atomic and thread safe allowing for concurrent reads to the database. Forking is also supported at the risk of loss of data synchronization between forks.
