@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::db::table::Value;
 
 pub struct SetOperatorEvaluator {
@@ -26,7 +28,16 @@ impl SetOperatorEvaluator {
        self.stack.pop().ok_or("Error processing SELECT statement. Stack is empty".to_string())
     }
 
-    // Keeps duplicates
+    pub fn union(&mut self) -> Result<(), String> {
+        let mut first = self.pop()?;
+        let second = self.pop()?;
+        first.extend(second.into_iter());
+        let set = first.into_iter().collect::<HashSet<Vec<Value>>>();
+        let result = set.into_iter().collect::<Vec<Vec<Value>>>();
+        self.push(result);
+        Ok(())
+    }
+    
     pub fn union_all(&mut self) -> Result<(), String> {
         let mut first = self.pop()?;
         let second = self.pop()?;
@@ -34,19 +45,79 @@ impl SetOperatorEvaluator {
         self.push(first);
         Ok(())
     }
-    
-    pub fn union(&mut self) -> Result<(), String> {
+    pub fn intersect(&mut self) -> Result<(), String> {
         let mut first = self.pop()?;
-        let second = self.pop()?;
-        first.extend(second);
+        let second = self.pop()?.into_iter().collect::<HashSet<Vec<Value>>>();
+        let mut index: usize = 0;
+        while index < first.len() {
+            if second.contains(&first[index]) {
+                index += 1;
+            }
+            else {
+                first.swap_remove(index);
+            }
+        }
         self.push(first);
         Ok(())
     }
-    pub fn intersect(&mut self) -> Result<(), String> {
-        todo!()
-    }
     pub fn except(&mut self) -> Result<(), String> {
-        todo!()
+        let mut first = self.pop()?;
+        let second = self.pop()?.into_iter().collect::<HashSet<Vec<Value>>>();
+        let mut index: usize = 0;
+        while index < first.len() {
+            if second.contains(&first[index]) {
+                first.swap_remove(index);
+            }
+            else {
+                index += 1;
+            }
+        }
+        self.push(first);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::db::table::test_utils::assert_table_rows_eq_unordered;
+
+    fn rows_1() -> Vec<Vec<Value>> {
+        vec![
+            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
+            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
+            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
+        ]
     }
 
+    fn rows_2() -> Vec<Vec<Value>> {
+        vec![
+            vec![Value::Integer(1), Value::Text("Fletcher".to_string()), Value::Integer(25), Value::Real(1000.0)],
+            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
+            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Null, Value::Real(5000.0)],
+        ]
+    }
+
+    #[test]
+    fn union_all_works_correctly() {
+        let mut evaluator = SetOperatorEvaluator::new();
+        evaluator.push(rows_1());
+        evaluator.push(rows_2());
+        assert!(evaluator.union_all().is_ok());
+        let result = evaluator.result();
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        let expected = vec![
+            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
+            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
+            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
+            vec![Value::Integer(1), Value::Text("Fletcher".to_string()), Value::Integer(25), Value::Real(1000.0)],
+            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
+            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Null, Value::Real(5000.0)],
+        ];
+        assert!(result.is_ok());
+        assert_table_rows_eq_unordered(expected, result.unwrap());
+    }
 }
+    
+    
