@@ -1,21 +1,38 @@
-pub mod select_statement;
-use crate::db::database::Database;
-use crate::db::table::Value;
-use crate::interpreter::ast::SelectStatementStack;
-use crate::interpreter::ast::SelectStatementStackElement;
-
+mod select_statement;
+mod set_operator_evaluator;
+use crate::db::{database::Database, table::Value};
+use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement};
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
-    let select_statement = statement.elements.first();
-    if let Some(select_statement) = select_statement {
-        match select_statement {
+    let mut evaluator = set_operator_evaluator::SetOperatorEvaluator {
+        stack: vec![],
+    };
+    for element in statement.elements {
+        match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
-                let rows = select_statement::select_statement(database.get_table(&select_statement.table_name)?, select_statement);
-                return rows;
+                let table = database.get_table(&select_statement.table_name)?;
+                let rows = select_statement::select_statement(table, &select_statement)?;
+                evaluator.push(rows);
             }
-            _ => Err(format!("Expected select statement, got {:?}", select_statement)),
+            SelectStatementStackElement::SetOperator(set_operator) => {
+                match set_operator {
+                    SetOperator::UnionAll => {
+                        evaluator.union_all();
+                    }
+                    SetOperator::Union => {
+                        evaluator.union();
+                    }
+                    SetOperator::Intersect => {
+                        evaluator.intersect();
+                    }
+                    SetOperator::Except => {
+                        evaluator.except();
+                    }
+                }
+            }
         }
-    } else {
-        Ok(vec![])
     }
+    let result = evaluator.result()?;
+    Ok(result)
 }
+
