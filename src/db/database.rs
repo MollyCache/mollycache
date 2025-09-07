@@ -1,5 +1,5 @@
 use crate::db::table::{Table, Value};
-use crate::interpreter::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement, DeleteStatement, UpdateStatement, SelectStatementStackElement};
+use crate::interpreter::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatementStack, DeleteStatement, UpdateStatement};
 use crate::db::table::select;
 use crate::db::table::insert;
 use crate::db::table::delete;
@@ -27,19 +27,9 @@ impl Database {
                 self.insert_into_table(statement)?;
                 Ok(None)
             },
-            SqlStatement::Select(mut statement) => {
-                let select_statement = statement.elements.pop();
-                if let Some(select_statement) = select_statement {
-                    match select_statement {
-                        SelectStatementStackElement::SelectStatement(select_statement) => {
-                            let rows = self.select_from_table(select_statement)?;
-                            Ok(Some(rows))
-                        }
-                        _ => Err(format!("Expected select statement, got {:?}", select_statement)),
-                    }
-                } else {
-                    Ok(None)
-                }
+            SqlStatement::Select(statement) => {
+                let rows = self.select_from_table(statement)?;
+                Ok(Some(rows))
             },
             SqlStatement::UpdateStatement(statement) => {
                 self.update_table(statement)?;
@@ -56,40 +46,35 @@ impl Database {
         if self.has_table(&statement.table_name) {
             return Err(format!("Table {} already exists", statement.table_name));
         }
-        let table = Table::new(statement.table_name, statement.columns) ;
+        let table = Table::new(statement.table_name, statement.columns);
         self.tables.insert(table.name.clone(), table);
         Ok(())
     }
 
     fn insert_into_table(&mut self, statement: InsertIntoStatement) -> Result<(), String> {
         let table = self.get_table_mut(&statement.table_name)?;
-        insert::insert(table, statement)?;
-        Ok(())
+        insert::insert(table, statement)
     }
 
-    fn select_from_table(&mut self, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-        let table = self.get_table(&statement.table_name)?;
-        let rows = select::select(table, statement)?;
-        Ok(rows)
+    fn select_from_table(&mut self, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
+        select::select(self, statement)
     }
 
     fn delete_from_table(&mut self, statement: DeleteStatement) -> Result<(), String> {
         let table = self.get_table_mut(&statement.table_name)?;
-        delete::delete(table, statement)?;
-        Ok(())
+        delete::delete(table, statement)
     }
 
     fn update_table(&mut self, statement: UpdateStatement) -> Result<(), String> {
         let table = self.get_table_mut(&statement.table_name)?;
-        update::update(table, statement)?;
-        Ok(())
+        update::update(table, statement)
     }
 
     fn has_table(&self, table_name: &str) -> bool {
         self.tables.contains_key(table_name)
     }
 
-    fn get_table(&self, table_name: &str) -> Result<&Table, String> {
+    pub fn get_table(&self, table_name: &str) -> Result<&Table, String> {
         if !self.has_table(table_name) {
             return Err(format!("Table {} does not exist", table_name));
         }
