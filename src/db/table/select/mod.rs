@@ -2,7 +2,7 @@ mod select_statement;
 mod set_operator_evaluator;
 use crate::db::{database::Database, table::Value};
 use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement, SelectStatementColumns};
-use crate::db::table::helpers::order_by_clause::{perform_comparions};
+use crate::db::table::helpers::{order_by_clause::{perform_comparions}, limit_clause::get_limited_rows};
 
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
@@ -65,7 +65,7 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
         });
     }
     if let Some(limit_clause) = statement.limit_clause {
-        result.truncate(limit_clause.limit);
+        result = get_limited_rows(result, &limit_clause)?;
     }
     Ok(result)
 }
