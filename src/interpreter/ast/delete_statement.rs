@@ -12,8 +12,8 @@ use crate::interpreter::{
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     expect_token_type(parser, TokenTypes::From)?;
-    let table_name = get_table_name(parser)?;
     parser.advance()?;
+    let table_name = get_table_name(parser)?;
     let where_clause = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;

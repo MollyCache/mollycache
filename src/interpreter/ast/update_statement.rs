@@ -7,10 +7,9 @@ use crate::interpreter::ast::helpers::where_stack::get_where_clause;
 use crate::interpreter::tokenizer::token::TokenTypes;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
-    
+    parser.advance()?;
     let table_name = get_table_name(parser)?;
     // Ensure Set
-    parser.advance()?;
     expect_token_type(parser, TokenTypes::Set)?;
     let update_values = get_update_values(parser)?;
     let where_clause = get_where_clause(parser)?;
