@@ -1,6 +1,6 @@
 use crate::interpreter::ast::helpers::order_by_clause::get_order_by;
 use crate::interpreter::ast::helpers::limit_clause::get_limit;
-use crate::interpreter::ast::{parser::Parser, SqlStatement, SelectStatementStack, SelectStatementStackElement, SetOperator, SelectStackOperators};
+use crate::interpreter::ast::{parser::Parser, SqlStatement, SelectStatementStack, SelectStatementStackElement, SetOperator, SelectStackOperators, SelectStatementColumns};
 use crate::interpreter::ast::helpers::select_statement;
 use crate::interpreter::ast::Parentheses;
 use crate::interpreter::tokenizer::token::TokenTypes;
@@ -8,10 +8,12 @@ use crate::interpreter::tokenizer::token::TokenTypes;
 // Returns a SelectStatementStack which is an RPN representation of the SELECT statements and set operators.
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     let mut statement_stack = SelectStatementStack {
+        columns: SelectStatementColumns::All,
         elements: vec![],
         order_by_clause: None,
         limit_clause: None,
     };
+    let mut columns = None;
     let mut set_operator_stack: Vec<SelectStackOperators> = vec![];
 
     loop {
@@ -19,6 +21,15 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
         match token.token_type {
             TokenTypes::Select => {
                 let mut statement = select_statement::get_statement(parser)?;
+                columns = match columns {
+                    None => Some(statement.columns.clone()),
+                    Some(columns) => {
+                        if statement.columns != columns {
+                            return Err("Columns mismatch between SELECT statements in Union".to_string());
+                        }
+                        Some(columns)
+                    },
+                };
                 if parser.current_token()?.token_type != TokenTypes::SemiColon {
                     if statement.order_by_clause.is_some() || statement.limit_clause.is_some() {
                         return Err("ORDER BY, or LIMIT clause not allowed with UNION SELECT statements".to_string());
@@ -104,7 +115,10 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
             return Err("Mismatched parentheses found.".to_string());
         }
     }
-
+    match columns {
+        Some(columns) => statement_stack.columns = columns,
+        None => return Err("Error parsing SELECT statement. Columns not found.".to_string()),
+    }
     return Ok(SqlStatement::Select(statement_stack));
 }
 
@@ -187,6 +201,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![expected_simple_select_statement(1)],
             order_by_clause: None,
             limit_clause: None,
@@ -203,10 +218,10 @@ mod tests {
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -231,10 +246,10 @@ mod tests {
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -268,10 +283,10 @@ mod tests {
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -320,10 +335,10 @@ mod tests {
         ];
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
+            columns: SelectStatementColumns::Specific(vec!["name".to_string()]),
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
@@ -383,6 +398,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -418,6 +434,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -430,5 +447,28 @@ mod tests {
             }),
         });
         assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_columns_mismatch_is_generated_correctly() {
+        // SELECT id, name FROM users UNION SELECT name FROM users;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Union, "UNION"),
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::SemiColon, ";")
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Columns mismatch between SELECT statements in Union".to_string());
     }
 }

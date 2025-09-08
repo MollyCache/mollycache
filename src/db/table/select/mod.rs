@@ -1,14 +1,37 @@
 mod select_statement;
 mod set_operator_evaluator;
 use crate::db::{database::Database, table::Value};
-use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement};
+use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement, SelectStatementColumns};
+use crate::db::table::helpers::{order_by_clause::{perform_comparions}, limit_clause::get_limited_rows};
+
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
     let mut evaluator = set_operator_evaluator::SetOperatorEvaluator::new();
+    let statement_columns = statement.columns.columns();
+    let mut columns: Option<Vec<&String>> = match statement_columns {
+        Err(_) => None,
+        Ok(columns_list) => Some(columns_list),
+    };
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
                 let table = database.get_table(&select_statement.table_name)?;
+                columns = match columns {
+                    None => Some(table.get_columns()),
+                    Some(columns) => {
+                        if statement.columns == SelectStatementColumns::All {
+                            if table.get_columns() != columns {
+                                return Err(format!("Columns mismatch between SELECT statements in Union"));
+                            }
+                        }
+                        else {
+                            if statement.columns.columns()? != columns {
+                                return Err(format!("Columns mismatch between SELECT statements in Union"));
+                            }
+                        }
+                        Some(columns)
+                    },
+                };
                 let rows = select_statement::select_statement(table, &select_statement)?;
                 evaluator.push(rows);
             }
@@ -30,7 +53,20 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
             }
         }
     }
-    let result = evaluator.result()?;
+    let mut result = evaluator.result()?;
+    if let Some(order_by_clause) = statement.order_by_clause {
+        result.sort_by(|a, b| {
+            if let Some(columns) = &columns {
+                perform_comparions(&columns, a, b, &order_by_clause)
+            }
+            else {
+                unreachable!()
+            }
+        });
+    }
+    if let Some(limit_clause) = statement.limit_clause {
+        result = get_limited_rows(result, &limit_clause)?;
+    }
     Ok(result)
 }
 
@@ -46,6 +82,7 @@ mod tests {
     fn select_statement_stack_with_multiple_set_operators_works_correctly() {
         let database = default_database();
         let statement = SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
                 columns: SelectStatementColumns::All,
@@ -71,6 +108,7 @@ mod tests {
     fn select_statement_stack_with_set_operator_works_correctly() {
         let database = default_database();
         let statement = SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
@@ -107,6 +145,7 @@ mod tests {
     fn select_statement_stack_works_correctly_with_multiple_set_operators() {
         let database = default_database();
         let statement = SelectStatementStack {
+            columns: SelectStatementColumns::All,
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
                 columns: SelectStatementColumns::All,

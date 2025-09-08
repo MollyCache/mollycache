@@ -175,4 +175,8 @@ impl Table {
         }
         return Err(format!("Column {} does not exist in table {}", column, self.name));
     }
+
+    pub fn get_columns(&self) -> Vec<&String> {
+        self.columns.iter().map(|column| &column.name).collect()
+    }
 }

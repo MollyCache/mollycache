@@ -42,6 +42,7 @@ pub struct InsertIntoStatement {
 
 #[derive(Debug, PartialEq)]
 pub struct SelectStatementStack {
+    pub columns: SelectStatementColumns,
     pub elements: Vec<SelectStatementStackElement>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
@@ -109,17 +110,17 @@ pub struct ColumnValue {
     pub value: Value,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SelectStatementColumns {
     All,
     Specific(Vec<String>),
 }
 
 impl SelectStatementColumns {
-    pub fn columns(&self) -> Result<&Vec<String>, String> {
+    pub fn columns(&self) -> Result<Vec<&String>, String> {
         return match self {
             SelectStatementColumns::All => Err("Cannot get columns from all columns".to_string()),
-            SelectStatementColumns::Specific(columns) => Ok(columns),
+            SelectStatementColumns::Specific(columns) => Ok(columns.iter().map(|column| column).collect()),
         }
     }
 }
@@ -355,6 +356,7 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
+                    columns: SelectStatementColumns::All,
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
                         columns: SelectStatementColumns::All,
@@ -402,7 +404,6 @@ mod tests {
             token(TokenTypes::EOF, ""),
         ];
         let result = generate(tokens);
-        println!("{:?}", result);
         assert!(result[0].is_err());
         assert!(result[1].is_ok());
         let expected = vec![
@@ -448,6 +449,7 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
+                    columns: SelectStatementColumns::All,
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
                         columns: SelectStatementColumns::All,

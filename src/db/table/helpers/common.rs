@@ -1,7 +1,7 @@
 use crate::db::table::{Table, Value, DataType};
 use crate::interpreter::ast::{SelectStatementColumns, WhereStackElement, OrderByClause, LimitClause};
 use crate::db::table::helpers::where_stack::matches_where_stack;
-use crate::db::table::helpers::{order_by_clause::get_ordered_row_indicies, limit_clause::get_limited_row_indicies};
+use crate::db::table::helpers::{order_by_clause::get_ordered_row_indicies, limit_clause::get_limited_rows};
 
 pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Value>, String> {
     if row.len() != table.width() {
@@ -54,7 +54,7 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
     } else {
         let specific_selected_columns = selected_columns.columns()?;
         for (i, column) in table.columns.iter().enumerate() {
-            if (*specific_selected_columns).contains(&column.name) {
+            if (*specific_selected_columns).contains(&&column.name) {
                 row_values.push(row[i].clone());
             }
         }
@@ -70,7 +70,8 @@ pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Ve
     }
 
     if let Some(limit_clause) = limit_clause {
-        row_indicies = get_limited_row_indicies(row_indicies, &limit_clause)?;
+        let result = get_limited_rows(row_indicies, &limit_clause)?;
+        return Ok(result.to_vec());
     }
 
     return Ok(row_indicies);

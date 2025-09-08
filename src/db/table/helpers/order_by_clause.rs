@@ -9,19 +9,20 @@ use crate::db::table::Value;
 // This sorting algorithm will always return a stable sort, this is given by all of the order columns
 // then the input order of the rows is maintained with any required tie breaking.
 pub fn get_ordered_row_indicies(table: &Table, mut row_indicies: Vec<usize>, order_by_clauses: &Vec<OrderByClause>) -> Result<Vec<usize>, String> {
+    let columns: Vec<&String> = table.columns.iter().map(|column| &column.name).collect();
     row_indicies.sort_by(|a, b| {
-        perform_comparions(table, &table.rows[*a], &table.rows[*b], order_by_clauses)
+        perform_comparions(&columns, &table.rows[*a], &table.rows[*b], order_by_clauses)
     });
     return Ok(row_indicies);
 }
 
-fn perform_comparions(table: &Table, row1: &Vec<Value>, row2: &Vec<Value>, order_by_clauses: &Vec<OrderByClause>) -> Ordering {
+pub fn perform_comparions(columns: &Vec<&String>, row1: &Vec<Value>, row2: &Vec<Value>, order_by_clauses: &Vec<OrderByClause>) -> Ordering {
     let mut result = Ordering::Equal;
     for comparison in order_by_clauses {
-        let index = table.get_index_of_column(&comparison.column);
+        let index = get_index_of_column(columns, &comparison.column);
         let index = match index {
             Ok(index) => index,
-            Err(_) => return Ordering::Equal, // Bad but should never happen because we've validated the columns in the parser
+            Err(_) => unreachable!(),
         };
         let ordering = row1[index].compare(&row2[index], &comparison.direction);
         if ordering != Ordering::Equal {
@@ -30,6 +31,16 @@ fn perform_comparions(table: &Table, row1: &Vec<Value>, row2: &Vec<Value>, order
         }
     }
     return result;
+}
+
+fn get_index_of_column(columns: &Vec<&String>, column_name: &String) -> Result<usize, String> {
+    let result = columns.iter().position(|column| column_name == *column);
+    if let Some(index) = result {
+        return Ok(index);
+    }
+    else {
+        return Err(format!("Column {} does not exist in table", column_name));
+    }
 }
 
 #[cfg(test)]
