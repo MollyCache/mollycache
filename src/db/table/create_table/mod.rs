@@ -6,7 +6,7 @@ use crate::db::table::Table;
 pub fn create_table(database: &mut Database, statement: CreateTableStatement) -> Result<(), String> {
     if database.has_table(&statement.table_name) {
         match statement.existence_check {
-            Some(ExistenceCheck::IfExists) => {
+            Some(ExistenceCheck::IfNotExists) => {
                 return Ok(());
             }
             _ => {
@@ -58,10 +58,10 @@ mod tests {
     }
 
     #[test]
-    fn create_table_with_if_exists_clause_does_not_error_when_table_already_exists() {
+    fn create_table_with_if_not_exists_clause_does_not_error_when_table_already_exists() {
         let statement = CreateTableStatement {
             table_name: "users".to_string(),
-            existence_check: Some(ExistenceCheck::IfExists),
+            existence_check: Some(ExistenceCheck::IfNotExists),
             columns: vec![ColumnDefinition { name: "id".to_string(), data_type: DataType::Integer, constraints: vec![] }],
         };
         let mut database = default_database();
