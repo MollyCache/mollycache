@@ -70,10 +70,10 @@ pub fn tokens_to_identifier_list(parser: &mut Parser) -> Result<Vec<String>, Str
 }
 
 pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
-    parser.advance()?;
     let token = parser.current_token()?;
     expect_token_type(parser, TokenTypes::Identifier)?;
     let result = token.value.to_string();
+    parser.advance()?;
     Ok(result)
 }
 

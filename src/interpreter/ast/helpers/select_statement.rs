@@ -13,8 +13,8 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     parser.advance()?;
     let columns = get_columns(parser)?;
     expect_token_type(parser, TokenTypes::From)?;
-    let table_name = get_table_name(parser)?;
     parser.advance()?;
+    let table_name = get_table_name(parser)?;
     let where_clause: Option<Vec<WhereStackElement>> = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;

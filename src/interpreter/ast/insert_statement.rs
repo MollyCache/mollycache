@@ -28,8 +28,8 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 }
 
 fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
-    let table_name = get_table_name(parser)?;
     parser.advance()?;
+    let table_name = get_table_name(parser)?;
 
     let token = parser.current_token()?;
     let columns = match token.token_type {

@@ -12,7 +12,7 @@ pub enum TokenTypes {
     Inner, Left, Right, Full, Outer, Join, On,
     Limit, Offset, Union, Intersect, Except,
     // Logical Operators
-    And, Or, In, Exists,
+    And, Or, In, Exists, If,
     Case, When, Then, Else, End, Is,
     Equals, NotEquals, LessThan, LessEquals, GreaterThan, GreaterEquals,
     // Aggregate Functions

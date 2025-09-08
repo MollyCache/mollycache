@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, 
+        parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, ExistenceCheck,
         helpers::common::{expect_token_type, get_table_name}
     }, 
     tokenizer::token::TokenTypes
@@ -16,10 +16,9 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
         TokenTypes::Table => {
             statement = table_statement(parser);
         },
-        TokenTypes::Index => {
-            statement = index_statement(parser);
+        _ => {
+            return Err(parser.format_error())
         },
-        _ => return Err(parser.format_error()),
     }
 
     // Ensure SemiColon
@@ -28,13 +27,25 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 }
 
 fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
-    // Get the table name
-    let table_name = get_table_name(parser)?;
     parser.advance()?;
+    let existence_check = match parser.current_token()?.token_type {
+        TokenTypes::If => {
+            parser.advance()?;
+            expect_token_type(parser, TokenTypes::Not)?;
+            parser.advance()?;
+            expect_token_type(parser, TokenTypes::Exists)?;
+            parser.advance()?;
+            Some(ExistenceCheck::IfExists)
+        },
+        _ => None,
+    };
+
+    let table_name = get_table_name(parser)?;
 
     let column_definitions = column_definitions(parser)?;
     return Ok(CreateTable(CreateTableStatement {
         table_name,
+        existence_check,
         columns: column_definitions,
     }));
 }
@@ -95,10 +106,6 @@ fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
     };
 }
 
-fn index_statement(_parser: &mut Parser) -> Result<SqlStatement, String> {
-    return Err("Index statements not yet implemented".to_string());
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -126,6 +133,7 @@ mod tests {
         let result = build(&mut parser);
         let expected = SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
+            existence_check: None,
             columns: vec![
                 ColumnDefinition {
                     name: "id".to_string(),
@@ -211,17 +219,29 @@ mod tests {
     }
 
     #[test]
-    fn index_statement_not_implemented() {
-        // CREATE INDEX my_index;
+    fn create_table_with_if_exists_clause() {
+        // CREATE TABLE IF NOT EXISTS users (id INTEGER);
         let tokens = vec![
             token(TokenTypes::Create, "CREATE"),
-            token(TokenTypes::Index, "INDEX"),
-            token(TokenTypes::Identifier, "my_index"),
+            token(TokenTypes::Table, "TABLE"),
+            token(TokenTypes::If, "IF"),
+            token(TokenTypes::Not, "NOT"),
+            token(TokenTypes::Exists, "EXISTS"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Integer, "INTEGER"),
+            token(TokenTypes::RightParen, ")"),
             token(TokenTypes::SemiColon, ";"),
             token(TokenTypes::EOF, ""),
         ];
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        assert!(result.is_err());
+        let expected = SqlStatement::CreateTable(CreateTableStatement {
+            table_name: "users".to_string(),
+            existence_check: Some(ExistenceCheck::IfExists),
+            columns: vec![ColumnDefinition { name: "id".to_string(), data_type: DataType::Integer, constraints: vec![] }],
+        });
+        assert_eq!(result.unwrap(), expected);
     }
 }
