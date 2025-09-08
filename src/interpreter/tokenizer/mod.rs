@@ -83,7 +83,7 @@ mod tests {
         ORDER BY GROUP HAVING DISTINCT ALL AS ASC DESC
         INNER LEFT RIGHT FULL OUTER JOIN ON UNION
         LIMIT OFFSET
-        AND OR IN EXISTS
+        AND OR IN EXISTS IF
         CASE WHEN THEN ELSE END
         = != < <= > >=
         COUNT SUM AVG MIN MAX
@@ -141,6 +141,7 @@ mod tests {
             token(TokenTypes::Or, "OR", 12, 9),
             token(TokenTypes::In, "IN", 15, 9),
             token(TokenTypes::Exists, "EXISTS", 18, 9),
+            token(TokenTypes::If, "IF", 25, 9),
             token(TokenTypes::Case, "CASE", 8, 10),
             token(TokenTypes::When, "WHEN", 13, 10),
             token(TokenTypes::Then, "THEN", 18, 10),

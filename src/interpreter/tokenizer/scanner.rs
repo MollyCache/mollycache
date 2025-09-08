@@ -166,6 +166,7 @@ impl<'a> Scanner<'a> {
             slice if slice.eq_ignore_ascii_case("OR") => TokenTypes::Or,
             slice if slice.eq_ignore_ascii_case("IN") => TokenTypes::In,
             slice if slice.eq_ignore_ascii_case("EXISTS") => TokenTypes::Exists,
+            slice if slice.eq_ignore_ascii_case("IF") => TokenTypes::If,
             slice if slice.eq_ignore_ascii_case("CASE") => TokenTypes::Case,
             slice if slice.eq_ignore_ascii_case("WHEN") => TokenTypes::When,
             slice if slice.eq_ignore_ascii_case("THEN") => TokenTypes::Then,
