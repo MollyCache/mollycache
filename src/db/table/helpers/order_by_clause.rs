@@ -15,7 +15,7 @@ pub fn get_ordered_row_indicies(table: &Table, mut row_indicies: Vec<usize>, ord
     return Ok(row_indicies);
 }
 
-fn perform_comparions(table: &Table, row1: &Vec<Value>, row2: &Vec<Value>, order_by_clauses: &Vec<OrderByClause>) -> Ordering {
+pub fn perform_comparions(table: &Table, row1: &Vec<Value>, row2: &Vec<Value>, order_by_clauses: &Vec<OrderByClause>) -> Ordering {
     let mut result = Ordering::Equal;
     for comparison in order_by_clauses {
         let index = table.get_index_of_column(&comparison.column);
