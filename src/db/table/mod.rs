@@ -7,6 +7,7 @@ pub mod select;
 pub mod insert;
 pub mod delete;
 pub mod update;
+pub mod create_table;
 pub mod helpers;
 #[cfg(test)]
 pub mod test_utils;

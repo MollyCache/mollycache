@@ -4,6 +4,7 @@ use crate::db::table::select;
 use crate::db::table::insert;
 use crate::db::table::delete;
 use crate::db::table::update;
+use crate::db::table::create_table;
 use std::collections::HashMap;
 
 pub struct Database {
@@ -43,38 +44,29 @@ impl Database {
     }
 
     fn create_table(&mut self, statement: CreateTableStatement) -> Result<(), String> {
-        if self.has_table(&statement.table_name) {
-            return Err(format!("Table {} already exists", statement.table_name));
-        }
-        let table = Table::new(statement.table_name, statement.columns) ;
-        self.tables.insert(table.name.clone(), table);
-        Ok(())
+        create_table::create_table(self, statement)
     }
 
     fn insert_into_table(&mut self, statement: InsertIntoStatement) -> Result<(), String> {
         let table = self.get_table_mut(&statement.table_name)?;
-        insert::insert(table, statement)?;
-        Ok(())
+        insert::insert(table, statement)
     }
 
     fn select_statement_stack(&mut self, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
-        let rows = select::select_statement_stack(self, statement)?;
-        Ok(rows)
+        select::select_statement_stack(self, statement)
     }
 
     fn delete_from_table(&mut self, statement: DeleteStatement) -> Result<(), String> {
         let table = self.get_table_mut(&statement.table_name)?;
-        delete::delete(table, statement)?;
-        Ok(())
+        delete::delete(table, statement)
     }
 
     fn update_table(&mut self, statement: UpdateStatement) -> Result<(), String> {
         let table = self.get_table_mut(&statement.table_name)?;
-        update::update(table, statement)?;
-        Ok(())
+        update::update(table, statement)
     }
 
-    fn has_table(&self, table_name: &str) -> bool {
+    pub fn has_table(&self, table_name: &str) -> bool {
         self.tables.contains_key(table_name)
     }
 
@@ -96,7 +88,6 @@ impl Database {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::CreateTableStatement;
     use crate::db::table::{ColumnDefinition, DataType};
 
 
@@ -117,24 +108,6 @@ mod tests {
                 ]))
             ])
         }
-    }
-
-    #[test]
-    fn create_table_generates_proper_table() {
-        let statement = CreateTableStatement {
-            table_name: "users".to_string(),
-            creation_mode: None,
-            columns: vec![
-                ColumnDefinition {
-                    name: "id".to_string(),
-                    data_type: DataType::Integer,
-                    constraints: vec![] 
-                },
-            ],
-        };
-        let mut database = Database::new();
-        assert!(database.create_table(statement).is_ok());
-        assert!(database.has_table("users"));
     }
 
     #[test]
