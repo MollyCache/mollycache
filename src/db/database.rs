@@ -1,5 +1,5 @@
 use crate::db::table::{Table, Value};
-use crate::interpreter::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatement, DeleteStatement, UpdateStatement, SelectStatementStackElement};
+use crate::interpreter::ast::{SqlStatement, CreateTableStatement, InsertIntoStatement, SelectStatementStack, DeleteStatement, UpdateStatement};
 use crate::db::table::select;
 use crate::db::table::insert;
 use crate::db::table::delete;
@@ -7,7 +7,7 @@ use crate::db::table::update;
 use std::collections::HashMap;
 
 pub struct Database {
-    tables: HashMap<String, Table>,
+    pub tables: HashMap<String, Table>,
 }
 
 impl Database {
@@ -27,19 +27,9 @@ impl Database {
                 self.insert_into_table(statement)?;
                 Ok(None)
             },
-            SqlStatement::Select(mut statement) => {
-                let select_statement = statement.elements.pop();
-                if let Some(select_statement) = select_statement {
-                    match select_statement {
-                        SelectStatementStackElement::SelectStatement(select_statement) => {
-                            let rows = self.select_from_table(select_statement)?;
-                            Ok(Some(rows))
-                        }
-                        _ => Err(format!("Expected select statement, got {:?}", select_statement)),
-                    }
-                } else {
-                    Ok(None)
-                }
+            SqlStatement::Select(statement) => {
+                let result = self.select_statement_stack(statement)?;
+                Ok(Some(result))
             },
             SqlStatement::UpdateStatement(statement) => {
                 self.update_table(statement)?;
@@ -67,9 +57,8 @@ impl Database {
         Ok(())
     }
 
-    fn select_from_table(&mut self, statement: SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-        let table = self.get_table(&statement.table_name)?;
-        let rows = select::select(table, statement)?;
+    fn select_statement_stack(&mut self, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
+        let rows = select::select_statement_stack(self, statement)?;
         Ok(rows)
     }
 
@@ -89,7 +78,7 @@ impl Database {
         self.tables.contains_key(table_name)
     }
 
-    fn get_table(&self, table_name: &str) -> Result<&Table, String> {
+    pub fn get_table(&self, table_name: &str) -> Result<&Table, String> {
         if !self.has_table(table_name) {
             return Err(format!("Table not found: {}", table_name));
         }

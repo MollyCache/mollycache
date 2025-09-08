@@ -32,7 +32,7 @@ pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, co
     Ok(rows)
 }
 
-pub fn get_row_indicies_matching_where_clause(table: &Table, where_clause: Option<Vec<WhereStackElement>>) -> Result<Vec<usize>, String> {
+pub fn get_row_indicies_matching_where_clause(table: &Table, where_clause: &Option<Vec<WhereStackElement>>) -> Result<Vec<usize>, String> {
     if let Some(where_clause) = where_clause {
         let mut row_indicies: Vec<usize> = vec![];
         for (i, row) in table.rows.iter().enumerate() {
@@ -62,7 +62,7 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
     return Ok(row_values);
 }
 
-pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: Option<Vec<WhereStackElement>>, order_by_clause: Option<Vec<OrderByClause>>, limit_clause: Option<LimitClause>) -> Result<Vec<usize>, String> {
+pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Vec<WhereStackElement>>, order_by_clause: &Option<Vec<OrderByClause>>, limit_clause: &Option<LimitClause>) -> Result<Vec<usize>, String> {
     let mut row_indicies = get_row_indicies_matching_where_clause(table, where_clause)?;
 
     if let Some(order_by_clause) = order_by_clause {

@@ -43,6 +43,8 @@ pub struct InsertIntoStatement {
 #[derive(Debug, PartialEq)]
 pub struct SelectStatementStack {
     pub elements: Vec<SelectStatementStackElement>,
+    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub limit_clause: Option<LimitClause>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -360,6 +362,8 @@ mod tests {
                         order_by_clause: None,
                         limit_clause: None,
                     })],
+                    order_by_clause: None,
+                    limit_clause: None,
                 }),
                 line_num: 1,
                 statement_text: "".to_string(),
@@ -451,6 +455,8 @@ mod tests {
                         order_by_clause: None,
                         limit_clause: None,
                     })],
+                    order_by_clause: None,
+                    limit_clause: None,
                 }),
                 line_num: 1,
                 statement_text: "".to_string(),
