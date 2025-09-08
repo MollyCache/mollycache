@@ -130,6 +130,7 @@ mod tests {
             parser.advance_past_semicolon()?;
             return Ok(SqlStatement::CreateTable(CreateTableStatement {
                 table_name: "users".to_string(),
+                creation_mode: None,
                 columns: vec![],
             }));
         }
@@ -187,6 +188,7 @@ mod tests {
         let result = parser.next_statement(builder);
         let expected = Some(Ok(SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
+            creation_mode: None,
             columns: vec![],
         })));
         assert_eq!(result, expected);

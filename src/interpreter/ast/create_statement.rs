@@ -35,6 +35,7 @@ fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
     let column_definitions = column_definitions(parser)?;
     return Ok(CreateTable(CreateTableStatement {
         table_name,
+        creation_mode: None,
         columns: column_definitions,
     }));
 }
@@ -126,6 +127,7 @@ mod tests {
         let result = build(&mut parser);
         let expected = SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
+            creation_mode: None,
             columns: vec![
                 ColumnDefinition {
                     name: "id".to_string(),

@@ -123,6 +123,7 @@ mod tests {
     fn create_table_generates_proper_table() {
         let statement = CreateTableStatement {
             table_name: "users".to_string(),
+            creation_mode: None,
             columns: vec![
                 ColumnDefinition {
                     name: "id".to_string(),
