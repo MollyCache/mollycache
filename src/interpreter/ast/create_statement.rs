@@ -1,7 +1,7 @@
 use crate::interpreter::{
     ast::{
         parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, ExistenceCheck,
-        helpers::common::{expect_token_type, get_table_name}
+        helpers::common::{expect_token_type, get_table_name, exists_clause}
     }, 
     tokenizer::token::TokenTypes
 };
@@ -28,17 +28,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 
 fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
-    let existence_check = match parser.current_token()?.token_type {
-        TokenTypes::If => {
-            parser.advance()?;
-            expect_token_type(parser, TokenTypes::Not)?;
-            parser.advance()?;
-            expect_token_type(parser, TokenTypes::Exists)?;
-            parser.advance()?;
-            Some(ExistenceCheck::IfExists)
-        },
-        _ => None,
-    };
+    let existence_check = exists_clause(parser, ExistenceCheck::IfNotExists)?;
 
     let table_name = get_table_name(parser)?;
 
@@ -111,6 +101,7 @@ fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
 mod tests {
     use super::*;
     use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::ExistenceCheck;
 
     #[test]
     fn create_table_generates_proper_statement(){
@@ -239,9 +230,9 @@ mod tests {
         let result = build(&mut parser);
         let expected = SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
-            existence_check: Some(ExistenceCheck::IfExists),
+            existence_check: Some(ExistenceCheck::IfNotExists),
             columns: vec![ColumnDefinition { name: "id".to_string(), data_type: DataType::Integer, constraints: vec![] }],
         });
-        assert_eq!(result.unwrap(), expected);
+        assert_eq!(expected, result.unwrap());
     }
 }

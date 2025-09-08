@@ -40,6 +40,9 @@ impl Database {
                 self.delete_from_table(statement)?;
                 Ok(None)
             },
+            SqlStatement::DropTable(_statement) => {
+                todo!();
+            }
         }
     }
 
