@@ -117,10 +117,10 @@ pub enum SelectStatementColumns {
 }
 
 impl SelectStatementColumns {
-    pub fn columns(&self) -> Result<&Vec<String>, String> {
+    pub fn columns(&self) -> Result<Vec<&String>, String> {
         return match self {
             SelectStatementColumns::All => Err("Cannot get columns from all columns".to_string()),
-            SelectStatementColumns::Specific(columns) => Ok(columns),
+            SelectStatementColumns::Specific(columns) => Ok(columns.iter().map(|column| column).collect()),
         }
     }
 }
@@ -404,7 +404,6 @@ mod tests {
             token(TokenTypes::EOF, ""),
         ];
         let result = generate(tokens);
-        println!("{:?}", result);
         assert!(result[0].is_err());
         assert!(result[1].is_ok());
         let expected = vec![

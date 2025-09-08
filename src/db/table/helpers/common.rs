@@ -54,7 +54,7 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
     } else {
         let specific_selected_columns = selected_columns.columns()?;
         for (i, column) in table.columns.iter().enumerate() {
-            if (*specific_selected_columns).contains(&column.name) {
+            if (*specific_selected_columns).contains(&&column.name) {
                 row_values.push(row[i].clone());
             }
         }

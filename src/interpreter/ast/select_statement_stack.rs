@@ -218,7 +218,6 @@ mod tests {
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
@@ -247,7 +246,6 @@ mod tests {
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
@@ -285,7 +283,6 @@ mod tests {
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
@@ -338,7 +335,6 @@ mod tests {
         ];
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
