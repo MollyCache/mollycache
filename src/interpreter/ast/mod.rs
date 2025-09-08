@@ -30,12 +30,12 @@ pub enum SqlStatement {
 #[derive(Debug, PartialEq)]
 pub struct CreateTableStatement {
     pub table_name: String,
-    pub creation_mode: Option<CreationMode>,
+    pub existence_check: Option<ExistenceCheck>,
     pub columns: Vec<ColumnDefinition>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum CreationMode { // Eventually expand to temp tables
+pub enum ExistenceCheck  { // Eventually expand to temp tables
     IfNotExists,
     IfExists,
 }

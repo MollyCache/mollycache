@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, CreationMode,
+        parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, ExistenceCheck,
         helpers::common::{expect_token_type, get_table_name}
     }, 
     tokenizer::token::TokenTypes
@@ -28,14 +28,14 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 
 fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
-    let creation_mode = match parser.current_token()?.token_type {
+    let existence_check = match parser.current_token()?.token_type {
         TokenTypes::If => {
             parser.advance()?;
             expect_token_type(parser, TokenTypes::Not)?;
             parser.advance()?;
             expect_token_type(parser, TokenTypes::Exists)?;
             parser.advance()?;
-            Some(CreationMode::IfExists)
+            Some(ExistenceCheck::IfExists)
         },
         _ => None,
     };
@@ -45,7 +45,7 @@ fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
     let column_definitions = column_definitions(parser)?;
     return Ok(CreateTable(CreateTableStatement {
         table_name,
-        creation_mode,
+        existence_check,
         columns: column_definitions,
     }));
 }
@@ -133,7 +133,7 @@ mod tests {
         let result = build(&mut parser);
         let expected = SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
-            creation_mode: None,
+            existence_check: None,
             columns: vec![
                 ColumnDefinition {
                     name: "id".to_string(),
@@ -239,7 +239,7 @@ mod tests {
         let result = build(&mut parser);
         let expected = SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
-            creation_mode: Some(CreationMode::IfExists),
+            existence_check: Some(ExistenceCheck::IfExists),
             columns: vec![ColumnDefinition { name: "id".to_string(), data_type: DataType::Integer, constraints: vec![] }],
         });
         assert_eq!(result.unwrap(), expected);
