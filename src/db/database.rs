@@ -7,7 +7,7 @@ use crate::db::table::update;
 use std::collections::HashMap;
 
 pub struct Database {
-    tables: HashMap<String, Table>,
+    pub tables: HashMap<String, Table>,
 }
 
 impl Database {
