@@ -1,4 +1,4 @@
-use crate::interpreter::{ast::{parser::Parser}, tokenizer::token::TokenTypes};
+use crate::interpreter::{ast::{parser::Parser, ExistenceCheck}, tokenizer::token::TokenTypes};
 
 use crate::db::table::Value;
 
@@ -75,6 +75,27 @@ pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     let result = token.value.to_string();
     parser.advance()?;
     Ok(result)
+}
+
+pub fn exists_clause(parser: &mut Parser, check_type: ExistenceCheck) -> Result<Option<ExistenceCheck>, String> {
+    if parser.current_token()?.token_type == TokenTypes::If {
+        parser.advance()?;
+        let token = parser.current_token()?;
+        let existence_check = match (&token.token_type, check_type) {
+            (TokenTypes::Not, ExistenceCheck::IfNotExists) => {
+                parser.advance()?;
+                expect_token_type(parser, TokenTypes::Exists)?;
+                ExistenceCheck::IfNotExists
+            },
+            (TokenTypes::Exists, ExistenceCheck::IfExists) => {
+                ExistenceCheck::IfExists
+            },
+            (_, _) => return Err(parser.format_error()),
+        };
+        parser.advance()?;
+        return Ok(Some(existence_check));
+    }
+    return Ok(None);
 }
 
 fn decode(hex: &str) -> Result<Vec<u8>, String> {

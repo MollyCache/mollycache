@@ -100,3 +100,30 @@ fn test_execution_errors() {
     let expected = vec![Err("Execution Error with statement starting on line 2 \n Error: Table not found: users".to_string())];
     assert_eq!(expected, result);
 }
+
+#[test]
+fn test_drop_table() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    DROP TABLE users;
+    DROP TABLE IF EXISTS users;
+    DROP TABLE users;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+
+    assert!(result[0].is_ok() && result[0].as_ref().unwrap().is_none());
+    assert!(result[1].is_ok() && result[1].as_ref().unwrap().is_none());
+    assert!(result[2].is_ok() && result[2].as_ref().unwrap().is_none());
+    assert!(result[3].is_err());
+    let expected_first = "Execution Error with statement starting on line 8 \n Error: Table users does not exist";
+    assert_eq!(expected_first, result[3].as_ref().err().unwrap());
+    
+    assert!(result[4].is_err());
+    let expected_second = "Execution Error with statement starting on line 9 \n Error: Table not found: users";
+    assert_eq!(expected_second, result[4].as_ref().err().unwrap());
+}

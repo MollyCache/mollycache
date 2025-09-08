@@ -86,6 +86,7 @@ impl<'a> Parser<'a> {
                 (TokenTypes::Select, _) | (TokenTypes::LeftParen, TokenTypes::Select) => Some(builder.build_select(self)),
                 (TokenTypes::Update, _) => Some(builder.build_update(self)),
                 (TokenTypes::Delete, _) => Some(builder.build_delete(self)),
+                (TokenTypes::Drop, _) => Some(builder.build_drop(self)),
                 _ => {
                     Some(Err(self.format_error()))
                 }
@@ -167,6 +168,10 @@ mod tests {
         }
 
         fn build_delete(&self, _parser: &mut Parser) -> Result<SqlStatement, String> {
+            todo!();
+        }
+
+        fn build_drop(&self, _parser: &mut Parser) -> Result<SqlStatement, String> {
             todo!();
         }
     }
