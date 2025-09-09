@@ -8,7 +8,7 @@ pub fn drop_table(database: &mut Database, statement: DropTableStatement) -> Res
                 return Ok(());
             }
             _ => {
-                return Err(format!("Table {} does not exist", statement.table_name));
+                return Err(format!("Table `{}` does not exist", statement.table_name));
             }
         }
     }
@@ -43,7 +43,7 @@ mod tests {
         let mut database = Database::new();
         let result = drop_table(&mut database, statement);
         assert!(result.is_err());
-        assert_eq!("Table users does not exist", result.err().unwrap());
+        assert_eq!("Table `users` does not exist", result.err().unwrap());
     }
 
     #[test]

@@ -11,6 +11,8 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     let table_name = get_table_name(parser)?;
     let action = get_action(parser)?;
+    parser.advance()?;
+    expect_token_type(parser, TokenTypes::SemiColon)?;
     return Ok(SqlStatement::AlterTable(AlterTableStatement {
         table_name: table_name,
         action: action,

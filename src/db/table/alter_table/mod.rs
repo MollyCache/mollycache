@@ -9,14 +9,14 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
             let table = database.tables.remove(&statement.table_name);
             match table {
                 Some(table) => database.tables.insert(new_table_name, table),
-                None => return Err(format!("Table {} does not exist", statement.table_name)),
+                None => return Err(format!("Table `{}` does not exist", statement.table_name)),
             };
             Ok(())
         }
         AlterTableAction::RenameColumn { old_column_name, new_column_name } => {
             let table = database.get_table_mut(&statement.table_name)?;
             if !table.has_column(&old_column_name){
-                return Err(format!("Column {} does not exist in table {}", old_column_name, statement.table_name));
+                return Err(format!("Column `{}` does not exist in table `{}`", old_column_name, statement.table_name));
             }
             table.columns.iter_mut().for_each(|column| {
                 if column.name == old_column_name {
@@ -28,7 +28,7 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
         AlterTableAction::AddColumn { column_def } => {
             let table = database.get_table_mut(&statement.table_name)?;
             if table.has_column(&column_def.name){
-                return Err(format!("Column {} already exists in table {}", column_def.name, statement.table_name));
+                return Err(format!("Column `{}` already exists in table `{}`", column_def.name, statement.table_name));
             }
             table.columns.push(column_def);
             table.rows.iter_mut().for_each(|row| {
@@ -39,7 +39,7 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
         AlterTableAction::DropColumn { column_name } => {
             let table = database.get_table_mut(&statement.table_name)?;
             if !table.has_column(&column_name){
-                return Err(format!("Column {} does not exist in table {}", column_name, statement.table_name));
+                return Err(format!("Column `{}` does not exist in table `{}`", column_name, statement.table_name));
             }
             let index = table.get_index_of_column(&column_name)?;
             // This is kind of bad because it's an O(n^2) operation however SQLite

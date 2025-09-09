@@ -89,14 +89,14 @@ impl Database {
 
     pub fn get_table(&self, table_name: &str) -> Result<&Table, String> {
         if !self.has_table(table_name) {
-            return Err(format!("Table not found: {}", table_name));
+            return Err(format!("Table `{}` does not exist", table_name));
         }
         Ok(self.tables.get(table_name).unwrap())
     }
 
     pub fn get_table_mut(&mut self, table_name: &str) -> Result<&mut Table, String> {
         if !self.has_table(table_name) {
-            return Err(format!("Table not found: {}", table_name));
+            return Err(format!("Table `{}` does not exist", table_name));
         }
         Ok(self.tables.get_mut(table_name).unwrap())
     }
@@ -139,15 +139,15 @@ mod tests {
         let mut database = default_database();
         let table = database.get_table("users");
         assert!(table.is_ok());
-        assert_eq!(table.unwrap().name, "users");
+        assert_eq!("users", table.unwrap().name);
         let table = database.get_table("not_users");
         assert!(table.is_err());
-        assert_eq!(table.unwrap_err(), "Table not found: not_users");
+        assert_eq!("Table `not_users` does not exist",table.unwrap_err());
         let table = database.get_table_mut("users");
         assert!(table.is_ok());
-        assert_eq!(table.unwrap().name, "users");
+        assert_eq!("users", table.unwrap().name);
         let table = database.get_table_mut("not_users");
         assert!(table.is_err());
-        assert_eq!(table.unwrap_err(), "Table not found: not_users");
+        assert_eq!("Table `not_users` does not exist", table.unwrap_err());
     }
 }
