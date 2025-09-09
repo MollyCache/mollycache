@@ -3,7 +3,7 @@ use crate::interpreter::ast::{
     helpers::common::{expect_token_type, token_to_value, get_table_name},
     helpers::{order_by_clause::get_order_by, limit_clause::get_limit},
 };
-use crate::interpreter::ast::helpers::where_stack::get_where_clause;
+use crate::interpreter::ast::helpers::where_clause::get_where_clause;
 use crate::interpreter::tokenizer::token::TokenTypes;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
