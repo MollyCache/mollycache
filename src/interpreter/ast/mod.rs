@@ -164,6 +164,7 @@ impl SelectStatementColumns {
 }
 
 #[derive(Debug, PartialEq)]
+#[cfg_attr(test, derive(Clone))]
 pub enum Operator {
     Equals,
     NotEquals,
@@ -178,6 +179,7 @@ pub enum Operator {
 }
 
 #[derive(Debug, PartialEq)]
+#[cfg_attr(test, derive(Clone))]
 pub struct WhereCondition {
     pub l_side: Operand,
     pub operator: Operator,
@@ -186,6 +188,7 @@ pub struct WhereCondition {
 
 
 #[derive(Debug, PartialEq)]
+#[cfg_attr(test, derive(Clone))]
 pub enum Operand {
     Value(Value),
     ValueList(Vec<Value>),

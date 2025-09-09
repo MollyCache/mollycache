@@ -52,7 +52,7 @@ pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<Wh
                     }
                 }
             },
-            _ => unreachable!(),
+            _ => unreachable!(), // There should be no Parentheses in the final where stack.
         }
     }
     

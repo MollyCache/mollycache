@@ -32,43 +32,6 @@ mod tests {
         conditions_evaluated: Vec<WhereCondition>,
     }
 
-    impl WhereCondition {
-        fn clone(&self) -> WhereCondition {
-            WhereCondition {
-                l_side: self.l_side.clone(),
-                operator: self.operator.clone(),
-                r_side: self.r_side.clone(),
-            }
-        }
-    }
-
-    impl Operand {
-        fn clone(&self) -> Operand {
-            match self {
-                Operand::Identifier(id) => Operand::Identifier(id.clone()),
-                Operand::Value(value) => Operand::Value(value.clone()),
-                Operand::ValueList(value_list) => Operand::ValueList(value_list.clone()),
-            }
-        }
-    }
-
-    impl Operator {
-        fn clone(&self) -> Operator {
-            match self {
-                Operator::Equals => Operator::Equals,
-                Operator::NotEquals => Operator::NotEquals,
-                Operator::LessThan => Operator::LessThan,
-                Operator::LessEquals => Operator::LessEquals,
-                Operator::GreaterThan => Operator::GreaterThan,
-                Operator::GreaterEquals => Operator::GreaterEquals,
-                Operator::In => Operator::In,
-                Operator::NotIn => Operator::NotIn,
-                Operator::Is => Operator::Is,
-                Operator::IsNot => Operator::IsNot,
-            }
-        }
-    }
-
     impl MatchesWhereClause for SpyWhereConditionEvaluator {
         fn matches_where_clause(&mut self, table: &Table, row: &Vec<Value>, where_clause: &WhereCondition) -> Result<bool, String> {
             self.conditions_evaluated.push(where_clause.clone());
