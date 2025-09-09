@@ -14,9 +14,6 @@ use crate::interpreter::tokenizer::token::TokenTypes;
 // This is currently represented as stack of LogicalOperators, WhereConditions.
 // WhereConditions are currently represented as 'column operator value'
 // This will later be expanded to replace the WhereConditions with a generalized evaluation function.
-
-// We also validate the order using an enum of the current next expected token types.
-
 pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElement>>, String> {
     if expect_token_type(parser, TokenTypes::Where).is_err() {
         return Ok(None);
@@ -33,29 +30,25 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
             WhereStackElement::Parentheses(parentheses) => {
                 if parentheses == Parentheses::Left {
                     operator_stack.push(WhereStackOperators::Parentheses(parentheses));
+                    continue;
                 }
-                else {
-                    while let Some(current_operator) = operator_stack.pop() {
-                        match (current_operator, operator_stack.len()) {
-                            (WhereStackOperators::LogicalOperator(_), 0) => return Err("Mismatched parentheses found.".to_string()),
-                            (WhereStackOperators::Parentheses(Parentheses::Left), _) => {
-                                break;
-                            },
-                            (WhereStackOperators::LogicalOperator(logical_operator), _) => {
-                                where_stack.push(WhereStackElement::LogicalOperator(logical_operator));
-                            },
-                            _ => unreachable!(),
-                        }
+                while let Some(current_operator) = operator_stack.pop() {
+                    match (current_operator, operator_stack.len()) {
+                        (WhereStackOperators::LogicalOperator(_), 0) => return Err("Mismatched parentheses found.".to_string()),
+                        (WhereStackOperators::Parentheses(Parentheses::Left), _) => break,
+                        (WhereStackOperators::LogicalOperator(logical_operator), _) => where_stack.push(WhereStackElement::LogicalOperator(logical_operator)),
+                        _ => unreachable!(),
                     }
                 }
             },
             WhereStackElement::LogicalOperator(logical_operator) => {
                 loop { 
-                    let current_operator =  if let Some(operator) = operator_stack.pop() {
-                        operator
-                    } else {
-                        operator_stack.push(WhereStackOperators::LogicalOperator(logical_operator));
-                        break;
+                    let current_operator =  match operator_stack.pop() {
+                        Some(operator) => operator,
+                        None => {
+                            operator_stack.push(WhereStackOperators::LogicalOperator(logical_operator));
+                            break;
+                        },
                     };
                     match current_operator {
                         WhereStackOperators::LogicalOperator(current_logical_operator) => {
@@ -99,12 +92,7 @@ fn get_where_stack_element(parser: &mut Parser, operator_stack: &Vec<WhereStackO
             parser.advance()?;
             Ok(Some(where_stack_element))
         },
-        TokenTypes::Identifier 
-        | TokenTypes::IntLiteral 
-        | TokenTypes::RealLiteral 
-        | TokenTypes::String 
-        | TokenTypes::Blob 
-        | TokenTypes::Null => {
+        TokenTypes::Identifier | TokenTypes::IntLiteral | TokenTypes::RealLiteral | TokenTypes::String | TokenTypes::Blob | TokenTypes::Null => {
             return Ok(Some(WhereStackElement::Condition(get_condition(parser)?)));
         }
         _ => return Ok(None),
