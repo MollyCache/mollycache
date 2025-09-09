@@ -1,6 +1,7 @@
+mod where_condition;
+
 use crate::interpreter::ast::{WhereStackElement, LogicalOperator};
 use crate::db::table::{Table, Value};
-use crate::db::table::helpers::where_condition::matches_where_clause;
 
 // This file holds the logic for whether a row matches a where stack which is a vec of WhereConditions
 // and logical operators stored in Reverse Polish Notation.
@@ -9,7 +10,7 @@ pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<Wh
     for where_stack_element in where_stack {
         match where_stack_element {
             WhereStackElement::Condition(where_condition) => {
-                result_stack.push(matches_where_clause(table, row, where_condition)?);
+                result_stack.push(where_condition::matches_where_clause(table, row, where_condition)?);
             },
             WhereStackElement::LogicalOperator(logical_operator) => {
                 let pop1 = match result_stack.pop() {

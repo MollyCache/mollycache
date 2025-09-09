@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::db::table::{Table, Value, DataType};
 use crate::interpreter::ast::{SelectStatementColumns, WhereStackElement, OrderByClause, LimitClause};
-use crate::db::table::helpers::where_stack::matches_where_stack;
+use crate::db::table::helpers::where_clause::matches_where_stack;
 use crate::db::table::helpers::{order_by_clause::get_ordered_row_indicies, limit_clause::get_limited_rows};
 
 pub struct DistinctOn<'a> {
