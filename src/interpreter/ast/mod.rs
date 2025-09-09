@@ -200,9 +200,19 @@ pub enum WhereStackElement {
     Parentheses(Parentheses),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum WhereStackOperators {
     LogicalOperator(LogicalOperator),
     Parentheses(Parentheses),
+}
+
+impl WhereStackOperators {
+    pub fn into_where_stack_element(self) -> WhereStackElement {
+        match self {
+            WhereStackOperators::LogicalOperator(logical_operator) => WhereStackElement::LogicalOperator(logical_operator),
+            WhereStackOperators::Parentheses(parentheses) => WhereStackElement::Parentheses(parentheses),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
