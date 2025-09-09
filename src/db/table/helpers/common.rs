@@ -1,5 +1,5 @@
 use crate::db::table::{Table, Value, DataType};
-use crate::interpreter::ast::{SelectStatementColumns, WhereStackElement, OrderByClause, LimitClause};
+use crate::interpreter::ast::{SelectableStack, SelectableStackElement, WhereStackElement, OrderByClause, LimitClause};
 use crate::db::table::helpers::where_stack::matches_where_stack;
 use crate::db::table::helpers::{order_by_clause::get_ordered_row_indicies, limit_clause::get_limited_rows};
 
@@ -18,7 +18,7 @@ pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Val
     return Ok(row_values);
 }
 
-pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, columns: Option<&SelectStatementColumns>) -> Result<Vec<Vec<Value>>, String> {
+pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, columns: Option<&Vec<SelectableStack>>) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
     for index in row_indicies {
         let row = table.rows[index].clone();
@@ -47,9 +47,11 @@ pub fn get_row_indicies_matching_where_clause(table: &Table, where_clause: &Opti
     }
 }
 
-pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
+pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &Vec<SelectableStack>) -> Result<Vec<Value>, String> {
     let mut row_values: Vec<Value> = vec![];
-    if *selected_columns == SelectStatementColumns::All {
+    // TODO: this
+    /*
+    if *selected_columns == SelectableStack::All {
         return Ok(validate_and_clone_row(table, row)?);
     } else {
         let specific_selected_columns = selected_columns.columns()?;
@@ -59,6 +61,7 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
             }
         }
     }
+    */
     return Ok(row_values);
 }
 

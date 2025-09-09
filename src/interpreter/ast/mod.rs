@@ -59,7 +59,7 @@ pub struct InsertIntoStatement {
 
 #[derive(Debug, PartialEq)]
 pub struct SelectStatementStack {
-    pub columns: SelectStatementColumns,
+    pub columns: Vec<SelectableStack>,
     pub elements: Vec<SelectStatementStackElement>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
@@ -98,7 +98,7 @@ impl SetOperator {
 #[derive(Debug, PartialEq)]
 pub struct SelectStatement {
     pub table_name: String,
-    pub columns: SelectStatementColumns,
+    pub columns: Vec<SelectableStack>,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
@@ -142,18 +142,22 @@ pub struct ColumnValue {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum SelectStatementColumns {
-    All,
-    Specific(Vec<String>),
+pub enum FunctionName {
+    CountFunction,
 }
 
-impl SelectStatementColumns {
-    pub fn columns(&self) -> Result<Vec<&String>, String> {
-        return match self {
-            SelectStatementColumns::All => Err("Cannot get columns from all columns".to_string()),
-            SelectStatementColumns::Specific(columns) => Ok(columns.iter().map(|column| column).collect()),
-        }
-    }
+#[derive (Debug, PartialEq, Clone)]
+pub struct SelectableStack {
+    pub selectables: Vec<SelectableStackElement>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum SelectableStackElement {
+    All,
+    Column(String),
+    Value(Value),
+    Function(FunctionName),
+    Parentheses(Parentheses),
 }
 
 #[derive(Debug, PartialEq)]
@@ -220,7 +224,7 @@ impl LogicalOperator {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Parentheses {
     Left,
     Right,
@@ -397,10 +401,14 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
-                    columns: SelectStatementColumns::All,
+                    columns: vec![SelectableStack {
+                        selectables: vec![SelectableStackElement::All]
+                    }],
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
-                        columns: SelectStatementColumns::All,
+                        columns: vec![SelectableStack {
+                            selectables: vec![SelectableStackElement::All]
+                        }],
                         where_clause: None,
                         order_by_clause: None,
                         limit_clause: None,
@@ -490,10 +498,14 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
-                    columns: SelectStatementColumns::All,
+                    columns: vec![SelectableStack {
+                        selectables: vec![SelectableStackElement::All],
+                    }],
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
-                        columns: SelectStatementColumns::All,
+                        columns: vec![SelectableStack {
+                            selectables: vec![SelectableStackElement::All]
+                        }],
                         where_clause: None,
                         order_by_clause: None,
                         limit_clause: None,

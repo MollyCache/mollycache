@@ -1,6 +1,6 @@
 use crate::{interpreter::{
     ast::{
-        parser::Parser, SelectStatement, SelectStatementColumns, WhereStackElement,
+        parser::Parser, SelectStatement, SelectableStack, WhereStackElement,
         helpers::{
             common::{tokens_to_identifier_list, get_table_name, expect_token_type},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
@@ -28,16 +28,9 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     });
 }
 
-fn get_columns(parser: &mut Parser) -> Result<SelectStatementColumns, String> {
-    let token = parser.current_token()?;
-    
-    if token.token_type == TokenTypes::Asterisk {
-        parser.advance()?;
-        Ok(SelectStatementColumns::All)
-    } else {
-        let columns = tokens_to_identifier_list(parser)?;
-        Ok(SelectStatementColumns::Specific(columns))
-    }
+fn get_columns(parser: &mut Parser) -> Result<Vec<SelectableStack>, String> {
+    // TODO: this
+    Ok(vec![])
 }
 
 #[cfg(test)]
@@ -52,6 +45,7 @@ mod tests {
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::ast::Operand;
+    use crate::interpreter::ast::SelectableStackElement;
 
     #[test]
     fn select_statement_with_all_tokens_is_generated_correctly() {
@@ -69,7 +63,9 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
-            columns: SelectStatementColumns::All,
+            columns: vec![SelectableStack {
+                selectables: vec![SelectableStackElement::All],
+            }],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -92,9 +88,9 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "guests".to_string(),
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-            ]),
+            columns: vec![SelectableStack {
+                selectables: vec![SelectableStackElement::Column("id".to_string())],
+            }],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -119,10 +115,13 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-                "name".to_string(),
-            ]),
+            columns: vec![
+                SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                }, SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                }
+            ],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -162,9 +161,9 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "guests".to_string(),
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-            ]),
+            columns: vec![SelectableStack {
+                selectables: vec![SelectableStackElement::Column("id".to_string())]
+            }],
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("id".to_string()),

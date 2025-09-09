@@ -1,11 +1,12 @@
 mod select_statement;
 mod set_operator_evaluator;
 use crate::db::{database::Database, table::Value};
-use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement, SelectStatementColumns};
+use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement, SelectableStack, SelectableStackElement};
 use crate::db::table::helpers::{order_by_clause::{perform_comparions}, limit_clause::get_limited_rows};
 
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
+    /*
     let mut evaluator = set_operator_evaluator::SetOperatorEvaluator::new();
     let statement_columns = statement.columns.columns();
     let mut columns: Option<Vec<&String>> = match statement_columns {
@@ -68,6 +69,8 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
         result = get_limited_rows(result, &limit_clause)?;
     }
     Ok(result)
+    */
+    Ok(vec![])
 }
 
 
@@ -75,17 +78,21 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
 mod tests {
     use super::*;
     use crate::db::table::test_utils::default_database;
-    use crate::interpreter::ast::{SelectStatement, SelectStatementColumns, WhereStackElement, WhereCondition, Operand, Operator, LogicalOperator};
+    use crate::interpreter::ast::{SelectStatement, SelectableStack, SelectableStackElement, WhereStackElement, WhereCondition, Operand, Operator, LogicalOperator};
 
 
     #[test]
     fn select_statement_stack_with_multiple_set_operators_works_correctly() {
         let database = default_database();
         let statement = SelectStatementStack {
-            columns: SelectStatementColumns::All,
+            columns: vec![SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            }],
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
+                columns: vec![SelectableStack {
+                    selectables: vec![SelectableStackElement::All]
+                }],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
@@ -108,11 +115,15 @@ mod tests {
     fn select_statement_stack_with_set_operator_works_correctly() {
         let database = default_database();
         let statement = SelectStatementStack {
-            columns: SelectStatementColumns::All,
+            columns: vec![SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            }],
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
-                    columns: SelectStatementColumns::All,
+                    columns: vec![SelectableStack {
+                        selectables: vec![SelectableStackElement::All]
+                    }],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("id".to_string()),
                         operator: Operator::Equals,
@@ -123,7 +134,9 @@ mod tests {
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
-                    columns: SelectStatementColumns::All,
+                    columns: vec![SelectableStack {
+                        selectables: vec![SelectableStackElement::All]
+                    }],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -145,17 +158,23 @@ mod tests {
     fn select_statement_stack_works_correctly_with_multiple_set_operators() {
         let database = default_database();
         let statement = SelectStatementStack {
-            columns: SelectStatementColumns::All,
+            columns: vec![SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            }],
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
+                columns: vec![SelectableStack {
+                    selectables: vec![SelectableStackElement::All]
+                }],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
             }),
             SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
+                columns: vec![SelectableStack {
+                    selectables: vec![SelectableStackElement::All]
+                }],
                 where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("id".to_string()),
                     operator: Operator::Equals,
@@ -174,7 +193,9 @@ mod tests {
             SelectStatementStackElement::SetOperator(SetOperator::Intersect),
             SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
+                columns: vec![SelectableStack {
+                    selectables: vec![SelectableStackElement::All]
+                }],
                 where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("id".to_string()),
                     operator: Operator::Equals,

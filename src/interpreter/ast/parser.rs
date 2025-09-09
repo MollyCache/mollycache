@@ -105,7 +105,7 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns, SelectStatementStack, SelectStatementStackElement};
+    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectableStack, SelectableStackElement, SelectStatementStack, SelectStatementStackElement};
     use crate::interpreter::ast::test_utils::{token_with_location, token};
 
     #[test]
@@ -151,10 +151,18 @@ mod tests {
             parser.advance()?;
             parser.advance_past_semicolon()?;
             return Ok(SqlStatement::Select(SelectStatementStack {
-                columns: SelectStatementColumns::All,
+                columns: vec![
+                    SelectableStack {
+                        selectables: vec![SelectableStackElement::All]
+                    }
+                ],
                 elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
-                    columns: SelectStatementColumns::All,
+                    columns: vec![
+                        SelectableStack {
+                            selectables: vec![SelectableStackElement::All]
+                        }
+                    ],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -215,10 +223,18 @@ mod tests {
         // Select
         let result = parser.next_statement(builder);
         let expected = Some(Ok(SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::All,
+            columns: vec![
+                SelectableStack {
+                    selectables: vec![SelectableStackElement::All]
+                }
+            ],
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
-                columns: SelectStatementColumns::All,
+                columns: vec![
+                    SelectableStack {
+                        selectables: vec![SelectableStackElement::All]
+                    }
+                ],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
