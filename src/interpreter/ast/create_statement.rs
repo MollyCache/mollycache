@@ -1,11 +1,11 @@
 use crate::interpreter::{
     ast::{
         parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, ExistenceCheck,
-        helpers::common::{expect_token_type, get_table_name, exists_clause}
+        helpers::common::{expect_token_type, get_table_name, exists_clause, token_to_data_type}
     }, 
     tokenizer::token::TokenTypes
 };
-use crate::db::table::{ColumnDefinition, DataType};
+use crate::db::table::ColumnDefinition;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
@@ -84,24 +84,12 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
     return Ok(columns);
 }
 
-fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
-    let token = parser.current_token()?;
-    return match token.token_type {
-        TokenTypes::Integer => Ok(DataType::Integer),
-        TokenTypes::Real => Ok(DataType::Real),
-        TokenTypes::Text => Ok(DataType::Text),
-        TokenTypes::Blob => Ok(DataType::Blob),
-        TokenTypes::Null => Ok(DataType::Null),
-        _ => Err(parser.format_error()),
-    };
-}
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::ast::ExistenceCheck;
+    use crate::db::table::DataType;
 
     #[test]
     fn create_table_generates_proper_statement(){

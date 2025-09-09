@@ -1,5 +1,5 @@
 use crate::db::table::{drop_table, Table, Value};
-use crate::interpreter::ast::{CreateTableStatement, DeleteStatement, DropTableStatement, InsertIntoStatement, SelectStatementStack, SqlStatement, UpdateStatement};
+use crate::interpreter::ast::{CreateTableStatement, DeleteStatement, DropTableStatement, InsertIntoStatement, SelectStatementStack, SqlStatement, UpdateStatement, AlterTableStatement};
 use crate::db::table::select;
 use crate::db::table::insert;
 use crate::db::table::delete;
@@ -44,6 +44,10 @@ impl Database {
                 self.drop_table(statement)?;
                 Ok(None)
             }
+            SqlStatement::AlterTable(statement) => {
+                self.alter_table(statement)?;
+                Ok(None)
+            }
         }
     }
 
@@ -72,6 +76,10 @@ impl Database {
 
     fn drop_table(&mut self, statement: DropTableStatement) -> Result<(), String> {
         drop_table::drop_table(self, statement)
+    }
+
+    fn alter_table(&mut self, _statement: AlterTableStatement) -> Result<(), String> {
+        todo!();
     }
 
     pub fn has_table(&self, table_name: &str) -> bool {

@@ -9,6 +9,7 @@ mod update_statement;
 mod delete_statement;
 mod helpers;
 mod drop_statement;
+mod alter_table_statement;
 #[cfg(test)]
 mod test_utils;
 
@@ -27,6 +28,7 @@ pub enum SqlStatement {
     UpdateStatement(UpdateStatement),
     DeleteStatement(DeleteStatement),
     DropTable(DropTableStatement),
+    AlterTable(AlterTableStatement),
 }
 
 #[derive(Debug, PartialEq)]
@@ -117,6 +119,20 @@ pub struct UpdateStatement {
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct AlterTableStatement {
+    pub table_name: String,
+    pub action: AlterTableAction,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum AlterTableAction {
+    RenameTable { new_table_name: String },
+    RenameColumn { old_column_name: String, new_column_name: String },
+    AddColumn { column_def: ColumnDefinition },
+    DropColumn { column_name: String },
 }
 
 #[derive(Debug, PartialEq)]
@@ -235,6 +251,7 @@ pub trait StatementBuilder {
     fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
     fn build_delete(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
     fn build_drop(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_alter(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
 }
 
 pub struct DefaultStatementBuilder;
@@ -262,6 +279,10 @@ impl StatementBuilder for DefaultStatementBuilder {
 
     fn build_drop(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
         drop_statement::build(parser)
+    }
+
+    fn build_alter(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        alter_table_statement::build(parser)
     }
 }
 
