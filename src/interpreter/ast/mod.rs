@@ -98,6 +98,7 @@ impl SetOperator {
 #[derive(Debug, PartialEq)]
 pub struct SelectStatement {
     pub table_name: String,
+    pub mode: SelectMode,
     pub columns: SelectStatementColumns,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
@@ -139,6 +140,12 @@ pub enum AlterTableAction {
 pub struct ColumnValue {
     pub column: String,
     pub value: Value,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SelectMode {
+    All,
+    Distinct,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -400,6 +407,7 @@ mod tests {
                     columns: SelectStatementColumns::All,
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
+                        mode: SelectMode::All,
                         columns: SelectStatementColumns::All,
                         where_clause: None,
                         order_by_clause: None,
@@ -493,6 +501,7 @@ mod tests {
                     columns: SelectStatementColumns::All,
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
+                        mode: SelectMode::All,
                         columns: SelectStatementColumns::All,
                         where_clause: None,
                         order_by_clause: None,

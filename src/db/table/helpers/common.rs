@@ -1,7 +1,13 @@
+use std::collections::HashSet;
+
 use crate::db::table::{Table, Value, DataType};
 use crate::interpreter::ast::{SelectStatementColumns, WhereStackElement, OrderByClause, LimitClause};
 use crate::db::table::helpers::where_stack::matches_where_stack;
 use crate::db::table::helpers::{order_by_clause::get_ordered_row_indicies, limit_clause::get_limited_rows};
+
+pub struct DistinctOn<'a> {
+    pub columns: &'a SelectStatementColumns,
+}
 
 pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Value>, String> {
     if row.len() != table.width() {
@@ -62,8 +68,13 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
     return Ok(row_values);
 }
 
-pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Vec<WhereStackElement>>, order_by_clause: &Option<Vec<OrderByClause>>, limit_clause: &Option<LimitClause>) -> Result<Vec<usize>, String> {
+pub fn get_row_indicies_matching_clauses(table: &Table, mode: Option<DistinctOn>, where_clause: &Option<Vec<WhereStackElement>>, order_by_clause: &Option<Vec<OrderByClause>>, limit_clause: &Option<LimitClause>) -> Result<Vec<usize>, String> {
     let mut row_indicies = get_row_indicies_matching_where_clause(table, where_clause)?;
+
+    if let Some(mode) = mode {
+            row_indicies = remove_duplicate_rows_from_indicies(table, row_indicies, &mode.columns)?;
+
+    }
 
     if let Some(order_by_clause) = order_by_clause {
         row_indicies = get_ordered_row_indicies(table, row_indicies, &order_by_clause)?;
@@ -74,5 +85,28 @@ pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Ve
         return Ok(result.to_vec());
     }
 
+    return Ok(row_indicies);
+}
+
+pub fn remove_duplicate_rows(rows: Vec<Vec<Value>>) -> Vec<Vec<Value>> {
+    let set = rows.into_iter().collect::<HashSet<Vec<Value>>>();
+    let result = set.into_iter().collect::<Vec<Vec<Value>>>();
+    return result;
+}
+
+pub fn remove_duplicate_rows_from_indicies(table: &Table, mut row_indicies: Vec<usize>, columns: &SelectStatementColumns) -> Result<Vec<usize>, String> {
+    let mut set = HashSet::new();
+    let mut index = row_indicies.len();
+    while index > 0 {
+        index -= 1; 
+        let row = get_columns_from_row(table, &table.rows[row_indicies[index]], columns)?;
+        if set.contains(&row) {
+            row_indicies.swap_remove(index);
+        }
+        else {
+            set.insert(row);
+        }
+        
+    }
     return Ok(row_indicies);
 }

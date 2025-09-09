@@ -105,7 +105,7 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns, SelectStatementStack, SelectStatementStackElement};
+    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns, SelectStatementStack, SelectStatementStackElement, SelectMode};
     use crate::interpreter::ast::test_utils::{token_with_location, token};
 
     #[test]
@@ -154,6 +154,7 @@ mod tests {
                 columns: SelectStatementColumns::All,
                 elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectStatementColumns::All,
                     where_clause: None,
                     order_by_clause: None,
@@ -218,6 +219,7 @@ mod tests {
             columns: SelectStatementColumns::All,
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectStatementColumns::All,
                 where_clause: None,
                 order_by_clause: None,
