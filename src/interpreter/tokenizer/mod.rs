@@ -216,4 +216,19 @@ mod tests {
         ];
         assert_eq!(expected, result);
     }
+
+    #[test]
+    fn tokenizer_parses_more_keywords() {
+        let result = tokenize("ALTER RENAME TO COLUMN ADD DROP");
+        let expected = vec![
+            token(TokenTypes::Alter, "ALTER", 0, 1),
+            token(TokenTypes::Rename, "RENAME", 6, 1),
+            token(TokenTypes::To, "TO", 13, 1),
+            token(TokenTypes::Column, "COLUMN", 16, 1),
+            token(TokenTypes::Add, "ADD", 23, 1),
+            token(TokenTypes::Drop, "DROP", 27, 1),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
 }
