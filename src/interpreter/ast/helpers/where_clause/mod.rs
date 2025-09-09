@@ -1,7 +1,6 @@
 mod where_condition;
 mod expected_token_matches_current;
 mod where_stack_element;
-
 use expected_token_matches_current::{next_expected_token_from_current, WhereClauseExpectedNextToken};
 
 use crate::interpreter::{ast::{
@@ -81,8 +80,6 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
 
     Ok(Some(where_stack))
 }
-
-
 
 #[cfg(test)]
 mod tests {
