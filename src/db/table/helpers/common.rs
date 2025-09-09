@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::db::table::{Table, Value, DataType};
 use crate::interpreter::ast::{SelectStatementColumns, WhereStackElement, OrderByClause, LimitClause};
-use crate::db::table::helpers::where_clause::matches_where_stack;
+use crate::db::table::helpers::where_clause::{matches_where_stack, WhereConditionEvaluator};
 use crate::db::table::helpers::{order_by_clause::get_ordered_row_indicies, limit_clause::get_limited_rows};
 
 pub struct DistinctOn<'a> {
@@ -42,7 +42,7 @@ pub fn get_row_indicies_matching_where_clause(table: &Table, where_clause: &Opti
     if let Some(where_clause) = where_clause {
         let mut row_indicies: Vec<usize> = vec![];
         for (i, row) in table.rows.iter().enumerate() {
-            if matches_where_stack(table, &row, &where_clause)? {
+            if matches_where_stack(table, &row, &where_clause, &WhereConditionEvaluator{})? {
                 row_indicies.push(i);
             }
         }
