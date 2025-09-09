@@ -75,7 +75,7 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
 mod tests {
     use super::*;
     use crate::db::table::test_utils::default_database;
-    use crate::interpreter::ast::{SelectStatement, SelectStatementColumns, WhereStackElement, WhereCondition, Operand, Operator, LogicalOperator};
+    use crate::interpreter::ast::{SelectStatement, SelectStatementColumns, WhereStackElement, WhereCondition, Operand, Operator, LogicalOperator, SelectMode};
 
 
     #[test]
@@ -85,6 +85,7 @@ mod tests {
             columns: SelectStatementColumns::All,
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectStatementColumns::All,
                 where_clause: None,
                 order_by_clause: None,
@@ -112,6 +113,7 @@ mod tests {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectStatementColumns::All,
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("id".to_string()),
@@ -123,6 +125,7 @@ mod tests {
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectStatementColumns::All,
                     where_clause: None,
                     order_by_clause: None,
@@ -148,6 +151,7 @@ mod tests {
             columns: SelectStatementColumns::All,
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectStatementColumns::All,
                 where_clause: None,
                 order_by_clause: None,
@@ -155,6 +159,7 @@ mod tests {
             }),
             SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectStatementColumns::All,
                 where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("id".to_string()),
@@ -174,6 +179,7 @@ mod tests {
             SelectStatementStackElement::SetOperator(SetOperator::Intersect),
             SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectStatementColumns::All,
                 where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("id".to_string()),

@@ -4,7 +4,7 @@ use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 use crate::db::table::DataType;
 
 pub fn update(table: &mut Table, statement: UpdateStatement) -> Result<(), String> {
-    let row_indicies = get_row_indicies_matching_clauses(table, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
+    let row_indicies = get_row_indicies_matching_clauses(table, None, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
     update_rows_from_indicies(table, row_indicies, statement.update_values)?;
     Ok(())
 }

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::db::table::Value;
+use crate::db::table::{helpers::common::remove_duplicate_rows, Value};
 
 pub struct SetOperatorEvaluator {
     pub stack: Vec<Vec<Vec<Value>>>,
@@ -32,8 +32,7 @@ impl SetOperatorEvaluator {
         let second = self.pop()?;
         let mut first = self.pop()?;
         first.extend(second.into_iter());
-        let set = first.into_iter().collect::<HashSet<Vec<Value>>>();
-        let result = set.into_iter().collect::<Vec<Vec<Value>>>();
+        let result = remove_duplicate_rows(first);
         self.push(result);
         Ok(())
     }

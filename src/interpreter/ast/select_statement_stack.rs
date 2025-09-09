@@ -162,6 +162,7 @@ mod tests {
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::LimitClause;
+    use crate::interpreter::ast::SelectMode;
 
     fn simple_select_statement_tokens(id: &'static str) -> Vec<Token<'static>> {
         vec![
@@ -179,6 +180,7 @@ mod tests {
     fn expected_simple_select_statement(id: i64) -> SelectStatementStackElement {
         SelectStatementStackElement::SelectStatement(SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectStatementColumns::All,
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("id".to_string()),
@@ -342,6 +344,7 @@ mod tests {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectStatementColumns::Specific(vec!["name".to_string()]),
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
@@ -353,6 +356,7 @@ mod tests {
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectStatementColumns::Specific(vec!["name".to_string()]),
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),

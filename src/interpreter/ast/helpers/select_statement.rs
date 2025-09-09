@@ -1,6 +1,6 @@
 use crate::{interpreter::{
     ast::{
-        parser::Parser, SelectStatement, SelectStatementColumns, WhereStackElement,
+        parser::Parser, SelectStatement, SelectStatementColumns, WhereStackElement, SelectMode,
         helpers::{
             common::{tokens_to_identifier_list, get_table_name, expect_token_type},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
@@ -11,6 +11,13 @@ use crate::{interpreter::{
 
 pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     parser.advance()?;
+    let mode = match parser.current_token()?.token_type {
+        TokenTypes::Distinct => {
+            parser.advance()?;
+            SelectMode::Distinct
+        }
+        _ => SelectMode::All
+    };
     let columns = get_columns(parser)?;
     expect_token_type(parser, TokenTypes::From)?;
     parser.advance()?;
@@ -21,6 +28,7 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     
     return Ok(SelectStatement {
             table_name: table_name,
+            mode: mode,
             columns: columns,
             where_clause: where_clause,
             order_by_clause: order_by_clause,
@@ -69,6 +77,7 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectStatementColumns::All,
             where_clause: None,
             order_by_clause: None,
@@ -92,6 +101,7 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "guests".to_string(),
+            mode: SelectMode::All,
             columns: SelectStatementColumns::Specific(vec![
                 "id".to_string(),
             ]),
@@ -119,6 +129,7 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectStatementColumns::Specific(vec![
                 "id".to_string(),
                 "name".to_string(),
@@ -162,6 +173,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "guests".to_string(),
+            mode: SelectMode::All,
             columns: SelectStatementColumns::Specific(vec![
                 "id".to_string(),
             ]),
@@ -192,5 +204,32 @@ mod tests {
             }),
         };
         assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_distinct_mode_is_generated_correctly() {
+        // SELECT DISTINCT id FROM guests;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Distinct, "DISTINCT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "guests"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        assert_eq!(statement, SelectStatement {
+            table_name: "guests".to_string(),
+            mode: SelectMode::Distinct,
+            columns: SelectStatementColumns::Specific(vec![
+                "id".to_string(),
+            ]),
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        });
     }
 }

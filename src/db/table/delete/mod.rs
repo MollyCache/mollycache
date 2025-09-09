@@ -6,7 +6,7 @@ use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 
 
 pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<(), String> {
-    let row_indicies_to_delete = get_row_indicies_matching_clauses(table, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
+    let row_indicies_to_delete = get_row_indicies_matching_clauses(table, None, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
     swap_remove_bulk(table, row_indicies_to_delete)?;
     Ok(())
 }

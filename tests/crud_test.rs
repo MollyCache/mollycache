@@ -168,3 +168,28 @@ fn test_alter_table() {
     assert!(result[7..=10].iter().all(|result| result.is_err()));
     assert_eq!(expected_errors, result[7..=10].iter().map(|result| result.as_ref().err().unwrap()).collect::<Vec<&String>>());
 }
+
+#[test]
+fn test_distinct_mode() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'John');
+    INSERT INTO users (id, name) VALUES (2, 'Jane');
+    INSERT INTO users (id, name) VALUES (3, 'Jim');
+    INSERT INTO users (id, name) VALUES (4, 'John');
+    SELECT DISTINCT name FROM users ORDER BY name ASC;
+    ";
+    let result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+    let expected = vec![
+        vec![Value::Text("Jane".to_string())],
+        vec![Value::Text("Jim".to_string())],
+        vec![Value::Text("John".to_string())],
+    ];
+    let row = result[5].as_ref().unwrap().as_ref().unwrap();
+    assert_eq!(expected, *row);
+}
