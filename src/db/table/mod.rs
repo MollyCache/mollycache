@@ -10,6 +10,7 @@ pub mod update;
 pub mod create_table;
 pub mod helpers;
 pub mod drop_table;
+pub mod alter_table;
 #[cfg(test)]
 pub mod test_utils;
 
