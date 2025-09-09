@@ -39,38 +39,29 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
                         where_stack.push(WhereStackElement::Condition(where_condition));
                     },
                     WhereStackElement::Parentheses(parentheses) => {
-                        match parentheses {
-                            Parentheses::Left => {
-                                if expected_next_token != WhereClauseExpectedNextToken::ConditionLeftParenNot {
-                                    return Err(parser.format_error_nearby());
+                        if parentheses == Parentheses::Left {
+                            if expected_next_token != WhereClauseExpectedNextToken::ConditionLeftParenNot {
+                                return Err(parser.format_error_nearby());
+                            }
+                            operator_stack.push(WhereStackOperators::Parentheses(parentheses));
+                        }
+                        else {
+                            if expected_next_token != WhereClauseExpectedNextToken::LogicalOperatorRightParen {
+                                return Err(parser.format_error_nearby());
+                            }
+                            expected_next_token = WhereClauseExpectedNextToken::LogicalOperatorRightParen;
+                            while let Some(current_operator) = operator_stack.pop() {
+                                match (current_operator, operator_stack.len()) {
+                                    (WhereStackOperators::LogicalOperator(_), 0) => return Err("Mismatched parentheses found.".to_string()),
+                                    (WhereStackOperators::Parentheses(Parentheses::Left), _) => {
+                                        break;
+                                    },
+                                    (WhereStackOperators::LogicalOperator(logical_operator), _) => {
+                                        where_stack.push(WhereStackElement::LogicalOperator(logical_operator));
+                                    },
+                                    _ => unreachable!(),
                                 }
-                                operator_stack.push(WhereStackOperators::Parentheses(parentheses));
-                            },
-                            Parentheses::Right => {
-                                if expected_next_token != WhereClauseExpectedNextToken::LogicalOperatorRightParen {
-                                    return Err(parser.format_error_nearby());
-                                }
-                                expected_next_token = WhereClauseExpectedNextToken::LogicalOperatorRightParen;
-                                loop {
-                                    let current_operator = operator_stack.pop();
-                                    if let Some (current_operator) = current_operator {
-                                        match current_operator {
-                                            WhereStackOperators::Parentheses(Parentheses::Left) => {
-                                                break;
-                                            },
-                                            WhereStackOperators::LogicalOperator(logical_operator) => {
-                                               where_stack.push(WhereStackElement::LogicalOperator(logical_operator));
-                                            },
-                                            WhereStackOperators::Parentheses(Parentheses::Right) => {
-                                                return Err("Mismatched parentheses found.".to_string());
-                                            },
-                                        }
-                                    }
-                                    else {
-                                        return Err("Mismatched parentheses found.".to_string());
-                                    }
-                                }   
-                            },
+                            }
                         }
                     },
                     WhereStackElement::LogicalOperator(logical_operator) => {
@@ -132,7 +123,7 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
 }
 
 fn get_where_condition(parser: &mut Parser, operator_stack: &Vec<WhereStackOperators>) -> Result<Option<WhereStackElement>, String> {
-    let token = parser.current_token()?;
+    let token = parser.current_token()?;    
     match token.token_type {
         // Logical operators and parentheses
         TokenTypes::And => {
