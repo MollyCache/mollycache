@@ -1,16 +1,31 @@
 use crate::db::table::{Table, Value};
-use crate::interpreter::ast::{WhereStackElement, LogicalOperator};
+use crate::interpreter::ast::{WhereStackElement, LogicalOperator, WhereCondition};
 use crate::db::table::helpers::where_clause::MatchesWhereClause;
 
 
 // This file holds the logic for whether a row matches a where stack which is a vec of WhereConditions
 // and logical operators stored in Reverse Polish Notation.
-pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<WhereStackElement>, where_clause_evaluator: &dyn MatchesWhereClause) -> Result<bool, String> {
-    let mut result_stack = vec![];
+
+enum Condition<'a> {
+    Boolean(bool),
+    WhereCondition(&'a WhereCondition),
+}
+
+impl<'a> Condition<'a> {
+    fn evaluate(&self, table: &Table, row: &Vec<Value>, where_clause_evaluator: &mut dyn MatchesWhereClause) -> Result<bool, String> {
+        match self {
+            Condition::Boolean(boolean) => Ok(*boolean),
+            Condition::WhereCondition(where_condition) => where_clause_evaluator.matches_where_clause(table, row, where_condition),
+        }
+    }
+}
+
+pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<WhereStackElement>, where_clause_evaluator: &mut dyn MatchesWhereClause) -> Result<bool, String> {
+    let mut result_stack: Vec<Condition> = vec![];
     for where_stack_element in where_stack {
         match where_stack_element {
             WhereStackElement::Condition(where_condition) => {
-                result_stack.push(where_clause_evaluator.matches_where_clause(table, row, where_condition)?);
+                result_stack.push(Condition::WhereCondition(where_condition));
             },
             WhereStackElement::LogicalOperator(logical_operator) => {
                 let pop1 = match result_stack.pop() {
@@ -18,22 +33,22 @@ pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<Wh
                     None => return Err(format!("Error evaluating where clause with table: {:?}", table)),
                 };
                 match logical_operator {
-                    LogicalOperator::Not => {
-                        result_stack.push(!pop1);
+                    LogicalOperator::Not => {      
+                        result_stack.push(Condition::Boolean(!pop1.evaluate(table, row, where_clause_evaluator)?));
                     }
                     LogicalOperator::And => {
                         let pop2 = match result_stack.pop() {
                             Some(pop2) => pop2,
                             None => return Err(format!("Error evaluating where clause with table: {:?}", table)),
                         };
-                        result_stack.push(pop1 && pop2);
+                        result_stack.push(Condition::Boolean(pop2.evaluate(table, row, where_clause_evaluator)? && pop1.evaluate(table, row, where_clause_evaluator)?));
                     }
                     LogicalOperator::Or => {
                         let pop2 = match result_stack.pop() {
                             Some(pop2) => pop2,
                             None => return Err(format!("Error evaluating where clause with table: {:?}", table)),
                         };
-                        result_stack.push(pop1 || pop2);
+                        result_stack.push(Condition::Boolean(pop2.evaluate(table, row, where_clause_evaluator)? || pop1.evaluate(table, row, where_clause_evaluator)?));
                     }
                 }
             },
@@ -42,7 +57,7 @@ pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<Wh
     }
     
     if let Some(result) = result_stack.pop() {
-        return Ok(result);
+        return Ok(result.evaluate(table, row, where_clause_evaluator)?);
     }
     else {
         return Err(format!("Error evaluating where clause with table: {:?}", table));
@@ -68,7 +83,7 @@ mod tests {
         ]);
         let row = vec![Value::Integer(1)];
         let where_stack = vec![WhereStackElement::Condition(WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))})];
-        let result = matches_where_stack(&table, &row, &where_stack, &WhereConditionEvaluator{});
+        let result = matches_where_stack(&table, &row, &where_stack, &mut WhereConditionEvaluator{});
         assert!(result.is_ok() && result.unwrap());
     }
 
@@ -93,7 +108,7 @@ mod tests {
             WhereStackElement::LogicalOperator(LogicalOperator::Not),
             WhereStackElement::LogicalOperator(LogicalOperator::Or),
         ];
-        let result = matches_where_stack(&table, &row, &where_stack, &WhereConditionEvaluator{});
+        let result = matches_where_stack(&table, &row, &where_stack, &mut WhereConditionEvaluator{});
         assert!(result.is_ok() && result.unwrap());
 
         let row = vec![
@@ -101,7 +116,7 @@ mod tests {
             Value::Text("Fletcher".to_string()),
             Value::Integer(15),
         ];
-        let result = matches_where_stack(&table, &row, &where_stack, &WhereConditionEvaluator{});
+        let result = matches_where_stack(&table, &row, &where_stack, &mut WhereConditionEvaluator{});
         assert!(result.is_ok() && result.unwrap());
 
         let row = vec![
@@ -109,7 +124,7 @@ mod tests {
             Value::Text("John".to_string()),
             Value::Integer(25),
         ];
-        let result = matches_where_stack(&table, &row, &where_stack, &WhereConditionEvaluator{});
+        let result = matches_where_stack(&table, &row, &where_stack, &mut WhereConditionEvaluator{});
         assert!(result.is_ok() && !result.unwrap());
     }
 }
