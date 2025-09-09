@@ -28,9 +28,9 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     });
 }
 
-fn get_columns(parser: &mut Parser) -> Result<Vec<SelectableStack>, String> {
+fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
     // TODO: this
-    Ok(vec![])
+    Ok(SelectableStack { selectables: vec![] })
 }
 
 #[cfg(test)]
@@ -63,9 +63,9 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
-            }],
+            },
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -88,9 +88,9 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "guests".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column("id".to_string())],
-            }],
+            },
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -115,13 +115,12 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![
-                SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("id".to_string())],
-                }, SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("name".to_string())],
-                }
-            ],
+            columns: SelectableStack {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Column("name".to_string()),
+                ],
+            },
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -161,9 +160,9 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "guests".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column("id".to_string())]
-            }],
+            },
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("id".to_string()),

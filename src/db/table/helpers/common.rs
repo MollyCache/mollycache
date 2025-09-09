@@ -18,7 +18,7 @@ pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Val
     return Ok(row_values);
 }
 
-pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, columns: Option<&Vec<SelectableStack>>) -> Result<Vec<Vec<Value>>, String> {
+pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, columns: Option<&SelectableStack>) -> Result<Vec<Vec<Value>>, String> {
     let mut rows: Vec<Vec<Value>> = vec![];
     for index in row_indicies {
         let row = table.rows[index].clone();
@@ -47,7 +47,7 @@ pub fn get_row_indicies_matching_where_clause(table: &Table, where_clause: &Opti
     }
 }
 
-pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &Vec<SelectableStack>) -> Result<Vec<Value>, String> {
+pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectableStack) -> Result<Vec<Value>, String> {
     let mut row_values: Vec<Value> = vec![];
     // TODO: this
     /*

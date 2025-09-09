@@ -151,18 +151,14 @@ mod tests {
             parser.advance()?;
             parser.advance_past_semicolon()?;
             return Ok(SqlStatement::Select(SelectStatementStack {
-                columns: vec![
-                    SelectableStack {
-                        selectables: vec![SelectableStackElement::All]
-                    }
-                ],
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::All]
+                },
                 elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
-                    columns: vec![
-                        SelectableStack {
-                            selectables: vec![SelectableStackElement::All]
-                        }
-                    ],
+                    columns: SelectableStack {
+                        selectables: vec![SelectableStackElement::All]
+                    },
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -223,18 +219,14 @@ mod tests {
         // Select
         let result = parser.next_statement(builder);
         let expected = Some(Ok(SqlStatement::Select(SelectStatementStack {
-            columns: vec![
-                SelectableStack {
-                    selectables: vec![SelectableStackElement::All]
-                }
-            ],
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            },
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
-                columns: vec![
-                    SelectableStack {
-                        selectables: vec![SelectableStackElement::All]
-                    }
-                ],
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::All]
+                },
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,

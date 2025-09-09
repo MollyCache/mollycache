@@ -59,7 +59,7 @@ pub struct InsertIntoStatement {
 
 #[derive(Debug, PartialEq)]
 pub struct SelectStatementStack {
-    pub columns: Vec<SelectableStack>,
+    pub columns: SelectableStack,
     pub elements: Vec<SelectStatementStackElement>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
@@ -98,7 +98,7 @@ impl SetOperator {
 #[derive(Debug, PartialEq)]
 pub struct SelectStatement {
     pub table_name: String,
-    pub columns: Vec<SelectableStack>,
+    pub columns: SelectableStack,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
     pub limit_clause: Option<LimitClause>,
@@ -401,14 +401,14 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
-                    columns: vec![SelectableStack {
+                    columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All]
-                    }],
+                    },
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
-                        columns: vec![SelectableStack {
+                        columns: SelectableStack {
                             selectables: vec![SelectableStackElement::All]
-                        }],
+                        },
                         where_clause: None,
                         order_by_clause: None,
                         limit_clause: None,
@@ -498,14 +498,14 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
-                    columns: vec![SelectableStack {
+                    columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
-                    }],
+                    },
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
-                        columns: vec![SelectableStack {
+                        columns: SelectableStack {
                             selectables: vec![SelectableStackElement::All]
-                        }],
+                        },
                         where_clause: None,
                         order_by_clause: None,
                         limit_clause: None,

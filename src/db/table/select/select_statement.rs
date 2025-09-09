@@ -25,9 +25,9 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
-            }],
+            },
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -48,12 +48,12 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![
                     SelectableStackElement::Column("name".to_string()),
                     SelectableStackElement::Column("age".to_string()),
                 ]
-            }],
+            },
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -74,9 +74,9 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
-            }],
+            },
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("name".to_string()),
@@ -100,12 +100,12 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![
                     SelectableStackElement::Column("name".to_string()),
                     SelectableStackElement::Column("age".to_string()),
                 ]
-            }],
+            },
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("money".to_string()),
@@ -129,9 +129,9 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
-            }],
+            },
             where_clause: None,
             order_by_clause: None,
             limit_clause: Some(LimitClause {
@@ -152,9 +152,9 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
-            }],
+            },
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("column_not_included".to_string()),
@@ -175,9 +175,9 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
-            columns: vec![SelectableStack {
+            columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
-            }],
+            },
             where_clause: None,
             order_by_clause: Some(vec![OrderByClause {column: "money".to_string(), direction: OrderByDirection::Desc}]),
             limit_clause: None,
