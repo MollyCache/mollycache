@@ -1,6 +1,6 @@
 use crate::interpreter::{ast::{parser::Parser, ExistenceCheck}, tokenizer::token::TokenTypes};
 
-use crate::db::table::Value;
+use crate::db::table::{Value, DataType};
 
 // Returns an error if the current token does not match the given token type
 pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), String> {
@@ -108,6 +108,19 @@ fn decode(hex: &str) -> Result<Vec<u8>, String> {
                 .map_err(|e| format!("Invalid hex at {}: {}", i, e))
         }).collect()
 }
+
+pub fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
+    let token = parser.current_token()?;
+    return match token.token_type {
+        TokenTypes::Integer => Ok(DataType::Integer),
+        TokenTypes::Real => Ok(DataType::Real),
+        TokenTypes::Text => Ok(DataType::Text),
+        TokenTypes::Blob => Ok(DataType::Blob),
+        TokenTypes::Null => Ok(DataType::Null),
+        _ => Err(parser.format_error()),
+    };
+}
+
 
 #[cfg(test)]
 mod tests {

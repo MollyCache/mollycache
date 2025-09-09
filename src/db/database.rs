@@ -1,10 +1,11 @@
 use crate::db::table::{drop_table, Table, Value};
-use crate::interpreter::ast::{CreateTableStatement, DeleteStatement, DropTableStatement, InsertIntoStatement, SelectStatementStack, SqlStatement, UpdateStatement};
+use crate::interpreter::ast::{CreateTableStatement, DeleteStatement, DropTableStatement, InsertIntoStatement, SelectStatementStack, SqlStatement, UpdateStatement, AlterTableStatement};
 use crate::db::table::select;
 use crate::db::table::insert;
 use crate::db::table::delete;
 use crate::db::table::update;
 use crate::db::table::create_table;
+use crate::db::table::alter_table;
 use std::collections::HashMap;
 
 pub struct Database {
@@ -44,6 +45,10 @@ impl Database {
                 self.drop_table(statement)?;
                 Ok(None)
             }
+            SqlStatement::AlterTable(statement) => {
+                self.alter_table(statement)?;
+                Ok(None)
+            }
         }
     }
 
@@ -74,20 +79,24 @@ impl Database {
         drop_table::drop_table(self, statement)
     }
 
+    fn alter_table(&mut self, statement: AlterTableStatement) -> Result<(), String> {
+        alter_table::alter_table(self, statement)
+    }
+
     pub fn has_table(&self, table_name: &str) -> bool {
         self.tables.contains_key(table_name)
     }
 
     pub fn get_table(&self, table_name: &str) -> Result<&Table, String> {
         if !self.has_table(table_name) {
-            return Err(format!("Table not found: {}", table_name));
+            return Err(format!("Table `{}` does not exist", table_name));
         }
         Ok(self.tables.get(table_name).unwrap())
     }
 
-    fn get_table_mut(&mut self, table_name: &str) -> Result<&mut Table, String> {
+    pub fn get_table_mut(&mut self, table_name: &str) -> Result<&mut Table, String> {
         if !self.has_table(table_name) {
-            return Err(format!("Table not found: {}", table_name));
+            return Err(format!("Table `{}` does not exist", table_name));
         }
         Ok(self.tables.get_mut(table_name).unwrap())
     }
@@ -130,15 +139,15 @@ mod tests {
         let mut database = default_database();
         let table = database.get_table("users");
         assert!(table.is_ok());
-        assert_eq!(table.unwrap().name, "users");
+        assert_eq!("users", table.unwrap().name);
         let table = database.get_table("not_users");
         assert!(table.is_err());
-        assert_eq!(table.unwrap_err(), "Table not found: not_users");
+        assert_eq!("Table `not_users` does not exist",table.unwrap_err());
         let table = database.get_table_mut("users");
         assert!(table.is_ok());
-        assert_eq!(table.unwrap().name, "users");
+        assert_eq!("users", table.unwrap().name);
         let table = database.get_table_mut("not_users");
         assert!(table.is_err());
-        assert_eq!(table.unwrap_err(), "Table not found: not_users");
+        assert_eq!("Table `not_users` does not exist", table.unwrap_err());
     }
 }
