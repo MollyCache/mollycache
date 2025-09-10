@@ -33,6 +33,9 @@ pub enum SqlStatement {
     AlterTable(AlterTableStatement),
     BeginTransaction(BeginStatement),
     Commit,
+    Rollback(RollbackStatement),
+    Savepoint(SavepointStatement),
+    Release(ReleaseStatement),
 }
 
 #[derive(Debug, PartialEq)]
@@ -146,6 +149,22 @@ pub enum BeginStatement {
     Immediate,
     Exclusive,
 }
+
+#[derive(Debug, PartialEq)]
+pub struct RollbackStatement {
+    pub savepoint_name: Option<String>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SavepointStatement {
+    pub savepoint_name: String,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ReleaseStatement {
+    pub savepoint_name: String,
+}
+
 
 #[derive(Debug, PartialEq)]
 pub struct ColumnValue {
