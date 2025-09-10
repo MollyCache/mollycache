@@ -6,6 +6,7 @@ use crate::db::table::helpers::{order_by_clause::{perform_comparions}, limit_cla
 
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
+    // TODO: this
     /*
     let mut evaluator = set_operator_evaluator::SetOperatorEvaluator::new();
     let statement_columns = statement.columns.columns();
