@@ -223,6 +223,33 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    fn read_block_comment(&mut self, start: usize) -> Option<Token<'a>> {
+        self.advance();
+        self.advance();
+        
+        while self.current < self.input.len() {
+            if self.current_char() == '*' && self.current + 1 < self.input.len() && self.peek_char() == '/' {
+                self.advance();
+                self.advance();
+                return self.next_token();
+            }
+            
+            if self.current_char() == '\n' {
+                self.line_num += 1;
+                self.col_num = self.current + 1;
+            }
+            
+            self.advance();
+        }
+        
+        Some(Token {
+            token_type: TokenTypes::Error,
+            value: &self.input[start + 2..self.current],
+            col_num: start - self.col_num + 2,
+            line_num: self.line_num,
+        })
+    }
+
     pub fn next_token(&mut self) -> Option<Token<'a>> {
         while self.handle_skips() {}
 
@@ -272,11 +299,29 @@ impl<'a> Scanner<'a> {
                     self.advance();
                     let token_type = self.read_digit();
                     Some(self.build_token(start, token_type))
-                } else {
+                } else if self.peek_char() == '-' {
+                    self.advance();
+                    if self.peek_char() == ' ' || self.peek_char() == '\n' {
+                        while self.current < self.input.len() && self.current_char() != '\n' {
+                            self.advance();
+                        }
+                        self.next_token()
+                    }
+                    else {
+                        return Some(self.build_token(start, TokenTypes::Error));
+                    }
+                }
+                else {
                     Some(self.build_token(start, TokenTypes::Minus))
                 }
             }
-            '/' => Some(self.build_token(start, TokenTypes::Divide)),
+            '/' => {
+                if self.peek_char() == '*' {
+                    self.read_block_comment(start)
+                } else {
+                    Some(self.build_token(start, TokenTypes::Divide))
+                }
+            }
             '%' => Some(self.build_token(start, TokenTypes::Modulo)),
             '=' => Some(self.build_token(start, TokenTypes::Equals)),
             '!' => {
