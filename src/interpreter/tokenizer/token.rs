@@ -3,7 +3,8 @@ pub enum TokenTypes {
     // Keywords
     Create, Select, Insert, Table, From, Into, Values, Where,
     Update, Delete, Add, Drop, Index, Set, Alter, Rename, 
-    To, Column,
+    To, Column, Begin, Deferred, Immediate, Exclusive,
+    Commit, End, Rollback, Savepoint, Release, Transaction,
     // Data Types 
     Integer, Real, Text, Blob, Null,
     // Constraints
@@ -14,7 +15,7 @@ pub enum TokenTypes {
     Limit, Offset, Union, Intersect, Except,
     // Logical Operators
     And, Or, In, Exists, If,
-    Case, When, Then, Else, End, Is,
+    Case, When, Then, Else, Is,
     Equals, NotEquals, LessThan, LessEquals, GreaterThan, GreaterEquals,
     // Aggregate Functions
     Count, Sum, Avg, Min, Max,
