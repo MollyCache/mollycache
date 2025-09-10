@@ -1,12 +1,12 @@
 use crate::{interpreter::{
     ast::{
-        parser::Parser, SelectStatement, SelectableStack, FunctionName, Operator, LogicalOperator, MathOperator, SelectableStackElement, WhereStackElement,
+        parser::Parser, SelectStatement, SelectableStack, FunctionName, FunctionSignature, Operator, LogicalOperator, MathOperator, SelectableStackElement, WhereStackElement,
         helpers::{
             common::{get_table_name, expect_token_type, token_to_value, compare_precedence},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
         }
     }, 
-    tokenizer::token::TokenTypes
+    tokenizer::token::TokenTypes,
 }};
 
 pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
@@ -32,18 +32,27 @@ fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
     #[derive(PartialEq)]
     enum ExtendedSelectableStackElement {
         SelectableStackElement(SelectableStackElement),
-        LeftParen,
-        RightParen,
+        LeftParen
     }
     let mut output: Vec<SelectableStackElement> = vec![];
     let mut operators: Vec<ExtendedSelectableStackElement> = vec![];
 
+    let mut first = true;
     loop {
+        let last_token_type = parser.current_token()?.token_type.clone();
+
+        if !first { parser.advance()?; }
+        let was_first = first;
+        first = false;
+
         let token = parser.current_token()?;
 
         // Tokens needing special handling
-        if token.token_type == TokenTypes::From {
+        if [TokenTypes::From, TokenTypes::SemiColon].contains(&token.token_type) {
             break;
+        } else if token.token_type == TokenTypes::Asterisk && (was_first || [TokenTypes::Comma, TokenTypes::LeftParen].contains(&last_token_type)) {
+            // * (All) is only allowed at certain places, otherwise it's * (Multiply)
+            output.push(SelectableStackElement::All);
         } else if token.token_type == TokenTypes::Comma {
             continue;
         } else if token.token_type == TokenTypes::LeftParen {
@@ -57,8 +66,7 @@ fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
                     },
                     ExtendedSelectableStackElement::SelectableStackElement(value) => {
                         output.push(value);
-                    },
-                    _ => {}
+                    }
                 }
             }
 

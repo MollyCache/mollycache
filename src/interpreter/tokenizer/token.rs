@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenTypes {
     // Keywords
     Create, Select, Insert, Table, From, Into, Values, Where,
