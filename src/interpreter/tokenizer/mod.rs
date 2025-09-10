@@ -336,4 +336,23 @@ mod tests {
         ];
         assert_eq!(expected, result);
     }
+
+    #[test]
+    fn tokenizer_parses_transaction_keywords() {
+        let result = tokenize("BEGIN DEFERRED IMMEDIATE EXCLUSIVE COMMIT END ROLLBACK SAVEPOINT RELEASE TRANSACTION");
+        let expected = vec![
+            token(TokenTypes::Begin, "BEGIN", 0, 1),
+            token(TokenTypes::Deferred, "DEFERRED", 6, 1),
+            token(TokenTypes::Immediate, "IMMEDIATE", 15, 1),
+            token(TokenTypes::Exclusive, "EXCLUSIVE", 25, 1),
+            token(TokenTypes::Commit, "COMMIT", 35, 1),
+            token(TokenTypes::End, "END", 42, 1),
+            token(TokenTypes::Rollback, "ROLLBACK", 46, 1),
+            token(TokenTypes::Savepoint, "SAVEPOINT", 55, 1),
+            token(TokenTypes::Release, "RELEASE", 65, 1),
+            token(TokenTypes::Transaction, "TRANSACTION", 73, 1),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
 }
