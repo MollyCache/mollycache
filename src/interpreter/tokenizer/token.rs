@@ -5,6 +5,7 @@ pub enum TokenTypes {
     Update, Delete, Add, Drop, Index, Set, Alter, Rename, 
     To, Column,
     // Data Types 
+    // TODO: add Type suffix
     Integer, Real, Text, Blob, Null,
     // Constraints
     Primary, Key, Not, Unique, Default, AutoIncrement,
@@ -21,8 +22,10 @@ pub enum TokenTypes {
     // Single Character Tokens
     Asterisk, SemiColon, LeftParen, RightParen, Comma, Dot,
     // Math Operators
+    // TODO: add arithmetic
     Plus, Minus, Divide, Modulo,       
     // Literals
+    // TODO: add Literal
     String, IntLiteral, True, False, HexLiteral, RealLiteral,
     // Others
     Identifier,
