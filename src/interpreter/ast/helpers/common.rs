@@ -1,4 +1,4 @@
-use crate::interpreter::{ast::{parser::Parser, ExistenceCheck}, tokenizer::token::TokenTypes};
+use crate::interpreter::{ast::{parser::Parser, ExistenceCheck, SelectableStackElement, Operator, LogicalOperator, MathOperator}, tokenizer::token::TokenTypes};
 
 use crate::db::table::{Value, DataType};
 
@@ -12,6 +12,7 @@ pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), 
 }
 
 pub fn token_to_value(parser: &Parser) -> Result<Value, String> {
+    // TODO: replace parser param with token param
     let token = parser.current_token()?;
     
     match token.token_type {
@@ -51,23 +52,6 @@ pub fn tokens_to_value_list(parser: &mut Parser) -> Result<Vec<Value>, String> {
     return Ok(values);
 }
 
-// Returns a list of Strings from the tokens when they are formated as "identifier, identifier, ..."
-pub fn tokens_to_identifier_list(parser: &mut Parser) -> Result<Vec<String>, String> {
-    let mut identifiers: Vec<String> = vec![];
-    loop {
-        let token = parser.current_token()?;
-        expect_token_type(parser, TokenTypes::Identifier)?;
-
-        identifiers.push(token.value.to_string());
-        parser.advance()?;
-        let token = parser.current_token()?;
-        if token.token_type != TokenTypes::Comma {
-            break;
-        }
-        parser.advance()?;
-    }
-    return Ok(identifiers);
-}
 
 pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     let token = parser.current_token()?;
@@ -96,6 +80,42 @@ pub fn exists_clause(parser: &mut Parser, check_type: ExistenceCheck) -> Result<
         return Ok(Some(existence_check));
     }
     return Ok(None);
+}
+
+pub fn compare_precedence(first: &SelectableStackElement, second: &SelectableStackElement) -> Result<i32, String> {
+    let first_precedence = get_precedence(first)?;
+    let second_precedence = get_precedence(second)?;
+    return if second_precedence == first_precedence { Ok(0) } else if second_precedence > first_precedence { Ok(-1) } else { Ok(1) };
+}
+
+fn get_precedence(operator: &SelectableStackElement) -> Result<i32, String> {
+    let result = match operator {
+        SelectableStackElement::MathOperator(MathOperator::Multiply) => 40,
+        SelectableStackElement::MathOperator(MathOperator::Divide) => 40,
+        SelectableStackElement::MathOperator(MathOperator::Modulo) => 40,
+
+        SelectableStackElement::MathOperator(MathOperator::Add) => 35,
+        SelectableStackElement::MathOperator(MathOperator::Subtract) => 35,
+
+        SelectableStackElement::Operator(Operator::GreaterThan) => 30,
+        SelectableStackElement::Operator(Operator::LessThan) => 30,
+        SelectableStackElement::Operator(Operator::GreaterEquals) => 30,
+        SelectableStackElement::Operator(Operator::LessEquals) => 30,
+
+        SelectableStackElement::Operator(Operator::Equals) => 25,
+        SelectableStackElement::Operator(Operator::NotEquals) => 25,
+        SelectableStackElement::Operator(Operator::Is) => 25,
+        SelectableStackElement::Operator(Operator::IsNot) => 25,
+        SelectableStackElement::Operator(Operator::In) => 25,
+        SelectableStackElement::Operator(Operator::NotIn) => 25,
+
+        SelectableStackElement::LogicalOperator(LogicalOperator::Not) => 20,
+        SelectableStackElement::LogicalOperator(LogicalOperator::And) => 15,
+        SelectableStackElement::LogicalOperator(LogicalOperator::Or) => 10,
+        _ => return Err("Not an operator".to_string()), // TODO: better error message
+    };
+
+    return Ok(result);
 }
 
 fn decode(hex: &str) -> Result<Vec<u8>, String> {

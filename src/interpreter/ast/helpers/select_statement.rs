@@ -1,8 +1,8 @@
 use crate::{interpreter::{
     ast::{
-        parser::Parser, SelectStatement, SelectableStack, WhereStackElement,
+        parser::Parser, SelectStatement, SelectableStack, FunctionName, Operator, LogicalOperator, MathOperator, SelectableStackElement, WhereStackElement,
         helpers::{
-            common::{tokens_to_identifier_list, get_table_name, expect_token_type},
+            common::{get_table_name, expect_token_type, token_to_value, compare_precedence},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
         }
     }, 
@@ -29,8 +29,122 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
 }
 
 fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
-    // TODO: this
-    Ok(SelectableStack { selectables: vec![] })
+    #[derive(PartialEq)]
+    enum ExtendedSelectableStackElement {
+        SelectableStackElement(SelectableStackElement),
+        LeftParen,
+        RightParen,
+    }
+    let mut output: Vec<SelectableStackElement> = vec![];
+    let mut operators: Vec<ExtendedSelectableStackElement> = vec![];
+
+    loop {
+        let token = parser.current_token()?;
+
+        // Tokens needing special handling
+        if token.token_type == TokenTypes::From {
+            break;
+        } else if token.token_type == TokenTypes::Comma {
+            continue;
+        } else if token.token_type == TokenTypes::LeftParen {
+            operators.push(ExtendedSelectableStackElement::LeftParen);
+            continue;
+        } else if token.token_type == TokenTypes::RightParen {
+            while let Some(operator) = operators.pop() {
+                match operator {
+                    ExtendedSelectableStackElement::LeftParen => {
+                        break;
+                    },
+                    ExtendedSelectableStackElement::SelectableStackElement(value) => {
+                        output.push(value);
+                    },
+                    _ => {}
+                }
+            }
+
+            // If the top operator exists and owns the parenthesis, push it
+            if operators.last().is_some() {
+                match operators.last().unwrap() {
+                    ExtendedSelectableStackElement::SelectableStackElement(inner) => match inner {
+                        SelectableStackElement::Function(function) => {
+                            if function.has_parentheses {
+                                output.push(SelectableStackElement::Function(function.clone()));
+                            }
+                        },
+                        _ => {},
+                    },
+                    _ => {},
+                }
+            };
+            continue;
+        }
+
+        // Operators
+        let operator = match token.token_type {
+            // Operators
+            TokenTypes::Equals => Some(SelectableStackElement::Operator(Operator::Equals)),
+            TokenTypes::NotEquals => Some(SelectableStackElement::Operator(Operator::NotEquals)),
+            TokenTypes::LessThan => Some(SelectableStackElement::Operator(Operator::LessThan)),
+            TokenTypes::GreaterThan => Some(SelectableStackElement::Operator(Operator::GreaterThan)),
+            TokenTypes::LessEquals => Some(SelectableStackElement::Operator(Operator::LessEquals)),
+            TokenTypes::GreaterEquals => Some(SelectableStackElement::Operator(Operator::GreaterEquals)),
+            TokenTypes::In => Some(SelectableStackElement::Operator(Operator::In)),
+            // TODO: handle NOT IN (not a token)
+            TokenTypes::Is => Some(SelectableStackElement::Operator(Operator::Is)),
+            // TODO: handle IS NOT (not a token)
+            // Logical operators
+            TokenTypes::Not => Some(SelectableStackElement::LogicalOperator(LogicalOperator::Not)),
+            TokenTypes::And => Some(SelectableStackElement::LogicalOperator(LogicalOperator::And)),
+            TokenTypes::Or => Some(SelectableStackElement::LogicalOperator(LogicalOperator::Or)),
+            // Math operators
+            TokenTypes::Plus => Some(SelectableStackElement::MathOperator(MathOperator::Add)),
+            TokenTypes::Minus => Some(SelectableStackElement::MathOperator(MathOperator::Subtract)),
+            TokenTypes::Asterisk => Some(SelectableStackElement::MathOperator(MathOperator::Multiply)),
+            TokenTypes::Divide => Some(SelectableStackElement::MathOperator(MathOperator::Divide)),
+            TokenTypes::Modulo => Some(SelectableStackElement::MathOperator(MathOperator::Modulo)),
+            _ => None,
+        };
+
+        if let Some(value) = operator {
+            while operators.len() > 0 {
+                match operators.last() {
+                    Some(last) => match last {
+                        ExtendedSelectableStackElement::SelectableStackElement(inner) => {
+                            if compare_precedence(&value, inner)? > 0 {
+                                output.push(inner.clone());
+                                operators.pop();
+                            } else {
+                                break;
+                            }
+                        },
+                        _ => { break; }
+                    }
+                    None => { break; }
+                }
+            }
+
+            operators.push(ExtendedSelectableStackElement::SelectableStackElement(value));
+            continue;
+        }
+
+        // Tokens that are automatically added to output
+        let element = match token.token_type {
+            // All
+            TokenTypes::All => SelectableStackElement::All,
+            // Literals
+            TokenTypes::IntLiteral => SelectableStackElement::Value(token_to_value(parser)?),
+            TokenTypes::RealLiteral => SelectableStackElement::Value(token_to_value(parser)?),
+            TokenTypes::String => SelectableStackElement::Value(token_to_value(parser)?),
+            TokenTypes::HexLiteral => SelectableStackElement::Value(token_to_value(parser)?),
+            TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
+            // TODO: handle ValueList (arrays)
+            TokenTypes::Identifier => SelectableStackElement::Column(token.value.to_string()), // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
+            _ => { return Err("Unexpected identifier".to_string()) } // TODO: better error handling
+        };
+        output.push(element);
+    }
+
+    Ok(SelectableStack { selectables: output })
 }
 
 #[cfg(test)]
