@@ -1,13 +1,15 @@
 use crate::interpreter::{
-    ast::{SqlStatement, StatementBuilder},
-    ast::helpers::token::format_statement_tokens,
-    tokenizer::scanner::Token, tokenizer::token::TokenTypes
+    ast::{helpers::token::format_statement_tokens, SqlStatement, statement_builder::{StatementBuilder, DefaultStatementBuilder}},
+    tokenizer::scanner::Token, tokenizer::token::TokenTypes  
 };
+
+
 
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     start: usize,
     current: usize,
+    builder: &'a dyn StatementBuilder,
 }
 
 impl<'a> Parser<'a> {
@@ -16,6 +18,7 @@ impl<'a> Parser<'a> {
             tokens,
             start: 0,
             current: 0, 
+            builder: &DefaultStatementBuilder{},
         };
     }
 
@@ -85,17 +88,22 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn next_statement(&mut self, builder: &dyn StatementBuilder) -> Option<Result<SqlStatement, String>> {
+    pub fn next_statement(&mut self) -> Option<Result<SqlStatement, String>> {
         self.start = self.current;
         match (&self.current_token(), &self.peek_token()) {
             (Ok(token), Ok(peek_token)) => match (&token.token_type, &peek_token.token_type) {
-                (TokenTypes::Create, _) => Some(builder.build_create(self)),
-                (TokenTypes::Insert, _) => Some(builder.build_insert(self)),
-                (TokenTypes::Select, _) | (TokenTypes::LeftParen, TokenTypes::Select) => Some(builder.build_select(self)),
-                (TokenTypes::Update, _) => Some(builder.build_update(self)),
-                (TokenTypes::Delete, _) => Some(builder.build_delete(self)),
-                (TokenTypes::Drop, _) => Some(builder.build_drop(self)),
-                (TokenTypes::Alter, _) => Some(builder.build_alter(self)),
+                (TokenTypes::Create, _) => Some(self.builder.build_create(self)),
+                (TokenTypes::Insert, _) => Some(self.builder.build_insert(self)),
+                (TokenTypes::Select, _) | (TokenTypes::LeftParen, TokenTypes::Select) => Some(self.builder.build_select(self)),
+                (TokenTypes::Update, _) => Some(self.builder.build_update(self)),
+                (TokenTypes::Delete, _) => Some(self.builder.build_delete(self)),
+                (TokenTypes::Drop, _) => Some(self.builder.build_drop(self)),
+                (TokenTypes::Alter, _) => Some(self.builder.build_alter(self)),
+                (TokenTypes::Begin, _) => Some(self.builder.build_begin(self)),
+                (TokenTypes::Commit, _) | (TokenTypes::End, _) => Some(self.builder.build_commit(self)),
+                (TokenTypes::Rollback, _) => Some(self.builder.build_rollback(self)),
+                (TokenTypes::Savepoint, _) => Some(self.builder.build_savepoint(self)),
+                (TokenTypes::Release, _) => Some(self.builder.build_release(self)),
                 _ => {
                     Some(Err(self.format_error()))
                 }
@@ -115,6 +123,7 @@ mod tests {
     use super::*;
     use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectStatementColumns, SelectStatementStack, SelectStatementStackElement, SelectMode};
     use crate::interpreter::ast::test_utils::{token_with_location, token};
+    use crate::interpreter::ast::statement_builder::MockStatementBuilder;
 
     #[test]
     fn parser_formats_error_when_at_end_of_input() {
@@ -132,64 +141,6 @@ mod tests {
         assert_eq!(result, "Error at line 3, column 15: Unexpected value: INSERT");
     }
 
-    pub struct MockStatementBuilder;
-
-    impl StatementBuilder for MockStatementBuilder {
-        fn build_create(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
-            parser.advance()?;
-            parser.advance_past_semicolon()?;
-            return Ok(SqlStatement::CreateTable(CreateTableStatement {
-                table_name: "users".to_string(),
-                existence_check: None,
-                columns: vec![],
-            }));
-        }
-        
-        fn build_insert(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
-            parser.advance()?;
-            parser.advance_past_semicolon()?;
-            return Ok(SqlStatement::InsertInto(InsertIntoStatement {
-                table_name: "users".to_string(),
-                columns: None,
-                values: vec![],
-            }));
-        }
-        
-        fn build_select(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
-            parser.advance()?;
-            parser.advance_past_semicolon()?;
-            return Ok(SqlStatement::Select(SelectStatementStack {
-                columns: SelectStatementColumns::All,
-                elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
-                    mode: SelectMode::All,
-                    columns: SelectStatementColumns::All,
-                    where_clause: None,
-                    order_by_clause: None,
-                    limit_clause: None,
-                })],
-                order_by_clause: None,
-                limit_clause: None,
-            }));
-        }
-
-        fn build_update(&self, _parser: &mut Parser) -> Result<SqlStatement, String> {
-            todo!();
-        }
-
-        fn build_delete(&self, _parser: &mut Parser) -> Result<SqlStatement, String> {
-            todo!();
-        }
-
-        fn build_drop(&self, _parser: &mut Parser) -> Result<SqlStatement, String> {
-            todo!();
-        }
-
-        fn build_alter(&self, _parser: &mut Parser) -> Result<SqlStatement, String> {
-            todo!();
-        }
-    }
-
     #[test]
     fn parser_next_statement_filters_options_correctly_handles_multiple_statements() {
         let tokens = vec![
@@ -201,10 +152,14 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
             token(TokenTypes::EOF, ""),
         ];
-        let mut parser = Parser::new(tokens);
-        let builder : &dyn StatementBuilder = &MockStatementBuilder;
+        let mut parser = Parser {
+            tokens,
+            start: 0,
+            current: 0,
+            builder: &MockStatementBuilder,
+        };
         // Create Table
-        let result = parser.next_statement(builder);
+        let result = parser.next_statement();
         let expected = Some(Ok(SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
             existence_check: None,
@@ -213,7 +168,7 @@ mod tests {
         assert_eq!(result, expected);
 
         // Insert Into
-        let result = parser.next_statement(builder);
+        let result = parser.next_statement();
         let expected = Some(Ok(SqlStatement::InsertInto(InsertIntoStatement {
             table_name: "users".to_string(),
             columns: None,
@@ -222,7 +177,7 @@ mod tests {
         assert_eq!(result, expected);
 
         // Select
-        let result = parser.next_statement(builder);
+        let result = parser.next_statement();
         let expected = Some(Ok(SqlStatement::Select(SelectStatementStack {
             columns: SelectStatementColumns::All,
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
@@ -239,7 +194,7 @@ mod tests {
         assert_eq!(result, expected);
 
         // EOF
-        let result = parser.next_statement(builder);
+        let result = parser.next_statement();
         let expected = None;
         assert_eq!(result, expected);
     }
@@ -251,9 +206,13 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
             token(TokenTypes::EOF, ""),
         ];
-        let mut parser = Parser::new(tokens);
-        let builder : &dyn StatementBuilder = &MockStatementBuilder;
-        let result = parser.next_statement(builder);
+        let mut parser = Parser {
+            tokens,
+            start: 0,
+            current: 0,
+            builder: &MockStatementBuilder,
+        };
+        let result = parser.next_statement();
         let expected = Some(Err("Error at line 1, column 0: Unexpected value: users".to_string()));
         assert_eq!(result, expected);
     }

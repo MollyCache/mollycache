@@ -49,6 +49,21 @@ impl Database {
                 self.alter_table(statement)?;
                 Ok(None)
             }
+            SqlStatement::BeginTransaction(_statement) => {
+                todo!()
+            }
+            SqlStatement::Commit => {
+                todo!()
+            }
+            SqlStatement::Rollback(_statement) => {
+                todo!()
+            }
+            SqlStatement::Savepoint(_statement) => {
+                todo!()
+            }
+            SqlStatement::Release(_statement) => {
+                todo!()
+            }
         }
     }
 
