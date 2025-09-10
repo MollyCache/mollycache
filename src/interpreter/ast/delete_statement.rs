@@ -2,7 +2,8 @@ use crate::interpreter::{
     ast::{
         parser::Parser, SqlStatement, DeleteStatement, 
         helpers::{
-            common::{expect_token_type, get_table_name},
+            token::expect_token_type,
+            common::get_table_name,
             order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit
         }
     },

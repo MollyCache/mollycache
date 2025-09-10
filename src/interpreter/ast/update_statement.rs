@@ -1,6 +1,7 @@
 use crate::interpreter::ast::{
     parser::Parser, SqlStatement, UpdateStatement, ColumnValue, 
-    helpers::common::{expect_token_type, token_to_value, get_table_name},
+    helpers::token::{expect_token_type, token_to_value},
+    helpers::common::get_table_name,
     helpers::{order_by_clause::get_order_by, limit_clause::get_limit},
 };
 use crate::interpreter::ast::helpers::where_clause::get_where_clause;

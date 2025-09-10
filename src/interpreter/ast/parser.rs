@@ -1,17 +1,20 @@
 use crate::interpreter::{
     ast::{SqlStatement, StatementBuilder},
-    tokenizer::scanner::Token, tokenizer::token::TokenTypes,
+    ast::helpers::token::format_statement_tokens,
+    tokenizer::scanner::Token, tokenizer::token::TokenTypes
 };
 
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
+    start: usize,
     current: usize,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token<'a>>) -> Self {
         return Self { 
-            tokens, 
+            tokens,
+            start: 0,
             current: 0, 
         };
     }
@@ -32,6 +35,10 @@ impl<'a> Parser<'a> {
             return Err(self.format_error());
         }
         return Ok(&self.tokens[self.current + 1]);
+    }
+
+    pub fn get_sql_statement_text(&self) -> String {
+        return format_statement_tokens(&self.tokens[self.start..self.current]);
     }
 
     pub fn advance(&mut self) -> Result<(), String> {
@@ -79,6 +86,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn next_statement(&mut self, builder: &dyn StatementBuilder) -> Option<Result<SqlStatement, String>> {
+        self.start = self.current;
         match (&self.current_token(), &self.peek_token()) {
             (Ok(token), Ok(peek_token)) => match (&token.token_type, &peek_token.token_type) {
                 (TokenTypes::Create, _) => Some(builder.build_create(self)),

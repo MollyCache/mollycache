@@ -354,7 +354,7 @@ pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>>
                         Ok(DatabaseSqlStatement {
                             sql_statement: sql_statement,
                             line_num: line_num,
-                            statement_text: "".to_string(),
+                            statement_text: parser.get_sql_statement_text(),
                         })
                     );
                 }
@@ -393,6 +393,7 @@ mod tests {
 
     #[test]
     fn ast_handles_multiple_statements() {
+        // SELECT * FROM users; INSERT INTO users VALUES (1, "Alice");
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Asterisk, "*"),
@@ -430,7 +431,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 line_num: 1,
-                statement_text: "".to_string(),
+                statement_text: "SELECT * FROM users;".to_string(),
             }),
             Ok(DatabaseSqlStatement {
                     sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
@@ -441,7 +442,7 @@ mod tests {
                         ],
                 }),
                     line_num: 1,
-                    statement_text: "".to_string(),
+                    statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
@@ -479,7 +480,7 @@ mod tests {
                     ],
                 }),
                 line_num: 1,
-                statement_text: "".to_string(),
+                statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
@@ -524,7 +525,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 line_num: 1,
-                statement_text: "".to_string(),
+                statement_text: "SELECT * FROM users;".to_string(),
             }),
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
@@ -535,7 +536,7 @@ mod tests {
                     ],
                 }),
                 line_num: 1,
-                statement_text: "".to_string(),
+                statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
