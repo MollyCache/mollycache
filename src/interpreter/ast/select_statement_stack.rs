@@ -8,7 +8,6 @@ use crate::interpreter::tokenizer::token::TokenTypes;
 // Returns a SelectStatementStack which is an RPN representation of the SELECT statements and set operators.
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     let mut statement_stack = SelectStatementStack {
-        columns: SelectableStack { selectables: vec![] },
         elements: vec![],
         order_by_clause: None,
         limit_clause: None,
@@ -115,10 +114,6 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
             return Err("Mismatched parentheses found.".to_string());
         }
     }
-    match columns {
-        Some(columns) => statement_stack.columns = columns,
-        None => return Err("Error parsing SELECT statement. Columns not found.".to_string()),
-    }
     return Ok(SqlStatement::Select(statement_stack));
 }
 
@@ -204,9 +199,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
-            },
             elements: vec![expected_simple_select_statement(1)],
             order_by_clause: None,
             limit_clause: None,
@@ -226,9 +218,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
-            },
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -256,9 +245,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
-            },
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -295,9 +281,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
-            },
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -349,9 +332,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column("name".to_string())]
-            },
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
@@ -415,9 +395,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
-            },
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -453,9 +430,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
-            },
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
