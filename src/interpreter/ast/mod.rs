@@ -97,6 +97,7 @@ impl SetOperator {
 #[derive(Debug, PartialEq)]
 pub struct SelectStatement {
     pub table_name: String,
+    pub column_names: Vec<String>,
     pub columns: SelectableStack,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
@@ -424,6 +425,7 @@ mod tests {
                         columns: SelectableStack {
                             selectables: vec![SelectableStackElement::All]
                         },
+                        column_names: vec!["*".to_string()],
                         where_clause: None,
                         order_by_clause: None,
                         limit_clause: None,
@@ -518,6 +520,7 @@ mod tests {
                         columns: SelectableStack {
                             selectables: vec![SelectableStackElement::All]
                         },
+                        column_names: vec!["*".to_string()],
                         where_clause: None,
                         order_by_clause: None,
                         limit_clause: None,

@@ -178,6 +178,7 @@ mod tests {
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
             },
+            column_names: vec!["*".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
@@ -338,6 +339,7 @@ mod tests {
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::Column("name".to_string())]
                     },
+                    column_names: vec!["name".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
                         operator: Operator::Equals,
@@ -351,6 +353,7 @@ mod tests {
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::Column("name".to_string())]
                     },
+                    column_names: vec!["name".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
                         operator: Operator::Equals,

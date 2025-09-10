@@ -156,6 +156,7 @@ mod tests {
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All]
                     },
+                    column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -221,6 +222,7 @@ mod tests {
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::All]
                 },
+                column_names: vec!["*".to_string()],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,

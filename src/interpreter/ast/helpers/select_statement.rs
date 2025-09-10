@@ -11,8 +11,8 @@ use crate::{interpreter::{
 
 pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     parser.advance()?;
-    let columns = get_columns(parser)?;
-    expect_token_type(parser, TokenTypes::From)?;
+    let (columns, column_names) = get_columns_and_names(parser)?;
+    expect_token_type(parser, TokenTypes::From)?; // TODO: this is not true, you can do SELECT 1;
     parser.advance()?;
     let table_name = get_table_name(parser)?;
     let where_clause: Option<Vec<WhereStackElement>> = get_where_clause(parser)?;
@@ -22,13 +22,14 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     return Ok(SelectStatement {
             table_name: table_name,
             columns: columns,
+            column_names: column_names,
             where_clause: where_clause,
             order_by_clause: order_by_clause,
             limit_clause: limit_clause,
     });
 }
 
-fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
+fn get_columns_and_names(parser: &mut Parser) -> Result<(SelectableStack, Vec<String>), String> {
     #[derive(PartialEq)]
     enum ExtendedSelectableStackElement {
         SelectableStackElement(SelectableStackElement),
@@ -36,6 +37,9 @@ fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
     }
     let mut output: Vec<SelectableStackElement> = vec![];
     let mut operators: Vec<ExtendedSelectableStackElement> = vec![];
+    let mut depth = 0;
+    let mut column_names: Vec<String> = vec![];
+    let mut current_name = "".to_string(); // TODO: this
 
     let mut first = true;
     loop {
@@ -53,12 +57,24 @@ fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
         } else if token.token_type == TokenTypes::Asterisk && (was_first || [TokenTypes::Comma, TokenTypes::LeftParen].contains(&last_token_type)) {
             // * (All) is only allowed at certain places, otherwise it's * (Multiply)
             output.push(SelectableStackElement::All);
+            current_name += token.value;
+            continue;
         } else if token.token_type == TokenTypes::Comma {
+            if depth == 0 {
+                column_names.push(current_name);
+                current_name = "".to_string();
+            } else {
+                current_name += token.value;
+            }
             continue;
         } else if token.token_type == TokenTypes::LeftParen {
             operators.push(ExtendedSelectableStackElement::LeftParen);
+            current_name += token.value;
+            depth += 1;
             continue;
         } else if token.token_type == TokenTypes::RightParen {
+            depth -= 1;
+            current_name += token.value;
             while let Some(operator) = operators.pop() {
                 match operator {
                     ExtendedSelectableStackElement::LeftParen => {
@@ -86,6 +102,8 @@ fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
             };
             continue;
         }
+
+        current_name += token.value;
 
         // Operators
         let operator = match token.token_type {
@@ -152,7 +170,21 @@ fn get_columns(parser: &mut Parser) -> Result<SelectableStack, String> {
         output.push(element);
     }
 
-    Ok(SelectableStack { selectables: output })
+    while !operators.is_empty() {
+        match operators.last() {
+            Some(value) => match value {
+                ExtendedSelectableStackElement::SelectableStackElement(inner) => {
+                    output.push(inner.clone());
+                },
+                _ => {}
+            }
+            _ => {}
+        }
+    }
+
+    column_names.push(current_name);
+
+    Ok((SelectableStack { selectables: output }, column_names))
 }
 
 #[cfg(test)]
@@ -188,6 +220,7 @@ mod tests {
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
             },
+            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -213,6 +246,7 @@ mod tests {
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column("id".to_string())],
             },
+            column_names: vec!["id".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -243,6 +277,7 @@ mod tests {
                     SelectableStackElement::Column("name".to_string()),
                 ],
             },
+            column_names: vec!["id".to_string(), "name".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -285,6 +320,7 @@ mod tests {
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column("id".to_string())]
             },
+            column_names: vec!["id".to_string()],
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("id".to_string()),
