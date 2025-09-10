@@ -1,5 +1,5 @@
-use crate::interpreter::tokenizer::scanner::Token;
 use crate::interpreter::ast::parser::Parser;
+use crate::interpreter::tokenizer::scanner::Token;
 use crate::interpreter::tokenizer::token::TokenTypes;
 use crate::db::table::{Value, DataType};
 use crate::interpreter::ast::helpers::common::hex_decode;
@@ -83,9 +83,26 @@ pub fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
     };
 }
 
+pub fn token_to_string(token: &Token) -> String {
+    match token.token_type {
+        TokenTypes::String => format!("'{}'", token.value),
+        TokenTypes::HexLiteral => format!("X'{}'", token.value),
+        TokenTypes::EOF | TokenTypes::SemiColon | TokenTypes::LeftParen | TokenTypes::RightParen => token.value.to_string(),
+        _ => token.value.to_string() + " ",
+    }
+}
 
-pub fn token_to_string(token: &Token) -> String {   
-    token.value.to_string()
+// TODO: Improve this function and the related code. Parsing tokens back into a string is a messy.
+// This should be guarenteed to only be hit if the statement is valid.
+pub fn format_statement_tokens(tokens: &[Token]) -> String {
+    let mut result = String::new();
+    for token in tokens {
+        result += &token_to_string(token);
+    }
+    result = result
+        .replace(" ;", ";")
+        .replace(" ,", ",");
+    return result;
 }
 
 #[cfg(test)]
@@ -105,5 +122,27 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = tokens_to_value_list(&mut parser);
         assert_eq!(result, Ok(vec![Value::Integer(1)]));
+    }
+
+    #[test]
+    fn format_statement_tokens_handles_single_token() {
+        let tokens = vec![
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let result = format_statement_tokens(&tokens);
+        assert_eq!(";".to_string(), result);
+    }
+
+    #[test]
+    fn format_statement_tokens_handles_multiple_tokens() {
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Asterisk, "*"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let result = format_statement_tokens(&tokens);
+        assert_eq!("SELECT * FROM users;".to_string(), result);
     }
 }

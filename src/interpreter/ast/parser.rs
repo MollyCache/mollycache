@@ -1,7 +1,7 @@
 use crate::interpreter::{
     ast::{SqlStatement, StatementBuilder},
-    tokenizer::scanner::Token, tokenizer::token::TokenTypes,
-    ast::helpers::token::token_to_string,
+    ast::helpers::token::format_statement_tokens,
+    tokenizer::scanner::Token, tokenizer::token::TokenTypes
 };
 
 pub struct Parser<'a> {
@@ -37,6 +37,10 @@ impl<'a> Parser<'a> {
         return Ok(&self.tokens[self.current + 1]);
     }
 
+    pub fn get_sql_statement_text(&self) -> String {
+        return format_statement_tokens(&self.tokens[self.start..self.current]);
+    }
+
     pub fn advance(&mut self) -> Result<(), String> {
         if let Ok(token) = self.current_token() {
             if token.token_type == TokenTypes::SemiColon {
@@ -45,11 +49,6 @@ impl<'a> Parser<'a> {
         }
         self.current += 1;
         Ok(())
-    }
-
-    pub fn get_sql_statement_text(&self) -> String {
-        let token_range = &self.tokens[self.start..self.current];
-        token_range.iter().map(|token| token_to_string(token)).collect()
     }
 
     pub fn advance_past_semicolon(&mut self) -> Result<(), String> {

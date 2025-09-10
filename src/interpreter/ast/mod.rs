@@ -431,7 +431,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 line_num: 1,
-                statement_text: "SELECT*FROMusers;".to_string(),
+                statement_text: "SELECT * FROM users;".to_string(),
             }),
             Ok(DatabaseSqlStatement {
                     sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
@@ -442,7 +442,7 @@ mod tests {
                         ],
                 }),
                     line_num: 1,
-                    statement_text: "INSERTINTOusersVALUES(1,Alice);".to_string(),
+                    statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
@@ -480,7 +480,7 @@ mod tests {
                     ],
                 }),
                 line_num: 1,
-                statement_text: "INSERTINTOusersVALUES(1,Alice);".to_string(),
+                statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
@@ -525,7 +525,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 line_num: 1,
-                statement_text: "SELECT*FROMusers;".to_string(),
+                statement_text: "SELECT * FROM users;".to_string(),
             }),
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
@@ -536,7 +536,7 @@ mod tests {
                     ],
                 }),
                 line_num: 1,
-                statement_text: "INSERTINTOusersVALUES(1,Alice);".to_string(),
+                statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
