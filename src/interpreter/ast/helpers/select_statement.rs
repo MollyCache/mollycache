@@ -39,7 +39,7 @@ fn get_columns_and_names(parser: &mut Parser) -> Result<(SelectableStack, Vec<St
     let mut operators: Vec<ExtendedSelectableStackElement> = vec![];
     let mut depth = 0;
     let mut column_names: Vec<String> = vec![];
-    let mut current_name = "".to_string(); // TODO: this
+    let mut current_name = "".to_string();
 
     let mut first = true;
     loop {
