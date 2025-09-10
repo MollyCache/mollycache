@@ -132,6 +132,7 @@ fn test_drop_table() {
 fn test_alter_table() {
     let mut database = Database::new();
     let sql = "
+    /* These should all succeed */
     CREATE TABLE users (
         id INTEGER,
         name TEXT
@@ -142,7 +143,7 @@ fn test_alter_table() {
     ALTER TABLE new_users ADD COLUMN new_column INTEGER;
     ALTER TABLE new_users DROP COLUMN id;
     SELECT * FROM new_users;
-
+    -- These should all fail
     ALTER TABLE users RENAME TO new_users;
     ALTER TABLE new_users DROP COLUMN id;
     ALTER TABLE new_users ADD COLUMN new_column INTEGER;
@@ -159,10 +160,10 @@ fn test_alter_table() {
     assert_eq!(expected, *row);
 
     let expected_errors = vec![
-        "Execution Error with statement starting on line 13 \n Error: Table `users` does not exist",
-        "Execution Error with statement starting on line 14 \n Error: Column `id` does not exist in table `new_users`",
-        "Execution Error with statement starting on line 15 \n Error: Column `new_column` already exists in table `new_users`",
-        "Execution Error with statement starting on line 16 \n Error: Column `id` does not exist in table `new_users`",
+        "Execution Error with statement starting on line 14 \n Error: Table `users` does not exist",
+        "Execution Error with statement starting on line 15 \n Error: Column `id` does not exist in table `new_users`",
+        "Execution Error with statement starting on line 16 \n Error: Column `new_column` already exists in table `new_users`",
+        "Execution Error with statement starting on line 17 \n Error: Column `id` does not exist in table `new_users`",
     ];
 
     assert!(result[7..=10].iter().all(|result| result.is_err()));
