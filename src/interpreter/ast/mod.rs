@@ -10,6 +10,8 @@ mod delete_statement;
 mod helpers;
 mod drop_statement;
 mod alter_table_statement;
+mod statement_builder;
+mod transaction_statements;
 #[cfg(test)]
 mod test_utils;
 
@@ -29,6 +31,8 @@ pub enum SqlStatement {
     DeleteStatement(DeleteStatement),
     DropTable(DropTableStatement),
     AlterTable(AlterTableStatement),
+    BeginTransaction(BeginStatement),
+    Commit,
 }
 
 #[derive(Debug, PartialEq)]
@@ -134,6 +138,13 @@ pub enum AlterTableAction {
     RenameColumn { old_column_name: String, new_column_name: String },
     AddColumn { column_def: ColumnDefinition },
     DropColumn { column_name: String },
+}
+
+#[derive(Debug, PartialEq)]
+pub enum BeginStatement {
+    Deferred,
+    Immediate,
+    Exclusive,
 }
 
 #[derive(Debug, PartialEq)]
@@ -264,52 +275,11 @@ pub struct LimitClause {
     pub offset: Option<Value>,
 }
 
-pub trait StatementBuilder {
-    fn build_create(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
-    fn build_insert(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
-    fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
-    fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
-    fn build_delete(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
-    fn build_drop(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
-    fn build_alter(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
-}
 
-pub struct DefaultStatementBuilder;
-
-impl StatementBuilder for DefaultStatementBuilder {
-    fn build_create(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        create_statement::build(parser)
-    }
-    
-    fn build_insert(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        insert_statement::build(parser)
-    }
-    
-    fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        select_statement_stack::build(parser)
-    }
-
-    fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        update_statement::build(parser)
-    }
-
-    fn build_delete(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        delete_statement::build(parser)
-    }
-
-    fn build_drop(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        drop_statement::build(parser)
-    }
-
-    fn build_alter(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
-        alter_table_statement::build(parser)
-    }
-}
 
 pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>> {
     let mut results: Vec<Result<DatabaseSqlStatement, String>> = vec![];
     let mut parser = parser::Parser::new(tokens);
-    let builder : &dyn StatementBuilder = &DefaultStatementBuilder;
     loop {
         let line_num = match parser.line_num() {
             Ok(line_num) => line_num,
@@ -318,7 +288,7 @@ pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>>
                 break;
             }
         };
-        let next_statement = parser.next_statement(builder);
+        let next_statement = parser.next_statement();
         if let Some(next_statement) = next_statement {
             match next_statement {
                 Err(error) => {
