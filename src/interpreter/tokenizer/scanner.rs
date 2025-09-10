@@ -272,7 +272,19 @@ impl<'a> Scanner<'a> {
                     self.advance();
                     let token_type = self.read_digit();
                     Some(self.build_token(start, token_type))
-                } else {
+                } else if self.peek_char() == '-' {
+                    self.advance();
+                    if self.peek_char() == ' ' || self.peek_char() == '\n' {
+                        while self.current < self.input.len() && self.current_char() != '\n' {
+                            self.advance();
+                        }
+                        self.next_token()
+                    }
+                    else {
+                        return Some(self.build_token(start, TokenTypes::Error));
+                    }
+                }
+                else {
                     Some(self.build_token(start, TokenTypes::Minus))
                 }
             }
