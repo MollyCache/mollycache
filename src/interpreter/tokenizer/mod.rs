@@ -231,4 +231,43 @@ mod tests {
         ];
         assert_eq!(expected, result);
     }
+
+    #[test]
+    fn tokenizer_parses_comments() {
+        let result = tokenize("SELECT * FROM users WHERE name = 'Fletcher'; -- This is a comment");
+        let expected = vec![
+            token(TokenTypes::Select, "SELECT", 0, 1),
+            token(TokenTypes::Asterisk, "*", 7, 1),
+            token(TokenTypes::From, "FROM", 9, 1),
+            token(TokenTypes::Identifier, "users", 14, 1),
+            token(TokenTypes::Where, "WHERE", 20, 1),
+            token(TokenTypes::Identifier, "name", 26, 1),
+            token(TokenTypes::Equals, "=", 31, 1),
+            token(TokenTypes::String, "Fletcher", 33, 1),
+            token(TokenTypes::SemiColon, ";", 43, 1),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn tokenizer_parses_comments_with_newlines() {
+        let result = tokenize("
+        SELECT * FROM users; -- This is a comment
+        SELECT * FROM users;");
+        let expected = vec![
+            token(TokenTypes::Select, "SELECT", 8, 2),
+            token(TokenTypes::Asterisk, "*", 15, 2),
+            token(TokenTypes::From, "FROM", 17, 2),
+            token(TokenTypes::Identifier, "users", 22, 2),
+            token(TokenTypes::SemiColon, ";", 27, 2),
+            token(TokenTypes::Select, "SELECT", 8, 3),
+            token(TokenTypes::Asterisk, "*", 15, 3),
+            token(TokenTypes::From, "FROM", 17, 3),
+            token(TokenTypes::Identifier, "users", 22, 3),
+            token(TokenTypes::SemiColon, ";", 27, 3),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
 }
