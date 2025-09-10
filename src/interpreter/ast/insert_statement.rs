@@ -1,6 +1,7 @@
 use crate::interpreter::{
     ast::{ 
-        helpers::common::{token_to_value, expect_token_type, get_table_name}, 
+        helpers::token::{token_to_value, expect_token_type},
+        helpers::common::get_table_name,
         parser::Parser, InsertIntoStatement, SqlStatement::{self, InsertInto}
     }, 
     tokenizer::token::TokenTypes

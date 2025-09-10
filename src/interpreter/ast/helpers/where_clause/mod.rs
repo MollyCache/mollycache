@@ -4,7 +4,7 @@ mod where_stack_element;
 use expected_token_matches_current::{next_expected_token_from_current, WhereClauseExpectedNextToken};
 
 use crate::interpreter::{ast::{
-    helpers::{common::expect_token_type, where_clause::where_stack_element::get_where_stack_element}, 
+    helpers::{token::expect_token_type, where_clause::where_stack_element::get_where_stack_element}, 
     parser::Parser, WhereStackElement, WhereStackOperators, Parentheses}};
 use crate::interpreter::tokenizer::token::TokenTypes;
 

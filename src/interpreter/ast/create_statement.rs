@@ -1,7 +1,8 @@
 use crate::interpreter::{
     ast::{
         parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, ExistenceCheck,
-        helpers::common::{expect_token_type, get_table_name, exists_clause, token_to_data_type}
+        helpers::token::{expect_token_type, token_to_data_type},
+        helpers::common::{get_table_name, exists_clause},
     }, 
     tokenizer::token::TokenTypes
 };

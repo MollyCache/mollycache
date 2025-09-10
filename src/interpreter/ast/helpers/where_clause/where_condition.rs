@@ -1,6 +1,6 @@
 use crate::interpreter::ast::{parser::Parser, WhereCondition, Operand, Operator};
 use crate::interpreter::tokenizer::token::TokenTypes;
-use crate::interpreter::ast::helpers::common::{expect_token_type, token_to_value, tokens_to_value_list};
+use crate::interpreter::ast::helpers::token::{expect_token_type, token_to_value, tokens_to_value_list};
 
 
 pub fn get_condition(parser: &mut Parser) -> Result<WhereCondition, String> {
