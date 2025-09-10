@@ -270,4 +270,70 @@ mod tests {
         ];
         assert_eq!(expected, result);
     }
+
+    #[test]
+    fn tokenizer_parses_comments_with_asterisks() {
+        let result = tokenize("SELECT  /* This is a comment */ SELECT ");
+        let expected = vec![
+            token(TokenTypes::Select, "SELECT", 0, 1),
+            token(TokenTypes::Select, "SELECT", 32, 1),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn tokenizer_parses_comments_with_asterisks_and_newlines() {
+        let result = tokenize("
+        SELECT  
+        /* This is a comment */ 
+        SELECT
+        ");
+        let expected = vec![
+            token(TokenTypes::Select, "SELECT", 8, 2),
+            token(TokenTypes::Select, "SELECT", 8, 4),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
+    
+    #[test]
+    fn tokenizer_parses_comment_block_spans_multiple_lines() {
+        let result = tokenize("
+        SELECT 
+        /* 
+        This is a comment
+        that is multi line
+        */
+        SELECT
+        ");
+        let expected = vec![
+            token(TokenTypes::Select, "SELECT", 8, 2),
+            token(TokenTypes::Select, "SELECT", 8, 7),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn tokenizer_raises_error_when_comment_block_is_not_closed() {
+        let result = tokenize("SELECT /* This is a comment");
+        let expected = vec![
+            token(TokenTypes::Select, "SELECT", 0, 1),
+            token(TokenTypes::Error, " This is a comment", 9, 1),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn tokenizer_raises_error_when_comment_block_is_not_closed_with_slash() {
+        let result = tokenize("SELECT /* This is a comment * SELECT");
+        let expected = vec![
+            token(TokenTypes::Select, "SELECT", 0, 1),
+            token(TokenTypes::Error, " This is a comment * SELECT", 9, 1),
+            token(TokenTypes::EOF, "", 0, 0),
+        ];
+        assert_eq!(expected, result);
+    }
 }
