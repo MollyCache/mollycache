@@ -1,5 +1,5 @@
 use crate::db::table::{drop_table, Table, Row};
-use crate::interpreter::ast::{CreateTableStatement, DeleteStatement, DropTableStatement, InsertIntoStatement, SelectStatementStack, SqlStatement, UpdateStatement, AlterTableStatement};
+use crate::interpreter::ast::{SqlStatement};
 use crate::db::table::select;
 use crate::db::table::insert;
 use crate::db::table::delete;
@@ -20,7 +20,7 @@ pub struct TransactionLog {
 
 pub struct TransactionEntry {
     pub statement: SqlStatement,
-    pub success: bool,
+    pub table_name: String,
     pub affected_rows: Vec<usize>,
 }
 
@@ -37,82 +37,92 @@ impl Database {
     }
 
     pub fn execute(&mut self, sql_statement: SqlStatement) -> Result<Option<Vec<Row>>, String> {
+        let sql_statement_clone = sql_statement.clone();
         return match sql_statement {
             SqlStatement::CreateTable(statement) => {
-                self.create_table(statement)?;
+                create_table::create_table(self, statement)?;
+                self.append_to_transaction(sql_statement_clone, vec![])?;
                 Ok(None)
             },
             SqlStatement::InsertInto(statement) => {
-                self.insert_into_table(statement)?;
+                let table = self.get_table_mut(&statement.table_name)?;
+                insert::insert(table, statement)?;
+                self.append_to_transaction(sql_statement_clone, vec![])?;
                 Ok(None)
             },
             SqlStatement::Select(statement) => {
-                let result = self.select_statement_stack(statement)?;
+                let result = select::select_statement_stack(self, statement)?;
                 Ok(Some(result))
             },
             SqlStatement::UpdateStatement(statement) => {
-                self.update_table(statement)?;
+                let table = self.get_table_mut(&statement.table_name)?;
+                update::update(table, statement)?;
+                self.append_to_transaction(sql_statement_clone, vec![])?;
                 Ok(None)
             },
             SqlStatement::DeleteStatement(statement) => {
-                self.delete_from_table(statement)?;
+                let table = self.get_table_mut(&statement.table_name)?;
+                delete::delete(table, statement)?;
+                self.append_to_transaction(sql_statement_clone, vec![])?;
                 Ok(None)
             },
             SqlStatement::DropTable(statement) => {
-                self.drop_table(statement)?;
+                drop_table::drop_table(self, statement)?;
+                self.append_to_transaction(sql_statement_clone, vec![])?;
                 Ok(None)
             }
             SqlStatement::AlterTable(statement) => {
-                self.alter_table(statement)?;
+                alter_table::alter_table(self, statement)?;
+                self.append_to_transaction(sql_statement_clone, vec![])?;
                 Ok(None)
             }
-            SqlStatement::BeginTransaction(_statement) => {
-                todo!()
+            SqlStatement::BeginTransaction(_) => {
+                self.transaction = Some(TransactionLog {
+                    entries: vec![],
+                    savepoint_name: vec![],
+                });
+                Ok(None)
             }
             SqlStatement::Commit => {
-                todo!()
+                self.transaction = None;
+                self.tables.iter_mut().for_each(|(_, table)| {
+                    table.commit_transaction();
+                });
+                Ok(None)
             }
-            SqlStatement::Rollback(_statement) => {
-                todo!()
+            SqlStatement::Rollback(_) => {
+                self.transaction = None;
+                self.tables.iter_mut().for_each(|(_, table)| {
+                    table.rollback_transaction();
+                });
+                Ok(None)
             }
-            SqlStatement::Savepoint(_statement) => {
-                todo!()
+            SqlStatement::Savepoint(statement) => {
+                match &mut self.transaction {
+                    Some(transaction) => {
+                        transaction.savepoint_name.push(Savepoint {
+                            name: statement.savepoint_name.clone(),
+                        });
+                    }
+                    None => {
+                        return Err("No transaction is currently active".to_string());
+                    }
+                }
+                self.append_to_transaction(sql_statement_clone, vec![])?;
+                Ok(None)
             }
-            SqlStatement::Release(_statement) => {
-                todo!()
+            SqlStatement::Release(statement) => {
+                match &mut self.transaction {
+                    Some(transaction) => {
+                        transaction.savepoint_name.retain(|savepoint| savepoint.name != statement.savepoint_name);
+                    }
+                    None => {
+                        return Err("No transaction is currently active".to_string());
+                    }
+                }
+                Ok(None)
             }
         }
-    }
-
-    fn create_table(&mut self, statement: CreateTableStatement) -> Result<(), String> {
-        create_table::create_table(self, statement)
-    }
-
-    fn insert_into_table(&mut self, statement: InsertIntoStatement) -> Result<(), String> {
-        let table = self.get_table_mut(&statement.table_name)?;
-        insert::insert(table, statement)
-    }
-
-    fn select_statement_stack(&mut self, statement: SelectStatementStack) -> Result<Vec<Row>, String> {
-        select::select_statement_stack(self, statement)
-    }
-
-    fn delete_from_table(&mut self, statement: DeleteStatement) -> Result<(), String> {
-        let table = self.get_table_mut(&statement.table_name)?;
-        delete::delete(table, statement)
-    }
-
-    fn update_table(&mut self, statement: UpdateStatement) -> Result<(), String> {
-        let table = self.get_table_mut(&statement.table_name)?;
-        update::update(table, statement)
-    }
-
-    fn drop_table(&mut self, statement: DropTableStatement) -> Result<(), String> {
-        drop_table::drop_table(self, statement)
-    }
-
-    fn alter_table(&mut self, statement: AlterTableStatement) -> Result<(), String> {
-        alter_table::alter_table(self, statement)
     }
 
     pub fn has_table(&self, table_name: &str) -> bool {
@@ -131,6 +141,28 @@ impl Database {
             return Err(format!("Table `{}` does not exist", table_name));
         }
         Ok(self.tables.get_mut(table_name).unwrap())
+    }
+
+    fn append_to_transaction(&mut self, sql_statement: SqlStatement, affected_rows: Vec<usize>) -> Result<(), String> {
+        let table_name = match &sql_statement {
+            SqlStatement::CreateTable(statement) => statement.table_name.clone(),
+            SqlStatement::InsertInto(statement) => statement.table_name.clone(),
+            SqlStatement::UpdateStatement(statement) => statement.table_name.clone(),
+            SqlStatement::DeleteStatement(statement) => statement.table_name.clone(),
+            SqlStatement::DropTable(statement) => statement.table_name.clone(),
+            SqlStatement::AlterTable(statement) => statement.table_name.clone(),
+            SqlStatement::Savepoint(_) => "".to_string(),
+            _ => unreachable!(),
+        };
+        
+        if let Some(transaction) = &mut self.transaction {
+            transaction.entries.push(TransactionEntry {
+                statement: sql_statement,
+                table_name: table_name,
+                affected_rows: affected_rows,
+            });
+        }
+        Ok(())
     }
 }
 

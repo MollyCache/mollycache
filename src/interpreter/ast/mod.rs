@@ -22,7 +22,7 @@ pub struct DatabaseSqlStatement {
     pub statement_text: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SqlStatement {
     CreateTable(CreateTableStatement),
     InsertInto(InsertIntoStatement),
@@ -38,33 +38,33 @@ pub enum SqlStatement {
     Release(ReleaseStatement),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CreateTableStatement {
     pub table_name: String,
     pub existence_check: Option<ExistenceCheck>,
     pub columns: Vec<ColumnDefinition>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct DropTableStatement {
     pub table_name: String,
     pub existence_check: Option<ExistenceCheck>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ExistenceCheck  { // Eventually expand to temp tables
     IfNotExists,
     IfExists,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct InsertIntoStatement {
     pub table_name: String,
     pub columns: Option<Vec<String>>,
     pub values: Vec<Vec<Value>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatementStack {
     pub columns: SelectStatementColumns,
     pub elements: Vec<SelectStatementStackElement>,
@@ -72,19 +72,19 @@ pub struct SelectStatementStack {
     pub limit_clause: Option<LimitClause>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SelectStatementStackElement {
     SelectStatement(SelectStatement),
     SetOperator(SetOperator),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SelectStackOperators {
     SetOperator(SetOperator),
     Parentheses(Parentheses),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SetOperator {
     Union,
     UnionAll,
@@ -102,7 +102,7 @@ impl SetOperator {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatement {
     pub table_name: String,
     pub mode: SelectMode,
@@ -112,7 +112,7 @@ pub struct SelectStatement {
     pub limit_clause: Option<LimitClause>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct DeleteStatement {
     pub table_name: String,
     pub where_clause: Option<Vec<WhereStackElement>>,
@@ -120,7 +120,7 @@ pub struct DeleteStatement {
     pub limit_clause: Option<LimitClause>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct UpdateStatement {
     pub table_name: String,
     pub update_values: Vec<ColumnValue>,
@@ -129,13 +129,13 @@ pub struct UpdateStatement {
     pub limit_clause: Option<LimitClause>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct AlterTableStatement {
     pub table_name: String,
     pub action: AlterTableAction,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AlterTableAction {
     RenameTable { new_table_name: String },
     RenameColumn { old_column_name: String, new_column_name: String },
@@ -143,36 +143,36 @@ pub enum AlterTableAction {
     DropColumn { column_name: String },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum BeginStatement {
     Deferred,
     Immediate,
     Exclusive,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct RollbackStatement {
     pub savepoint_name: Option<String>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SavepointStatement {
     pub savepoint_name: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ReleaseStatement {
     pub savepoint_name: String,
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ColumnValue {
     pub column: String,
     pub value: Value,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SelectMode {
     All,
     Distinct,
@@ -193,8 +193,7 @@ impl SelectStatementColumns {
     }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
     Equals,
     NotEquals,
@@ -208,8 +207,7 @@ pub enum Operator {
     IsNot,
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, PartialEq, Clone)]
 pub struct WhereCondition {
     pub l_side: Operand,
     pub operator: Operator,
@@ -217,8 +215,7 @@ pub struct WhereCondition {
 }
 
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operand {
     Value(Value),
     ValueList(Vec<Value>),
@@ -226,14 +223,14 @@ pub enum Operand {
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum WhereStackElement {
     Condition(WhereCondition),
     LogicalOperator(LogicalOperator),
     Parentheses(Parentheses),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum WhereStackOperators {
     LogicalOperator(LogicalOperator),
     Parentheses(Parentheses),
@@ -248,7 +245,7 @@ impl WhereStackOperators {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LogicalOperator {
     Not,
     And,
@@ -270,25 +267,25 @@ impl LogicalOperator {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Parentheses {
     Left,
     Right,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum OrderByDirection {
     Asc,
     Desc,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct OrderByClause {
     pub column: String,
     pub direction: OrderByDirection,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct LimitClause {
     pub limit: Value,
     pub offset: Option<Value>,

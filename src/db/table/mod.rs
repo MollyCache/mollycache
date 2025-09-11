@@ -17,7 +17,7 @@ pub mod alter_table;
 pub mod test_utils;
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum DataType {
     Integer,
     Real,
@@ -26,14 +26,14 @@ pub enum DataType {
     Null,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ColumnDefinition {
     pub name: String,
     pub data_type: DataType,
     pub constraints: Vec<ColumnConstraint>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ColumnConstraint {
     pub constraint_type: String,
 }
@@ -220,6 +220,14 @@ impl Table {
 
     pub fn push(&mut self, row: Row) {
         self.rows.push(RowStack::new(row));
+    }
+
+    pub fn commit_transaction(&mut self) {
+        todo!()
+    }
+        
+    pub fn rollback_transaction(&mut self) {
+        todo!()
     }
 
     pub fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> &'a Value {

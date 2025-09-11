@@ -3,20 +3,20 @@ use crate::interpreter::ast::{UpdateStatement, ColumnValue};
 use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 use crate::db::table::DataType;
 
-pub fn update(table: &mut Table, statement: UpdateStatement) -> Result<(), String> {
+pub fn update(table: &mut Table, statement: UpdateStatement) -> Result<Vec<usize>, String> {
     let row_indicies = get_row_indicies_matching_clauses(table, None, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
-    update_rows_from_indicies(table, row_indicies, statement.update_values)?;
-    Ok(())
+    update_rows_from_indicies(table, &row_indicies, statement.update_values)?;
+    Ok(row_indicies)
 }
 
-fn update_rows_from_indicies(table: &mut Table, row_indicies: Vec<usize>, update_values: Vec<ColumnValue>) -> Result<(), String> {
+fn update_rows_from_indicies(table: &mut Table, row_indicies: &Vec<usize>, update_values: Vec<ColumnValue>) -> Result<(), String> {
     for row_index in row_indicies {
         for update_value in &update_values {
             let column_index = table.get_index_of_column(&update_value.column)?;
             if table.columns[column_index].data_type != update_value.value.get_type() && update_value.value.get_type() != DataType::Null {
                 return Err(format!("Found different data types for column: {} and value: {:?}", update_value.column, update_value.value.get_type()));
             }
-            table[row_index][column_index] = update_value.value.clone();
+            table[*row_index][column_index] = update_value.value.clone();
         }
     }
     Ok(())
@@ -97,6 +97,8 @@ mod tests {
         };
         let result = update(&mut table, statement);
         assert!(result.is_ok());
+        let row_indicies = result.unwrap();
+        assert_eq!(vec![1, 2, 3], row_indicies);
         let expected = vec![
             Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
             Row(vec![Value::Integer(2), Value::Text("Fletcher".to_string()), Value::Integer(50), Value::Real(2000.0)]),

@@ -5,13 +5,13 @@ use crate::interpreter::ast::DeleteStatement;
 use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 
 
-pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<(), String> {
+pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<Vec<usize>, String> {
     let row_indicies_to_delete = get_row_indicies_matching_clauses(table, None, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
-    swap_remove_bulk(table, row_indicies_to_delete)?;
-    Ok(())
+    swap_remove_bulk(table, &row_indicies_to_delete)?;
+    Ok(row_indicies_to_delete)
 }
 
-fn swap_remove_bulk(table: &mut Table, row_indicies: Vec<usize>) -> Result<(), String> {
+fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), String> {
     if table.rows.len() == 0 {
         if row_indicies.len() != 0 {
             unreachable!();
@@ -115,6 +115,8 @@ mod tests {
         };
         let result = delete(&mut table, statement);
         assert!(result.is_ok());
+        let row_indicies = result.unwrap();
+        assert_eq!(vec![1, 2, 3], row_indicies);
         let expected = vec![
             Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
         ];
