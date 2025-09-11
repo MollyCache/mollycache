@@ -1,5 +1,5 @@
 #[cfg(test)]
-use mollydb::db::table::Value;
+use mollydb::db::table::Row;
 #[cfg(test)]
 use mollydb::interpreter::ast::OrderByDirection;
 #[cfg(test)]
@@ -7,7 +7,7 @@ use std::cmp::Ordering;
 
 
 #[cfg(test)]
-pub fn assert_table_rows_eq_unordered(mut expected: Vec<Vec<Value>>, mut actual: Vec<Vec<Value>>) {
+pub fn assert_table_rows_eq_unordered(mut expected: Vec<Row>, mut actual: Vec<Row>) {
     expected.sort_by(|a, b| {
         let mut i = 0;
         while i < a.len() && i < b.len() && a[i].compare(&b[i], &OrderByDirection::Asc) == Ordering::Equal {

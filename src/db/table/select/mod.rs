@@ -1,11 +1,11 @@
 mod select_statement;
 mod set_operator_evaluator;
-use crate::db::{database::Database, table::Value};
+use crate::db::{database::Database, table::Row};
 use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement, SelectStatementColumns};
 use crate::db::table::helpers::{order_by_clause::{perform_comparions}, limit_clause::get_limited_rows};
 
 
-pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
+pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Row>, String> {
     let mut evaluator = set_operator_evaluator::SetOperatorEvaluator::new();
     let statement_columns = statement.columns.columns();
     let mut columns: Option<Vec<&String>> = match statement_columns {
@@ -75,6 +75,7 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
 mod tests {
     use super::*;
     use crate::db::table::test_utils::default_database;
+    use crate::db::table::Value;
     use crate::interpreter::ast::{SelectStatement, SelectStatementColumns, WhereStackElement, WhereCondition, Operand, Operator, LogicalOperator, SelectMode};
 
 
@@ -97,10 +98,10 @@ mod tests {
         let result = select_statement_stack(&database, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -139,7 +140,7 @@ mod tests {
         let result = select_statement_stack(&database, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -197,7 +198,7 @@ mod tests {
         let result = select_statement_stack(&database, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
         ];
         assert_eq!(expected, result.unwrap());
     }

@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use crate::interpreter::ast::OrderByClause;
 use crate::db::table::Table;
-use crate::db::table::Value;
+use crate::db::table::{Row};
 
 
 
@@ -11,12 +11,12 @@ use crate::db::table::Value;
 pub fn get_ordered_row_indicies(table: &Table, mut row_indicies: Vec<usize>, order_by_clauses: &Vec<OrderByClause>) -> Result<Vec<usize>, String> {
     let columns: Vec<&String> = table.columns.iter().map(|column| &column.name).collect();
     row_indicies.sort_by(|a, b| {
-        perform_comparions(&columns, &table.rows[*a], &table.rows[*b], order_by_clauses)
+        perform_comparions(&columns, &table[*a], &table[*b], order_by_clauses)
     });
     return Ok(row_indicies);
 }
 
-pub fn perform_comparions(columns: &Vec<&String>, row1: &Vec<Value>, row2: &Vec<Value>, order_by_clauses: &Vec<OrderByClause>) -> Ordering {
+pub fn perform_comparions(columns: &Vec<&String>, row1: &Row, row2: &Row, order_by_clauses: &Vec<OrderByClause>) -> Ordering {
     let mut result = Ordering::Equal;
     for comparison in order_by_clauses {
         let index = get_index_of_column(columns, &comparison.column);
@@ -46,7 +46,7 @@ fn get_index_of_column(columns: &Vec<&String>, column_name: &String) -> Result<u
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{Table, Value, DataType, ColumnDefinition};
+    use crate::db::table::{Table, Value, DataType, ColumnDefinition, Row, RowStack};
     use crate::interpreter::ast::OrderByDirection;
 
     fn default_table() -> Table {
@@ -59,13 +59,13 @@ mod tests {
                 ColumnDefinition {name: "some_data".to_string(), data_type: DataType::Blob, constraints: vec![]},
             ],
             rows: vec![
-                vec![Value::Integer(3), Value::Text("c_Jim".to_string()), Value::Real(3000.0), Value::Blob(b"0022".to_vec())],
-                vec![Value::Integer(1), Value::Text("a_John".to_string()), Value::Real(1000.0), Value::Blob(b"0000".to_vec())],
-                vec![Value::Null, Value::Null, Value::Null, Value::Null],
-                vec![Value::Integer(2), Value::Text("b_Jane".to_string()), Value::Real(2000.0), Value::Blob(b"0201".to_vec())],
-                vec![Value::Integer(3), Value::Text("b_Jim".to_string()), Value::Real(1500.0), Value::Blob(b"0102".to_vec())],
-                vec![Value::Integer(4), Value::Text("a_Jim".to_string()), Value::Real(500.0), Value::Blob(b"0101".to_vec())],
-                vec![Value::Integer(1), Value::Text("a_Jim".to_string()), Value::Real(5000.0), Value::Blob(b"0401".to_vec())],
+                RowStack::new(Row(vec![Value::Integer(3), Value::Text("c_Jim".to_string()), Value::Real(3000.0), Value::Blob(b"0022".to_vec())])),
+                RowStack::new(Row(vec![Value::Integer(1), Value::Text("a_John".to_string()), Value::Real(1000.0), Value::Blob(b"0000".to_vec())])),
+                RowStack::new(Row(vec![Value::Null, Value::Null, Value::Null, Value::Null])),
+                RowStack::new(Row(vec![Value::Integer(2), Value::Text("b_Jane".to_string()), Value::Real(2000.0), Value::Blob(b"0201".to_vec())])),
+                RowStack::new(Row(vec![Value::Integer(3), Value::Text("b_Jim".to_string()), Value::Real(1500.0), Value::Blob(b"0102".to_vec())])),
+                RowStack::new(Row(vec![Value::Integer(4), Value::Text("a_Jim".to_string()), Value::Real(500.0), Value::Blob(b"0101".to_vec())])),
+                RowStack::new(Row(vec![Value::Integer(1), Value::Text("a_Jim".to_string()), Value::Real(5000.0), Value::Blob(b"0401".to_vec())])),
             ],
         }
     }

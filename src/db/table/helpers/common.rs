@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::db::table::{Table, Value, DataType};
+use crate::db::table::{Table, DataType, Row};
 use crate::interpreter::ast::{SelectStatementColumns, WhereStackElement, OrderByClause, LimitClause};
 use crate::db::table::helpers::where_clause::row_matches_where_stack;
 use crate::db::table::helpers::{order_by_clause::get_ordered_row_indicies, limit_clause::get_limited_rows};
@@ -9,12 +9,12 @@ pub struct DistinctOn<'a> {
     pub columns: &'a SelectStatementColumns,
 }
 
-pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Value>, String> {
+pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
     if row.len() != table.width() {
         return Err(format!("Rows have incorrect width"));
     }
 
-    let mut row_values: Vec<Value> = vec![];
+    let mut row_values: Row = Row(vec![]);
     for (i, value) in row.iter().enumerate() {
         if value.get_type() != table.columns[i].data_type && value.get_type() != DataType::Null {
             return Err(format!("Data type mismatch for column {}", table.columns[i].name));
@@ -24,10 +24,10 @@ pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Val
     return Ok(row_values);
 }
 
-pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, columns: Option<&SelectStatementColumns>) -> Result<Vec<Vec<Value>>, String> {
-    let mut rows: Vec<Vec<Value>> = vec![];
+pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, columns: Option<&SelectStatementColumns>) -> Result<Vec<Row>, String> {
+    let mut rows: Vec<Row> = vec![];
     for index in row_indicies {
-        let row = table.rows[index].clone();
+        let row: Row = table[index].clone();
         if let Some(columns) = columns {
             rows.push(get_columns_from_row(table, &row, columns)?);
         }
@@ -41,7 +41,7 @@ pub fn get_row_columns_from_indicies(table: &Table, row_indicies: Vec<usize>, co
 pub fn get_row_indicies_matching_where_clause(table: &Table, where_clause: &Option<Vec<WhereStackElement>>) -> Result<Vec<usize>, String> {
     if let Some(where_clause) = where_clause {
         let mut row_indicies: Vec<usize> = vec![];
-        for (i, row) in table.rows.iter().enumerate() {
+        for (i, row) in table.iter().enumerate() {
             if row_matches_where_stack(table, &row, &where_clause)? {
                 row_indicies.push(i);
             }
@@ -53,8 +53,8 @@ pub fn get_row_indicies_matching_where_clause(table: &Table, where_clause: &Opti
     }
 }
 
-pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectStatementColumns) -> Result<Vec<Value>, String> {
-    let mut row_values: Vec<Value> = vec![];
+pub fn get_columns_from_row(table: &Table, row: &Row, selected_columns: &SelectStatementColumns) -> Result<Row, String> {
+    let mut row_values: Row = Row(vec![]);
     if *selected_columns == SelectStatementColumns::All {
         return Ok(validate_and_clone_row(table, row)?);
     } else {
@@ -88,9 +88,9 @@ pub fn get_row_indicies_matching_clauses(table: &Table, mode: Option<DistinctOn>
     return Ok(row_indicies);
 }
 
-pub fn remove_duplicate_rows(rows: Vec<Vec<Value>>) -> Vec<Vec<Value>> {
-    let set = rows.into_iter().collect::<HashSet<Vec<Value>>>();
-    let result = set.into_iter().collect::<Vec<Vec<Value>>>();
+pub fn remove_duplicate_rows(rows: Vec<Row>) -> Vec<Row> {
+    let set = rows.into_iter().collect::<HashSet<Row>>();
+    let result = set.into_iter().collect::<Vec<Row>>();
     return result;
 }
 
@@ -99,7 +99,7 @@ pub fn remove_duplicate_rows_from_indicies(table: &Table, mut row_indicies: Vec<
     let mut index = row_indicies.len();
     while index > 0 {
         index -= 1; 
-        let row = get_columns_from_row(table, &table.rows[row_indicies[index]], columns)?;
+        let row = get_columns_from_row(table, &table[row_indicies[index]], columns)?;
         if set.contains(&row) {
             row_indicies.swap_remove(index);
         }

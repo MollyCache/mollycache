@@ -1,4 +1,4 @@
-use crate::db::table::{Table, Value};
+use crate::db::table::{Table, Row};
 use crate::interpreter::ast::{WhereStackElement, LogicalOperator, WhereCondition};
 use crate::db::table::helpers::where_clause::MatchesWhereClause;
 
@@ -12,7 +12,7 @@ enum Condition<'a> {
 }
 
 impl<'a> Condition<'a> {
-    fn evaluate(&self, table: &Table, row: &Vec<Value>, where_clause_evaluator: &mut dyn MatchesWhereClause) -> Result<bool, String> {
+    fn evaluate(&self, table: &Table, row: &Row, where_clause_evaluator: &mut dyn MatchesWhereClause) -> Result<bool, String> {
         match self {
             Condition::Boolean(boolean) => Ok(*boolean),
             Condition::WhereCondition(where_condition) => where_clause_evaluator.matches_where_clause(table, row, where_condition),
@@ -20,7 +20,7 @@ impl<'a> Condition<'a> {
     }
 }
 
-pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<WhereStackElement>, where_clause_evaluator: &mut dyn MatchesWhereClause) -> Result<bool, String> {
+pub fn matches_where_stack(table: &Table, row: &Row, where_stack: &Vec<WhereStackElement>, where_clause_evaluator: &mut dyn MatchesWhereClause) -> Result<bool, String> {
     let mut result_stack: Vec<Condition> = vec![];
     for where_stack_element in where_stack {
         match where_stack_element {
@@ -67,7 +67,7 @@ pub fn matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<Wh
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{Table, Value, ColumnDefinition, DataType};
+    use crate::db::table::{Table, Value, ColumnDefinition, DataType, Row};
     use crate::interpreter::ast::{WhereStackElement, LogicalOperator};
     use crate::interpreter::ast::{Operator, Operand, WhereCondition};
     use crate::db::table::helpers::where_clause::WhereConditionEvaluator;
@@ -81,7 +81,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Integer(1)];
+        let row = Row(vec![Value::Integer(1)]);
         let where_stack = vec![WhereStackElement::Condition(WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))})];
         let result = matches_where_stack(&table, &row, &where_stack, &mut WhereConditionEvaluator{});
         assert!(result.is_ok() && result.unwrap());
@@ -95,11 +95,11 @@ mod tests {
             ColumnDefinition {name:"name".to_string(),data_type:DataType::Text, constraints: vec![] },
             ColumnDefinition {name:"age".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![
+        let row = Row(vec![
             Value::Integer(1),
             Value::Text("John".to_string()),
             Value::Integer(20),
-        ];
+        ]);
         let where_stack = vec![
             simple_condition("id", Operator::Equals, Value::Integer(1)),
             simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
@@ -111,19 +111,19 @@ mod tests {
         let result = matches_where_stack(&table, &row, &where_stack, &mut WhereConditionEvaluator{});
         assert!(result.is_ok() && result.unwrap());
 
-        let row = vec![
+        let row = Row(vec![
             Value::Integer(2),
             Value::Text("Fletcher".to_string()),
             Value::Integer(15),
-        ];
+        ]);
         let result = matches_where_stack(&table, &row, &where_stack, &mut WhereConditionEvaluator{});
         assert!(result.is_ok() && result.unwrap());
 
-        let row = vec![
+        let row = Row(vec![
             Value::Integer(2),
             Value::Text("John".to_string()),
             Value::Integer(25),
-        ];
+        ]);
         let result = matches_where_stack(&table, &row, &where_stack, &mut WhereConditionEvaluator{});
         assert!(result.is_ok() && !result.unwrap());
     }
