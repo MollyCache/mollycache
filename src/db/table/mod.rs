@@ -1,5 +1,7 @@
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use std::ops::{Deref, DerefMut, Index, IndexMut};
+use std::cmp::Eq;
 
 use crate::interpreter::ast::OrderByDirection;
 
@@ -137,11 +139,50 @@ impl Hash for Value {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[repr(transparent)]
+pub struct Row(pub Vec<Value>);
+
+#[derive(Debug)]
+pub struct RowStack{
+    pub stack: Vec<Row>,
+}
+
+impl Deref for Row {
+    type Target = Vec<Value>;
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl DerefMut for Row {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
+
+impl RowStack {
+    pub fn new(stack: Row) -> Self {
+        Self { stack: vec![stack] }
+    }
+}
+
+
 #[derive(Debug)]
 pub struct Table {
     pub name: String,
     pub columns: Vec<ColumnDefinition>,
-    pub rows: Vec<Vec<Value>>,
+    rows: Vec<RowStack>,
+}
+
+impl Index<usize> for Table {
+    type Output = Row;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.rows[index].stack.last().unwrap()
+    }
+}
+
+impl IndexMut<usize> for Table {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.rows[index].stack.last_mut().unwrap()
+    }
 }
 
 impl Table {
@@ -151,6 +192,34 @@ impl Table {
             columns,
             rows: vec![],
         }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Row> {
+        self.rows.iter().map(|s| s.stack.last().unwrap())
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Row> {
+        self.rows.iter_mut().map(|s| s.stack.last_mut().unwrap())
+    }
+
+    pub fn get_rows_clone(&self) -> Vec<Row> {
+        self.rows.iter().map(|s| s.stack.last().unwrap().clone()).collect()
+    }
+
+    pub fn get_rows(&self) -> Vec<&Row> {
+        self.rows.iter().map(|s| s.stack.last().unwrap()).collect()
+    }
+
+    pub fn get_rows_mut(&mut self) -> Vec<&mut Row> {
+        self.rows.iter_mut().map(|s| s.stack.last_mut().unwrap()).collect()
+    }
+
+    pub fn set_rows(&mut self, rows: Vec<Row>) {
+        self.rows = rows.into_iter().map(|r| RowStack::new(r)).collect();
+    }
+
+    pub fn push(&mut self, row: Row) {
+        self.rows.push(RowStack::new(row));
     }
 
     pub fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> &'a Value {

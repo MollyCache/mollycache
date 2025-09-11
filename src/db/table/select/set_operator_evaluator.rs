@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use crate::db::table::{helpers::common::remove_duplicate_rows, Value};
+use crate::db::table::{helpers::common::remove_duplicate_rows, Row};
 
 pub struct SetOperatorEvaluator {
-    pub stack: Vec<Vec<Vec<Value>>>,
+    pub stack: Vec<Vec<Row>>,
 }
 
 impl SetOperatorEvaluator {
@@ -13,18 +13,18 @@ impl SetOperatorEvaluator {
         }
     }
 
-    pub fn result(&mut self) -> Result<Vec<Vec<Value>>, String> {
+    pub fn result(&mut self) -> Result<Vec<Row>, String> {
         if self.stack.len() != 1 {
             return Err("Error processing SELECT statement. Stack length is not 1".to_string());
         }
         self.pop()
     }
 
-    pub fn push(&mut self, rows: Vec<Vec<Value>>) {
+    pub fn push(&mut self, rows: Vec<Row>) {
         self.stack.push(rows);
     }
 
-    fn pop(&mut self) -> Result<Vec<Vec<Value>>, String> {
+    fn pop(&mut self) -> Result<Vec<Row>, String> {
        self.stack.pop().ok_or("Error processing SELECT statement. Stack is empty".to_string())
     }
 
@@ -46,7 +46,7 @@ impl SetOperatorEvaluator {
     }
 
     pub fn intersect(&mut self) -> Result<(), String> {
-        let second = self.pop()?.into_iter().collect::<HashSet<Vec<Value>>>();
+        let second = self.pop()?.into_iter().collect::<HashSet<Row>>();
         let mut first = self.pop()?;
         let mut index: usize = 0;
         while index < first.len() {
@@ -62,7 +62,7 @@ impl SetOperatorEvaluator {
     }
 
     pub fn except(&mut self) -> Result<(), String> {
-        let second = self.pop()?.into_iter().collect::<HashSet<Vec<Value>>>();
+        let second = self.pop()?.into_iter().collect::<HashSet<Row>>();
         let mut first = self.pop()?;
         let mut index: usize = 0;
         while index < first.len() {
@@ -82,20 +82,21 @@ impl SetOperatorEvaluator {
 mod test {
     use super::*;
     use crate::db::table::test_utils::assert_table_rows_eq_unordered;
+    use crate::db::table::Value;
 
-    fn rows_1() -> Vec<Vec<Value>> {
+    fn rows_1() -> Vec<Row> {
         vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
         ]
     }
 
-    fn rows_2() -> Vec<Vec<Value>> {
+    fn rows_2() -> Vec<Row> {
         vec![
-            vec![Value::Integer(1), Value::Text("Fletcher".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Null, Value::Real(5000.0)],
+            Row(vec![Value::Integer(1), Value::Text("Fletcher".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Null, Value::Real(5000.0)]),
         ]
     }
 
@@ -108,12 +109,12 @@ mod test {
         let result = evaluator.result();
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(1), Value::Text("Fletcher".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Null, Value::Real(5000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(1), Value::Text("Fletcher".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Null, Value::Real(5000.0)]),
         ];
         assert!(result.is_ok());
         assert_table_rows_eq_unordered(expected, result.unwrap());
@@ -128,7 +129,7 @@ mod test {
         let result = evaluator.result();
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
         ];
         assert_table_rows_eq_unordered(expected, result.unwrap());
     }
@@ -142,8 +143,8 @@ mod test {
         let result = evaluator.result();
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
         ];
         assert_table_rows_eq_unordered(expected, result.unwrap());
     }

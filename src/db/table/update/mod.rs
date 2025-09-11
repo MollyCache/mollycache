@@ -16,7 +16,7 @@ fn update_rows_from_indicies(table: &mut Table, row_indicies: Vec<usize>, update
             if table.columns[column_index].data_type != update_value.value.get_type() && update_value.value.get_type() != DataType::Null {
                 return Err(format!("Found different data types for column: {} and value: {:?}", update_value.column, update_value.value.get_type()));
             }
-            table.rows[row_index][column_index] = update_value.value.clone();
+            table[row_index][column_index] = update_value.value.clone();
         }
     }
     Ok(())
@@ -29,6 +29,7 @@ mod tests {
     use crate::interpreter::ast::ColumnValue;
     use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
     use crate::interpreter::ast::{WhereStackElement, WhereCondition, Operand, Operator, OrderByClause, OrderByDirection, LimitClause};
+    use crate::db::table::Row;
 
     #[test]
     fn update_works_correctly() {
@@ -43,26 +44,26 @@ mod tests {
         let result = update(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Text("John".to_string()), Value::Integer(40), Value::Real(4000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Text("John".to_string()), Value::Integer(40), Value::Real(4000.0)]),
         ];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 
     #[test]
     fn update_with_all_clauses_works_correctly() {
         let mut table = default_table();
-        table.rows = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
-            vec![Value::Integer(5), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(6), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(7), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)],
-        ];
+        table.set_rows(vec![
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
+            Row(vec![Value::Integer(5), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(6), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(7), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+        ]);
         let statement = UpdateStatement {
             table_name: "users".to_string(),
             update_values: vec![ColumnValue { column: "name".to_string(), value: Value::Text("Fletcher".to_string()) }],
@@ -73,15 +74,15 @@ mod tests {
         let result = update(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
-            vec![Value::Integer(5), Value::Text("Fletcher".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(6), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(7), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
+            Row(vec![Value::Integer(5), Value::Text("Fletcher".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(6), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(7), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)]),
         ];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 
     #[test]
@@ -97,12 +98,12 @@ mod tests {
         let result = update(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Fletcher".to_string()), Value::Integer(50), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Fletcher".to_string()), Value::Integer(50), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Text("Fletcher".to_string()), Value::Integer(50), Value::Real(4000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Fletcher".to_string()), Value::Integer(50), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Fletcher".to_string()), Value::Integer(50), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Text("Fletcher".to_string()), Value::Integer(50), Value::Real(4000.0)]),
         ];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 
     #[test]
@@ -122,7 +123,7 @@ mod tests {
         let result = update(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 
     #[test]
@@ -168,11 +169,11 @@ mod tests {
         let result = update(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Null],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Null],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Null],
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Null],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Null]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Null]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Null]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Null]),
         ];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 }

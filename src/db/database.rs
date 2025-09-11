@@ -1,4 +1,4 @@
-use crate::db::table::{drop_table, Table, Value};
+use crate::db::table::{drop_table, Table, Row};
 use crate::interpreter::ast::{CreateTableStatement, DeleteStatement, DropTableStatement, InsertIntoStatement, SelectStatementStack, SqlStatement, UpdateStatement, AlterTableStatement};
 use crate::db::table::select;
 use crate::db::table::insert;
@@ -10,16 +10,33 @@ use std::collections::HashMap;
 
 pub struct Database {
     pub tables: HashMap<String, Table>,
+    pub transaction: Option<TransactionLog>,
+}
+
+pub struct TransactionLog {
+    pub entries: Vec<TransactionEntry>,
+    pub savepoint_name: Vec<Savepoint>,
+}
+
+pub struct TransactionEntry {
+    pub statement: SqlStatement,
+    pub success: bool,
+    pub affected_rows: Vec<usize>,
+}
+
+pub struct Savepoint {
+    pub name: String,
 }
 
 impl Database {
     pub fn new() -> Self {
         Self {
             tables: HashMap::new(),
+            transaction: None,
         }
     }
 
-    pub fn execute(&mut self, sql_statement: SqlStatement) -> Result<Option<Vec<Vec<Value>>>, String> {
+    pub fn execute(&mut self, sql_statement: SqlStatement) -> Result<Option<Vec<Row>>, String> {
         return match sql_statement {
             SqlStatement::CreateTable(statement) => {
                 self.create_table(statement)?;
@@ -76,7 +93,7 @@ impl Database {
         insert::insert(table, statement)
     }
 
-    fn select_statement_stack(&mut self, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
+    fn select_statement_stack(&mut self, statement: SelectStatementStack) -> Result<Vec<Row>, String> {
         select::select_statement_stack(self, statement)
     }
 
@@ -138,7 +155,8 @@ mod tests {
                         constraints: vec![]
                     },
                 ]))
-            ])
+            ]),
+            transaction: None,
         }
     }
 

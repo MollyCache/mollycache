@@ -43,7 +43,7 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: Vec<usize>) -> Result<(), S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::Value;
+    use crate::db::table::{Value, Row};
     use crate::interpreter::ast::{WhereStackElement, Operator, Operand, WhereCondition, OrderByDirection, OrderByClause};
     use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
     use crate::interpreter::ast::LimitClause;
@@ -66,25 +66,25 @@ mod tests {
         let result = delete(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
         ];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 
     #[test]
     fn delete_from_table_with_all_clauses_works_correctly() {
         let mut table = default_table();
-        table.rows = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
-            vec![Value::Integer(5), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(6), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(7), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)],
-        ];
+        table.set_rows(vec![
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
+            Row(vec![Value::Integer(5), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(6), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(7), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+        ]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition { l_side: Operand::Identifier("name".to_string()), operator: Operator::Equals, r_side: Operand::Value(Value::Text("John".to_string())) })]),
@@ -94,14 +94,14 @@ mod tests {
         let result = delete(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
-            vec![Value::Integer(6), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(7), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
+            Row(vec![Value::Integer(6), Value::Text("John".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(7), Value::Text("John".to_string()), Value::Integer(35), Value::Real(3000.0)]),
         ];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 
     #[test]
@@ -116,9 +116,9 @@ mod tests {
         let result = delete(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
         ];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod tests {
         let result = delete(&mut table, statement);
         assert!(result.is_ok());
         let expected = vec![];
-        assert_table_rows_eq_unordered(expected, table.rows);
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
 
     #[test]
