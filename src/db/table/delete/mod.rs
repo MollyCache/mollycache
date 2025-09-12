@@ -151,4 +151,67 @@ mod tests {
         let result = delete(&mut table, statement);
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn delete_with_complex_where_and_limit_edge_case() {
+        let mut table = default_table();
+        table.set_rows(vec![
+            Row(vec![Value::Integer(10), Value::Text("Alice".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(20), Value::Text("Bob".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(30), Value::Text("Charlie".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(40), Value::Text("David".to_string()), Value::Integer(40), Value::Real(4000.0)]),
+            Row(vec![Value::Integer(50), Value::Text("Eve".to_string()), Value::Integer(45), Value::Real(5000.0)]),
+        ]);
+        let statement = DeleteStatement {
+            table_name: "users".to_string(),
+            where_clause: Some(vec![
+                WhereStackElement::Condition(WhereCondition {
+                    l_side: Operand::Identifier("age".to_string()),
+                    operator: Operator::GreaterEquals,
+                    r_side: Operand::Value(Value::Integer(30)),
+                }),
+            ]),
+            order_by_clause: Some(vec![OrderByClause {
+                column: "id".to_string(),
+                direction: OrderByDirection::Desc,
+            }]),
+            limit_clause: Some(LimitClause {
+                limit: Value::Integer(2),
+                offset: Some(Value::Integer(1)),
+            }),
+        };
+        let result = delete(&mut table, statement);
+        assert!(result.is_ok());
+        let deleted_indices = result.unwrap();
+        assert_eq!(deleted_indices.len(), 2);
+        let expected = vec![
+            Row(vec![Value::Integer(10), Value::Text("Alice".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(20), Value::Text("Bob".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(50), Value::Text("Eve".to_string()), Value::Integer(45), Value::Real(5000.0)]),
+        ];
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
+    }
+
+    #[test]
+    fn delete_single_row_from_single_row_table_returns_correct_index() {
+        let mut table = default_table();
+        table.set_rows(vec![
+            Row(vec![Value::Integer(42), Value::Text("OnlyOne".to_string()), Value::Integer(99), Value::Real(123.45)]),
+        ]);
+        let statement = DeleteStatement {
+            table_name: "users".to_string(),
+            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("id".to_string()),
+                operator: Operator::Equals,
+                r_side: Operand::Value(Value::Integer(42)),
+            })]),
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        let result = delete(&mut table, statement);
+        assert!(result.is_ok());
+        let deleted_indices = result.unwrap();
+        assert_eq!(deleted_indices, vec![0]);
+        assert_eq!(table.get_rows_clone().len(), 0);
+    }
 }
