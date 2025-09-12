@@ -46,8 +46,8 @@ impl Database {
             },
             SqlStatement::InsertInto(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
-                insert::insert(table, statement)?;
-                self.append_to_transaction(sql_statement_clone, vec![])?;
+                let rows_inserted = insert::insert(table, statement)?;
+                self.append_to_transaction(sql_statement_clone, rows_inserted)?;
                 Ok(None)
             },
             SqlStatement::Select(statement) => {
@@ -56,14 +56,14 @@ impl Database {
             },
             SqlStatement::UpdateStatement(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
-                update::update(table, statement)?;
-                self.append_to_transaction(sql_statement_clone, vec![])?;
+                let rows_updated = update::update(table, statement)?;
+                self.append_to_transaction(sql_statement_clone, rows_updated)?;
                 Ok(None)
             },
             SqlStatement::DeleteStatement(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
-                delete::delete(table, statement)?;
-                self.append_to_transaction(sql_statement_clone, vec![])?;
+                let rows_deleted = delete::delete(table, statement)?;
+                self.append_to_transaction(sql_statement_clone, rows_deleted)?;
                 Ok(None)
             },
             SqlStatement::DropTable(statement) => {

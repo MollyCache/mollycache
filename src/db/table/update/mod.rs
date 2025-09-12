@@ -124,6 +124,7 @@ mod tests {
         };
         let result = update(&mut table, statement);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec![]);
         let expected = vec![];
         assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
@@ -170,6 +171,7 @@ mod tests {
         };
         let result = update(&mut table, statement);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec![0, 1, 2, 3]);
         let expected = vec![
             Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Null]),
             Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Null]),
