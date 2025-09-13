@@ -1,6 +1,7 @@
 use crate::interpreter::{
     ast::{parser::Parser, SqlStatement, AlterTableStatement, AlterTableAction},
-    ast::helpers::common::{expect_token_type, get_table_name, token_to_data_type},
+    ast::helpers::token::{expect_token_type, token_to_data_type},
+    ast::helpers::common::get_table_name,
     tokenizer::token::TokenTypes,
 };
 use crate::db::table::ColumnDefinition;

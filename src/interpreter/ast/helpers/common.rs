@@ -1,6 +1,6 @@
 use crate::interpreter::{ast::{parser::Parser, ExistenceCheck, SelectableStackElement, Operator, LogicalOperator, MathOperator}, tokenizer::token::TokenTypes};
 
-use crate::db::table::{Value, DataType};
+use crate::db::table::Value;
 
 // Returns an error if the current token does not match the given token type
 pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), String> {
@@ -28,7 +28,7 @@ pub fn token_to_value(parser: &Parser) -> Result<Value, String> {
         },
         TokenTypes::String => Ok(Value::Text(token.value.to_string())),
         TokenTypes::Blob => {
-            let bytes = decode(token.value)
+            let bytes = hex_decode(token.value)
                 .map_err(|_| parser.format_error())?;
             Ok(Value::Blob(bytes))
         },
@@ -118,7 +118,7 @@ fn get_precedence(operator: &SelectableStackElement) -> Result<i32, String> {
     return Ok(result);
 }
 
-fn decode(hex: &str) -> Result<Vec<u8>, String> {
+pub fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
     if hex.len() % 2 != 0 {
         return Err("Hex string must have even length".to_string());
     }
@@ -128,19 +128,6 @@ fn decode(hex: &str) -> Result<Vec<u8>, String> {
                 .map_err(|e| format!("Invalid hex at {}: {}", i, e))
         }).collect()
 }
-
-pub fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
-    let token = parser.current_token()?;
-    return match token.token_type {
-        TokenTypes::Integer => Ok(DataType::Integer),
-        TokenTypes::Real => Ok(DataType::Real),
-        TokenTypes::Text => Ok(DataType::Text),
-        TokenTypes::Blob => Ok(DataType::Blob),
-        TokenTypes::Null => Ok(DataType::Null),
-        _ => Err(parser.format_error()),
-    };
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -163,7 +150,7 @@ mod tests {
 
     #[test]
     fn decode_handles_valid_hex_string() {
-        let result = decode("0A1A3F");
+        let result = hex_decode("0A1A3F");
         assert!(result.is_ok());
         let expected = vec![0x0A, 0x1A, 0x3F];
         assert_eq!(expected, result.unwrap());
@@ -171,12 +158,12 @@ mod tests {
 
     #[test]
     fn decode_handles_invalid_hex_string() {
-        let result = decode("0AZA3A");
+        let result = hex_decode("0AZA3A");
         assert!(result.is_err());
         let expected = "Invalid hex at 2: invalid digit found in string";
         assert_eq!(expected, result.err().unwrap());
         
-        let result = decode("0A1");
+        let result = hex_decode("0A1");
         assert!(result.is_err());
         let expected = "Hex string must have even length";
         assert_eq!(expected, result.err().unwrap());

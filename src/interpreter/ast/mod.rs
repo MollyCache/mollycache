@@ -10,6 +10,8 @@ mod delete_statement;
 mod helpers;
 mod drop_statement;
 mod alter_table_statement;
+mod statement_builder;
+mod transaction_statements;
 #[cfg(test)]
 mod test_utils;
 
@@ -29,6 +31,11 @@ pub enum SqlStatement {
     DeleteStatement(DeleteStatement),
     DropTable(DropTableStatement),
     AlterTable(AlterTableStatement),
+    BeginTransaction(BeginStatement),
+    Commit,
+    Rollback(RollbackStatement),
+    Savepoint(SavepointStatement),
+    Release(ReleaseStatement),
 }
 
 #[derive(Debug, PartialEq)]
@@ -137,6 +144,29 @@ pub enum AlterTableAction {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum BeginStatement {
+    Deferred,
+    Immediate,
+    Exclusive,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct RollbackStatement {
+    pub savepoint_name: Option<String>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SavepointStatement {
+    pub savepoint_name: String,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ReleaseStatement {
+    pub savepoint_name: String,
+}
+
+
+#[derive(Debug, PartialEq)]
 pub struct ColumnValue {
     pub column: String,
     pub value: Value,
@@ -201,6 +231,7 @@ pub enum Operator {
 }
 
 #[derive(Debug, PartialEq)]
+#[cfg_attr(test, derive(Clone))]
 pub struct WhereCondition {
     pub l_side: Operand,
     pub operator: Operator,
@@ -209,6 +240,7 @@ pub struct WhereCondition {
 
 
 #[derive(Debug, PartialEq)]
+#[cfg_attr(test, derive(Clone))]
 pub enum Operand {
     Value(Value),
     ValueList(Vec<Value>),
@@ -223,9 +255,19 @@ pub enum WhereStackElement {
     Parentheses(Parentheses),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum WhereStackOperators {
     LogicalOperator(LogicalOperator),
     Parentheses(Parentheses),
+}
+
+impl WhereStackOperators {
+    pub fn into_where_stack_element(self) -> WhereStackElement {
+        match self {
+            WhereStackOperators::LogicalOperator(logical_operator) => WhereStackElement::LogicalOperator(logical_operator),
+            WhereStackOperators::Parentheses(parentheses) => WhereStackElement::Parentheses(parentheses),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -319,7 +361,6 @@ impl StatementBuilder for DefaultStatementBuilder {
 pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>> {
     let mut results: Vec<Result<DatabaseSqlStatement, String>> = vec![];
     let mut parser = parser::Parser::new(tokens);
-    let builder : &dyn StatementBuilder = &DefaultStatementBuilder;
     loop {
         let line_num = match parser.line_num() {
             Ok(line_num) => line_num,
@@ -328,7 +369,7 @@ pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>>
                 break;
             }
         };
-        let next_statement = parser.next_statement(builder);
+        let next_statement = parser.next_statement();
         if let Some(next_statement) = next_statement {
             match next_statement {
                 Err(error) => {
@@ -364,7 +405,7 @@ pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>>
                         Ok(DatabaseSqlStatement {
                             sql_statement: sql_statement,
                             line_num: line_num,
-                            statement_text: "".to_string(),
+                            statement_text: parser.get_sql_statement_text(),
                         })
                     );
                 }
@@ -403,6 +444,7 @@ mod tests {
 
     #[test]
     fn ast_handles_multiple_statements() {
+        // SELECT * FROM users; INSERT INTO users VALUES (1, "Alice");
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
             token(TokenTypes::Asterisk, "*"),
@@ -442,7 +484,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 line_num: 1,
-                statement_text: "".to_string(),
+                statement_text: "SELECT * FROM users;".to_string(),
             }),
             Ok(DatabaseSqlStatement {
                     sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
@@ -453,7 +495,7 @@ mod tests {
                         ],
                 }),
                     line_num: 1,
-                    statement_text: "".to_string(),
+                    statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
@@ -491,7 +533,7 @@ mod tests {
                     ],
                 }),
                 line_num: 1,
-                statement_text: "".to_string(),
+                statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
@@ -538,7 +580,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 line_num: 1,
-                statement_text: "".to_string(),
+                statement_text: "SELECT * FROM users;".to_string(),
             }),
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
@@ -549,7 +591,7 @@ mod tests {
                     ],
                 }),
                 line_num: 1,
-                statement_text: "".to_string(),
+                statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);

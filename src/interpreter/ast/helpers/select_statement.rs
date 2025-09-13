@@ -2,8 +2,9 @@ use crate::{interpreter::{
     ast::{
         parser::Parser, SelectStatement, SelectableStack, FunctionName, FunctionSignature, Operator, LogicalOperator, MathOperator, SelectableStackElement, WhereStackElement, SelectMode,
         helpers::{
-            common::{get_table_name, expect_token_type, token_to_value, compare_precedence},
-            order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
+            token::{expect_token_type, token_to_value},
+            common::{get_table_name, compare_precedence},
+            order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit
         }
     }, 
     tokenizer::token::TokenTypes,

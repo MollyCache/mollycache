@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use crate::db::table::{Table, Value, DataType};
 use crate::interpreter::ast::{SelectableStack, SelectableStackElement, Operator, LogicalOperator, MathOperator, WhereStackElement, OrderByClause, LimitClause};
-use crate::db::table::helpers::where_stack::matches_where_stack;
+use crate::db::table::helpers::where_clause::row_matches_where_stack;
 
 pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Value>, String> {
     if row.len() != table.width() {
@@ -152,7 +152,7 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
     return Ok(row_values);
 }
 
-// Used for UPDATE and DELETE. Not used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
+// Used for UPDATE and DELETE. Notget_row_indicies_matching_clauses used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
 pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Vec<WhereStackElement>>, order_by_clause: &Option<Vec<OrderByClause>>, limit_clause: &Option<LimitClause>) -> Result<Vec<usize>, String> {
     let mut indices = vec![];
     let (limit, offset) = limit_clause.as_ref().map_or(
@@ -168,7 +168,7 @@ pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Ve
     ).enumerate() {
         if limit != -1 && indices.len() as i64 >= limit && order_by_clause.is_none() {
             break;
-        } else if where_clause.as_ref().map_or_else(|| Ok(true), |stmt| matches_where_stack(table, row, &stmt))? {
+        } else if where_clause.as_ref().map_or_else(|| Ok(true), |stmt| row_matches_where_stack(table, row, &stmt))? {
             indices.push(i);
         }
     }

@@ -134,6 +134,16 @@ impl<'a> Scanner<'a> {
             slice if slice.eq_ignore_ascii_case("RENAME") => TokenTypes::Rename,
             slice if slice.eq_ignore_ascii_case("TO") => TokenTypes::To,
             slice if slice.eq_ignore_ascii_case("COLUMN") => TokenTypes::Column,
+            slice if slice.eq_ignore_ascii_case("BEGIN") => TokenTypes::Begin,
+            slice if slice.eq_ignore_ascii_case("DEFERRED") => TokenTypes::Deferred,
+            slice if slice.eq_ignore_ascii_case("IMMEDIATE") => TokenTypes::Immediate,
+            slice if slice.eq_ignore_ascii_case("EXCLUSIVE") => TokenTypes::Exclusive,
+            slice if slice.eq_ignore_ascii_case("COMMIT") => TokenTypes::Commit,
+            slice if slice.eq_ignore_ascii_case("END") => TokenTypes::End,
+            slice if slice.eq_ignore_ascii_case("ROLLBACK") => TokenTypes::Rollback,
+            slice if slice.eq_ignore_ascii_case("SAVEPOINT") => TokenTypes::Savepoint,
+            slice if slice.eq_ignore_ascii_case("RELEASE") => TokenTypes::Release,
+            slice if slice.eq_ignore_ascii_case("TRANSACTION") => TokenTypes::Transaction,
             slice if slice.eq_ignore_ascii_case("INTEGER") => TokenTypes::Integer,
             slice if slice.eq_ignore_ascii_case("REAL") => TokenTypes::Real,
             slice if slice.eq_ignore_ascii_case("TEXT") => TokenTypes::Text,
@@ -176,7 +186,6 @@ impl<'a> Scanner<'a> {
             slice if slice.eq_ignore_ascii_case("WHEN") => TokenTypes::When,
             slice if slice.eq_ignore_ascii_case("THEN") => TokenTypes::Then,
             slice if slice.eq_ignore_ascii_case("ELSE") => TokenTypes::Else,
-            slice if slice.eq_ignore_ascii_case("END") => TokenTypes::End,
             slice if slice.eq_ignore_ascii_case("IS") => TokenTypes::Is,
             slice if slice.eq_ignore_ascii_case("COUNT") => TokenTypes::Count,
             slice if slice.eq_ignore_ascii_case("SUM") => TokenTypes::Sum,
@@ -221,6 +230,33 @@ impl<'a> Scanner<'a> {
         } else {
             return TokenTypes::Error;
         }
+    }
+
+    fn read_block_comment(&mut self, start: usize) -> Option<Token<'a>> {
+        self.advance();
+        self.advance();
+        
+        while self.current < self.input.len() {
+            if self.current_char() == '*' && self.current + 1 < self.input.len() && self.peek_char() == '/' {
+                self.advance();
+                self.advance();
+                return self.next_token();
+            }
+            
+            if self.current_char() == '\n' {
+                self.line_num += 1;
+                self.col_num = self.current + 1;
+            }
+            
+            self.advance();
+        }
+        
+        Some(Token {
+            token_type: TokenTypes::Error,
+            value: &self.input[start + 2..self.current],
+            col_num: start - self.col_num + 2,
+            line_num: self.line_num,
+        })
     }
 
     pub fn next_token(&mut self) -> Option<Token<'a>> {
@@ -272,11 +308,29 @@ impl<'a> Scanner<'a> {
                     self.advance();
                     let token_type = self.read_digit();
                     Some(self.build_token(start, token_type))
-                } else {
+                } else if self.peek_char() == '-' {
+                    self.advance();
+                    if self.peek_char() == ' ' || self.peek_char() == '\n' {
+                        while self.current < self.input.len() && self.current_char() != '\n' {
+                            self.advance();
+                        }
+                        self.next_token()
+                    }
+                    else {
+                        return Some(self.build_token(start, TokenTypes::Error));
+                    }
+                }
+                else {
                     Some(self.build_token(start, TokenTypes::Minus))
                 }
             }
-            '/' => Some(self.build_token(start, TokenTypes::Divide)),
+            '/' => {
+                if self.peek_char() == '*' {
+                    self.read_block_comment(start)
+                } else {
+                    Some(self.build_token(start, TokenTypes::Divide))
+                }
+            }
             '%' => Some(self.build_token(start, TokenTypes::Modulo)),
             '=' => Some(self.build_token(start, TokenTypes::Equals)),
             '!' => {

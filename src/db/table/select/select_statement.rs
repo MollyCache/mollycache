@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use crate::db::table::helpers::order_by_clause::perform_comparisons;
-use crate::db::table::helpers::where_stack::matches_where_stack;
+use crate::db::table::helpers::where_clause::row_matches_where_stack;
 use crate::db::table::{Table, Value};
 use crate::interpreter::ast::{SelectStatement, SelectMode};
 use crate::db::table::helpers::common::{get_columns_from_row};
@@ -25,7 +25,7 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
     ).enumerate() {
         if limit != -1 && rows_and_indexes.len() as i64 >= limit && statement.order_by_clause.is_none() {
             break;
-        } else if statement.where_clause.as_ref().map_or_else(|| Ok(true), |stmt| matches_where_stack(table, row, &stmt))? {
+        } else if statement.where_clause.as_ref().map_or_else(|| Ok(true), |stmt| row_matches_where_stack(table, row, &stmt))? {
             let columns = get_columns_from_row(table, row, &statement.columns)?;
             if let Some(map) = &mut distinct_map {
                 if map.insert(columns.clone()) {
