@@ -1,6 +1,6 @@
 use crate::{interpreter::{
     ast::{
-        parser::Parser, SelectStatement, SelectableStack, FunctionName, FunctionSignature, Operator, LogicalOperator, MathOperator, SelectableStackElement, WhereStackElement,
+        parser::Parser, SelectStatement, SelectableStack, FunctionName, FunctionSignature, Operator, LogicalOperator, MathOperator, SelectableStackElement, WhereStackElement, SelectMode,
         helpers::{
             common::{get_table_name, expect_token_type, token_to_value, compare_precedence},
             order_by_clause::get_order_by, where_stack::get_where_clause, limit_clause::get_limit
@@ -11,6 +11,13 @@ use crate::{interpreter::{
 
 pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     parser.advance()?;
+    let mode = match parser.current_token()?.token_type {
+        TokenTypes::Distinct => {
+            parser.advance()?;
+            SelectMode::Distinct
+        }
+        _ => SelectMode::All
+    };
     let (columns, column_names) = get_columns_and_names(parser)?;
     expect_token_type(parser, TokenTypes::From)?; // TODO: this is not true, you can do SELECT 1;
     parser.advance()?;
@@ -21,6 +28,7 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     
     return Ok(SelectStatement {
             table_name: table_name,
+            mode: mode,
             columns: columns,
             column_names: column_names,
             where_clause: where_clause,
@@ -217,6 +225,7 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
             },
@@ -243,6 +252,7 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "guests".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column("id".to_string())],
             },
@@ -271,6 +281,7 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
                     SelectableStackElement::Column("id".to_string()),
@@ -317,6 +328,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "guests".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column("id".to_string())]
             },
@@ -343,10 +355,38 @@ mod tests {
                 }
             ]),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(5)),
+                limit: 10,
+                offset: Some(5),
             }),
         };
         assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_distinct_mode_is_generated_correctly() {
+        // SELECT DISTINCT id FROM guests;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Distinct, "DISTINCT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "guests"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        assert_eq!(statement, SelectStatement {
+            table_name: "guests".to_string(),
+            column_names: vec!["id".to_string()],
+            mode: SelectMode::Distinct,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column("id".to_string())],
+            },
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        });
     }
 }

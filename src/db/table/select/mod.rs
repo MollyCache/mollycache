@@ -1,8 +1,8 @@
 mod select_statement;
 mod set_operator_evaluator;
 use crate::db::{database::Database, table::Value};
-use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement, SelectableStack, SelectableStackElement};
-use crate::db::table::helpers::{order_by_clause::{perform_comparions}, limit_clause::get_limited_rows};
+use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement};
+use crate::db::table::helpers::order_by_clause::perform_comparisons;
 
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Vec<Value>>, String> {
@@ -47,19 +47,16 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
     }
     let mut result = evaluator.result()?;
     if let Some(order_by_clause) = statement.order_by_clause {
-        if let Some(columns) = column_names {
-            let column_names_ref: Vec<&String> = columns.iter().map(|s| s as &String).collect();
-            result.sort_by(|a, b| {
-                perform_comparions(&column_names_ref, a, b, &order_by_clause)
-            });
-        } else {
-            unreachable!()
-        }
+        result.sort_by(|a, b| {
+            perform_comparisons(a, b, &order_by_clause)
+        });
     }
 
     // TODO: if LIMIT without ORDER BY, apply LIMIT at the beginning / after the WHERE
     if let Some(limit_clause) = statement.limit_clause {
-        result = get_limited_rows(result, &limit_clause)?;
+        let offset = limit_clause.offset.unwrap_or(0);
+        let end = limit_clause.limit + offset;
+        result = result[offset..end].to_vec();
     }
     Ok(result)
 }
@@ -69,7 +66,7 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
 mod tests {
     use super::*;
     use crate::db::table::test_utils::default_database;
-    use crate::interpreter::ast::{SelectStatement, SelectableStack, SelectableStackElement, WhereStackElement, WhereCondition, Operand, Operator, LogicalOperator};
+    use crate::interpreter::ast::{SelectStatement, SelectableStack, SelectableStackElement, WhereStackElement, WhereCondition, Operand, Operator, LogicalOperator, SelectMode};
 
 
     #[test]
@@ -78,6 +75,7 @@ mod tests {
         let statement = SelectStatementStack {
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::All]
                 },
@@ -107,6 +105,7 @@ mod tests {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All]
                     },
@@ -121,6 +120,7 @@ mod tests {
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All]
                     },
@@ -148,6 +148,7 @@ mod tests {
         let statement = SelectStatementStack {
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::All]
                 },
@@ -158,6 +159,7 @@ mod tests {
             }),
             SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::All]
                 },
@@ -180,6 +182,7 @@ mod tests {
             SelectStatementStackElement::SetOperator(SetOperator::Intersect),
             SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::All]
                 },

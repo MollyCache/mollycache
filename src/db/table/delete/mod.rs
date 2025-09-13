@@ -89,7 +89,7 @@ mod tests {
             table_name: "users".to_string(),
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition { l_side: Operand::Identifier("name".to_string()), operator: Operator::Equals, r_side: Operand::Value(Value::Text("John".to_string())) })]),
             order_by_clause: Some(vec![OrderByClause { column: "id".to_string(), direction: OrderByDirection::Desc }]),
-            limit_clause: Some(LimitClause { limit: Value::Integer(1), offset: Some(Value::Integer(2)) }),
+            limit_clause: Some(LimitClause { limit: 1, offset: Some(2) }),
         };
         let result = delete(&mut table, statement);
         assert!(result.is_ok());

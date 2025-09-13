@@ -158,6 +158,7 @@ mod tests {
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::LimitClause;
+    use crate::interpreter::ast::SelectMode;
 
     fn simple_select_statement_tokens(id: &'static str) -> Vec<Token<'static>> {
         vec![
@@ -175,6 +176,7 @@ mod tests {
     fn expected_simple_select_statement(id: i64) -> SelectStatementStackElement {
         SelectStatementStackElement::SelectStatement(SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
             },
@@ -336,6 +338,7 @@ mod tests {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::Column("name".to_string())]
                     },
@@ -350,6 +353,7 @@ mod tests {
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::Column("name".to_string())]
                     },
@@ -369,8 +373,8 @@ mod tests {
                 direction: OrderByDirection::Asc,
             }]),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(15)),
+                limit: 10,
+                offset: Some(15),
             }),
         });
         assert_eq!(expected, statement);
@@ -408,8 +412,8 @@ mod tests {
                 direction: OrderByDirection::Asc,
             }]),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(15)),
+                limit: 10,
+                offset: Some(15),
             }),
         });
         assert_eq!(expected, statement);
@@ -440,8 +444,8 @@ mod tests {
             ],
             order_by_clause: None,
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(15)),
+                limit: 10,
+                offset: Some(15),
             }),
         });
         assert_eq!(expected, statement);

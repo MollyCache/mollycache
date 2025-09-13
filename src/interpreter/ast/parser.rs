@@ -105,7 +105,7 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectableStack, SelectableStackElement, SelectStatementStack, SelectStatementStackElement};
+    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectableStack, SelectableStackElement, SelectStatementStack, SelectStatementStackElement, SelectMode};
     use crate::interpreter::ast::test_utils::{token_with_location, token};
 
     #[test]
@@ -153,6 +153,7 @@ mod tests {
             return Ok(SqlStatement::Select(SelectStatementStack {
                 elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All]
                     },
@@ -219,6 +220,7 @@ mod tests {
         let expected = Some(Ok(SqlStatement::Select(SelectStatementStack {
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
+                mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::All]
                 },

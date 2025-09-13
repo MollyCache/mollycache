@@ -98,6 +98,7 @@ impl SetOperator {
 pub struct SelectStatement {
     pub table_name: String,
     pub column_names: Vec<String>,
+    pub mode: SelectMode,
     pub columns: SelectableStack,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<Vec<OrderByClause>>,
@@ -139,6 +140,12 @@ pub enum AlterTableAction {
 pub struct ColumnValue {
     pub column: String,
     pub value: Value,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SelectMode {
+    All,
+    Distinct,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -263,8 +270,8 @@ pub struct OrderByClause {
 
 #[derive(Debug, PartialEq)]
 pub struct LimitClause {
-    pub limit: Value,
-    pub offset: Option<Value>,
+    pub limit: usize,
+    pub offset: Option<usize>,
 }
 
 pub trait StatementBuilder {
@@ -422,6 +429,7 @@ mod tests {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
+                        mode: SelectMode::All,
                         columns: SelectableStack {
                             selectables: vec![SelectableStackElement::All]
                         },
@@ -517,6 +525,7 @@ mod tests {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
+                        mode: SelectMode::All,
                         columns: SelectableStack {
                             selectables: vec![SelectableStackElement::All]
                         },

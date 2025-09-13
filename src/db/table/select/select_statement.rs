@@ -1,30 +1,70 @@
+use std::collections::HashSet;
+use crate::db::table::helpers::order_by_clause::perform_comparisons;
+use crate::db::table::helpers::where_stack::matches_where_stack;
 use crate::db::table::{Table, Value};
-use crate::interpreter::ast::{SelectStatement};
-use crate::db::table::helpers::common::{get_row_indicies_matching_clauses, get_row_columns_from_indicies};
-
-
+use crate::interpreter::ast::{SelectStatement, SelectMode};
+use crate::db::table::helpers::common::{get_columns_from_row};
 
 pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
-    let row_indicies = get_row_indicies_matching_clauses(table, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
-    
-    return Ok(get_row_columns_from_indicies(table, row_indicies, Some(&statement.columns))?);
+    let mut rows_and_indexes = vec![];
+    let (limit, offset) = statement.limit_clause.as_ref().map_or(
+        (-1, 0),
+        |stmt| (
+            stmt.limit as i64,
+            stmt.offset.map_or(0, |val| val)
+        )
+    );
+
+    let mut distinct_map = match statement.mode {
+        SelectMode::All => None,
+        SelectMode::Distinct => Some(HashSet::new()),
+    };
+
+    for (i, row) in table.rows.iter().skip(
+        if statement.order_by_clause.is_none() {offset} else {0}
+    ).enumerate() {
+        if limit != -1 && rows_and_indexes.len() as i64 >= limit && statement.order_by_clause.is_none() {
+            break;
+        } else if statement.where_clause.as_ref().map_or_else(|| Ok(true), |stmt| matches_where_stack(table, row, &stmt))? {
+            let columns = get_columns_from_row(table, row, &statement.columns)?;
+            if let Some(map) = &mut distinct_map {
+                if map.insert(columns.clone()) {
+                    rows_and_indexes.push((columns, i));
+                }
+            } else {
+                rows_and_indexes.push((columns, i));
+            }
+        }
+    }
+
+    if let Some(stmt) = &statement.order_by_clause {
+        rows_and_indexes.sort_by(|a, b| perform_comparisons(&table.rows[a.1], &table.rows[b.1], stmt));
+        let end = if limit == -1 {rows_and_indexes.len()} else {offset + limit as usize};
+        rows_and_indexes = rows_and_indexes[offset..end].to_vec();
+    }
+
+    Ok(rows_and_indexes.into_iter().map(|elem| elem.0).collect())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::db::table::Value;
+    use crate::db::table::ColumnDefinition;
+    use crate::db::table::DataType;
     use crate::interpreter::ast::{SelectableStack, SelectableStackElement, LimitClause, OrderByClause, OrderByDirection, Operator};
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::Operand;
-    use crate::db::table::test_utils::default_table;
+    use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
+    use crate::interpreter::ast::SelectMode;
 
     #[test]
     fn select_with_all_tokens_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
             },
@@ -49,6 +89,7 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
                     SelectableStackElement::Column("name".to_string()),
@@ -76,6 +117,7 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
             },
@@ -103,6 +145,7 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
                     SelectableStackElement::Column("name".to_string()),
@@ -133,6 +176,7 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
             },
@@ -140,8 +184,8 @@ mod tests {
             where_clause: None,
             order_by_clause: None,
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(1),
-                offset: Some(Value::Integer(1)),
+                limit: 1,
+                offset: Some(1),
             }),
         };
         let result = select_statement(&table, &statement);
@@ -157,6 +201,7 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
             },
@@ -181,6 +226,7 @@ mod tests {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
+            mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All]
             },
@@ -198,5 +244,41 @@ mod tests {
             vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
         ];
         assert_eq!(expected, result.unwrap());
+    }
+
+    #[test]
+    fn select_with_distinct_mode_is_generated_correctly() {
+        let table = Table {
+            name: "users".to_string(),
+            columns: vec![
+                ColumnDefinition {name: "id".to_string(), data_type: DataType::Integer, constraints: vec![]},
+                ColumnDefinition {name: "name".to_string(), data_type: DataType::Text, constraints: vec![]},
+            ],
+            rows: vec![
+                vec![Value::Integer(1), Value::Text("John".to_string())],
+                vec![Value::Integer(2), Value::Text("Jane".to_string())],
+                vec![Value::Integer(3), Value::Text("Jane".to_string())],
+                vec![Value::Integer(4), Value::Null],
+            ],
+        };
+        let statement = SelectStatement {
+            table_name: "users".to_string(),
+            column_names: vec!["name".to_string()],
+            mode: SelectMode::Distinct,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column("name".to_string())]
+            },
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        let result = select_statement(&table, &statement);
+        assert!(result.is_ok());
+        let expected = vec![
+            vec![Value::Text("John".to_string())],
+            vec![Value::Text("Jane".to_string())],
+            vec![Value::Null],
+        ];
+        assert_table_rows_eq_unordered(expected, result.unwrap());
     }
 }

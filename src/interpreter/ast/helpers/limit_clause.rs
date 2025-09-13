@@ -10,7 +10,15 @@ pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
     parser.advance()?;
 
     expect_token_type(parser, TokenTypes::IntLiteral)?;
-    let limit = token_to_value(parser)?;
+    let limit = match token_to_value(parser)? {
+        Value::Integer(v) => {
+            if v < 0 {
+                return Err("Invalid LIMIT value: must be positive.".to_string())
+            }
+            v as usize
+        },
+        _ => return Err("Invalid LIMIT value: must be integer.".to_string())
+    };
     parser.advance()?;
 
     let token = parser.current_token()?;
@@ -23,11 +31,14 @@ pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
     parser.advance()?;
 
     expect_token_type(parser, TokenTypes::IntLiteral)?;
-    let offset = token_to_value(parser)?;
-    if let Value::Integer(offset) = offset {
-        if offset < 0 {
-            return Err(parser.format_error());
-        }
+    let offset = match token_to_value(parser)? {
+        Value::Integer(v) => {
+            if v < 0 {
+                return Err("Invalid OFFSET value: must be positive.".to_string())
+            }
+            v as usize
+        },
+        _ => return Err("Invalid OFFSET value: must be integer.".to_string())
     };
     parser.advance()?;
 
@@ -57,8 +68,8 @@ mod tests {
         assert!(result.is_ok());
         let limit_clause = result.unwrap();
         let expected = Some(LimitClause {
-            limit: Value::Integer(10),
-            offset: Some(Value::Integer(5)),
+            limit: 10,
+            offset: Some(5),
         });
         assert_eq!(expected, limit_clause);
     }
@@ -76,7 +87,7 @@ mod tests {
         assert!(result.is_ok());
         let limit_clause = result.unwrap();
         let expected = Some(LimitClause {
-            limit: Value::Integer(10),
+            limit: 10,
             offset: None,
         });
         assert_eq!(expected, limit_clause);

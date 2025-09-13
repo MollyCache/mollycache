@@ -102,8 +102,8 @@ mod tests {
                 }
             ]),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(5)),
+                limit: 10,
+                offset: Some(5),
             }),
         });
         assert_eq!(expected, statement);
