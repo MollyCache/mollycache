@@ -34,11 +34,11 @@ pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
     let offset = match token_to_value(parser)? {
         Value::Integer(v) => {
             if v < 0 {
-                return Err("Invalid OFFSET value: must be positive.".to_string())
+                return Err(parser.format_error())
             }
             v as usize
         },
-        _ => return Err("Invalid OFFSET value: must be integer.".to_string())
+        _ => return Err(parser.format_error())
     };
     parser.advance()?;
 

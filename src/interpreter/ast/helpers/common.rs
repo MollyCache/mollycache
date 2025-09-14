@@ -187,7 +187,7 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
             TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
             // TODO: handle ValueList (arrays)
             TokenTypes::Identifier => SelectableStackElement::Column(token.value.to_string()), // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
-            _ => { return Err(format!("Unexpected identifier: {}", token.value)) } // TODO: better error handling
+            _ => { return Err(parser.format_error()) } // TODO: better error handling
         };
         output.push(element);
     }
