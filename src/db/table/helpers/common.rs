@@ -183,7 +183,7 @@ pub fn remove_duplicate_rows(rows: Vec<Row>) -> Vec<Row> {
     return result;
 }
 
-fn pop_one_and_operate<F, R>(f: F, values: &mut Vec<Value>, err: Option<String>) -> Result<R, String> where F: Fn(Value) -> Result<R, String> {
+fn pop_one_and_operate<F, R>(f: F, values: &mut Row, err: Option<String>) -> Result<R, String> where F: Fn(Value) -> Result<R, String> {
     if let Some(val) = values.pop() {
         return f(val);
     } else {
@@ -191,7 +191,7 @@ fn pop_one_and_operate<F, R>(f: F, values: &mut Vec<Value>, err: Option<String>)
     }
 }
 
-fn pop_two_and_operate<F, R>(f: F, values: &mut Vec<Value>, err: Option<String>) -> Result<R, String> where F: Fn(Value, Value) -> Result<R, String> {
+fn pop_two_and_operate<F, R>(f: F, values: &mut Row, err: Option<String>) -> Result<R, String> where F: Fn(Value, Value) -> Result<R, String> {
     if let Some(second) = values.pop() && let Some(first) = values.pop() {
         return f(first, second);
     } else {

@@ -6,13 +6,13 @@ use crate::db::table::{Table, Value, Row};
 
 // We create an interface here to allow us to create a spy for testing short circuiting.
 trait MatchesWhereClause {
-    fn matches_where_clause(&mut self, table: &Table, row: &Vec<Value>, where_clause: &WhereCondition) -> Result<bool, String>;
+    fn matches_where_clause(&mut self, table: &Table, row: &Row, where_clause: &WhereCondition) -> Result<bool, String>;
 }
 
 struct WhereConditionEvaluator;
 
 impl MatchesWhereClause for WhereConditionEvaluator {
-    fn matches_where_clause(&mut self, table: &Table, row: &Vec<Value>, where_clause: &WhereCondition) -> Result<bool, String> {
+    fn matches_where_clause(&mut self, table: &Table, row: &Row, where_clause: &WhereCondition) -> Result<bool, String> {
         where_condition::matches_where_clause(table, row, where_clause)
     }
 }
@@ -33,7 +33,7 @@ mod tests {
     }
 
     impl MatchesWhereClause for SpyWhereConditionEvaluator {
-        fn matches_where_clause(&mut self, table: &Table, row: &Vec<Value>, where_clause: &WhereCondition) -> Result<bool, String> {
+        fn matches_where_clause(&mut self, table: &Table, row: &Row, where_clause: &WhereCondition) -> Result<bool, String> {
             self.conditions_evaluated.push(where_clause.clone());
             where_condition::matches_where_clause(table, row, where_clause)
         }
