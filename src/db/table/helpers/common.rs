@@ -165,15 +165,11 @@ pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Ve
         )
     );
 
-    println!("Limit, offset: {}, {}", limit, offset);
-    println!("skipping: {}", if order_by_clause.is_none() {offset} else {0});
 
     for (i, row) in table.iter().skip(
         if order_by_clause.is_none() {offset} else {0}
     ).enumerate() {
-        println!("seeing element {}", i);
         if limit != -1 && indices.len() as i64 >= limit && order_by_clause.is_none() {
-            println!("breaking");
             break;
         } else if where_clause.as_ref().map_or_else(|| Ok(true), |stmt| row_matches_where_stack(table, row, &stmt))? {
             indices.push(i);

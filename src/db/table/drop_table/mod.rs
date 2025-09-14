@@ -29,7 +29,6 @@ mod tests {
         };
         let mut database = default_database();
         let result = drop_table(&mut database, statement);
-        println!("{:?}", result);
         assert!(result.is_ok());
         assert!(!database.has_table("users"));
     }
