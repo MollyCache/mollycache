@@ -1,3 +1,4 @@
+use crate::interpreter::ast::helpers::common::get_selectables;
 use crate::interpreter::ast::{parser::Parser, OrderByClause, OrderByDirection, SelectableStack, SelectableStackElement};
 use crate::interpreter::tokenizer::token::TokenTypes;
 
@@ -12,44 +13,11 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
     expect_token_type(parser, TokenTypes::By)?;
     parser.advance()?;
 
-    let mut columns = vec![];
     let mut directions = vec![];
-    /*
-    loop {
-        let token = parser.current_token()?;
-        expect_token_type(parser, TokenTypes::Identifier)?;
-        let column = token.value.to_string();
-        parser.advance()?;
-
-        let token = parser.current_token()?;
-        let direction = match token.token_type {
-            TokenTypes::Asc => {
-                parser.advance()?;
-                OrderByDirection::Asc
-            },
-            TokenTypes::Desc => {
-                parser.advance()?;
-                OrderByDirection::Desc
-            },
-            _ => OrderByDirection::Asc,
-        };
-
-        order_by_clauses.push(OrderByClause {
-            column: column,
-            direction: direction,
-        });
-
-        let token = parser.current_token()?;
-        if token.token_type != TokenTypes::Comma {
-            break;
-        }
-        parser.advance()?;
-    }
-    */
+    let columns = get_selectables(parser, true, &mut Some(&mut directions), &mut None)?;
+    
     return Ok(Some(OrderByClause {
-        columns: SelectableStack {
-            selectables: columns,
-        },
+        columns: columns,
         directions: directions
     }));
 }
