@@ -23,6 +23,23 @@ jobs:
       
       - name: Run checks
         run: RUSTFLAGS="-D warnings" cargo check --verbose
+    
+  lint:
+    name: Rust Lint Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust (latest stable)
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      
+      - name: Install Linter
+        run: rustup component add rustfmt
+
+      - name: Run Linter
+        run: cargo fmt --all -- --check
 
   test:
     name: Rust Tests
