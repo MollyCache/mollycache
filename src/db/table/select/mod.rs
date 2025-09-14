@@ -2,12 +2,15 @@ mod select_statement;
 mod set_operator_evaluator;
 use crate::db::{database::Database, table::Row};
 use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement};
-use crate::db::table::helpers::order_by_clause::perform_comparisons;
+use crate::db::table::helpers::order_by_clause::apply_order_by;
 
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Row>, String> {
     let mut evaluator = set_operator_evaluator::SetOperatorEvaluator::new();
     let mut column_names: Option<Vec<String>> = None;
+    
+    // TODO: so ugly and also just false. Needed in some sort of way for now. See later TODO about dealing with 2+ tables
+    let mut first_table = None;
 
     for element in statement.elements {
         match element {
@@ -26,6 +29,10 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
                 let table = database.get_table(&select_statement.table_name)?;
                 let rows = select_statement::select_statement(table, &select_statement)?;
                 evaluator.push(rows);
+
+                if first_table.is_none() {
+                    first_table = Some(table);
+                }
             }
             SelectStatementStackElement::SetOperator(set_operator) => {
                 match set_operator {
@@ -47,9 +54,12 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
     }
     let mut result = evaluator.result()?;
     if let Some(order_by_clause) = statement.order_by_clause {
-        result.sort_by(|a, b| {
-            perform_comparisons(a, b, &order_by_clause)
-        });
+        if let Some(table) = first_table {
+            // TODO: this is just plain false when working with 2+ tables
+            apply_order_by(table, &mut result, &order_by_clause)?;
+        } else {
+            unreachable!();
+        }
     }
 
     // TODO: if LIMIT without ORDER BY, apply LIMIT at the beginning / after the WHERE

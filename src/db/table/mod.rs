@@ -212,6 +212,10 @@ impl Table {
         }
     }
 
+    pub fn get(&self, i: usize) -> Option<&Row> {
+        self.rows.get(i)?.stack.last()
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &Row> {
         self.rows.iter().map(|s| s.stack.last().unwrap())
     }

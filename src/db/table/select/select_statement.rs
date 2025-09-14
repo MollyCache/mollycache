@@ -1,12 +1,12 @@
 use std::collections::HashSet;
-use crate::db::table::helpers::order_by_clause::perform_comparisons;
+use crate::db::table::helpers::order_by_clause::{apply_order_by};
 use crate::db::table::helpers::where_clause::row_matches_where_stack;
 use crate::db::table::{Table, Row};
 use crate::interpreter::ast::{SelectStatement, SelectMode};
 use crate::db::table::helpers::common::{get_columns_from_row};
 
 pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Vec<Row>, String> {
-    let mut rows_and_indexes = vec![];
+    let mut rows = vec![];
     let (limit, offset) = statement.limit_clause.as_ref().map_or(
         (-1, 0),
         |stmt| (
@@ -23,27 +23,29 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
     for (i, row) in table.iter().skip(
         if statement.order_by_clause.is_none() {offset} else {0}
     ).enumerate() {
-        if limit != -1 && rows_and_indexes.len() as i64 >= limit && statement.order_by_clause.is_none() {
+        if limit != -1 && rows.len() as i64 >= limit && statement.order_by_clause.is_none() {
             break;
         } else if statement.where_clause.as_ref().map_or_else(|| Ok(true), |stmt| row_matches_where_stack(table, row, &stmt))? {
             let columns = get_columns_from_row(table, row, &statement.columns)?;
             if let Some(map) = &mut distinct_map {
                 if map.insert(columns.clone()) {
-                    rows_and_indexes.push((columns, i));
+                    rows.push(columns);
                 }
             } else {
-                rows_and_indexes.push((columns, i));
+                rows.push(columns);
             }
         }
     }
 
     if let Some(stmt) = &statement.order_by_clause {
-        rows_and_indexes.sort_by(|a, b| perform_comparisons(&table[a.1], &table[b.1], stmt));
-        let end = if limit == -1 {rows_and_indexes.len()} else {offset + limit as usize};
-        rows_and_indexes = rows_and_indexes[offset..end].to_vec();
+        apply_order_by(table, &mut rows, stmt)?;
+        if limit != -1 || offset != 0 {
+            let end = if limit == -1 {rows.len()} else {offset + limit as usize};
+            rows = rows[offset..end].to_vec();
+        }
     }
 
-    Ok(rows_and_indexes.into_iter().map(|elem| elem.0).collect())
+    Ok(rows)
 }
 
 #[cfg(test)]
