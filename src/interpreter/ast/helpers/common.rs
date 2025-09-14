@@ -11,48 +11,6 @@ pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), 
     Ok(())
 }
 
-pub fn token_to_value(parser: &Parser) -> Result<Value, String> {
-    // TODO: replace parser param with token param
-    let token = parser.current_token()?;
-    
-    match token.token_type {
-        TokenTypes::IntLiteral => {
-            let num = token.value.parse::<i64>()
-                .map_err(|_| parser.format_error())?;
-            Ok(Value::Integer(num))
-        },
-        TokenTypes::RealLiteral => {
-            let num = token.value.parse::<f64>()
-                .map_err(|_| parser.format_error())?;
-            Ok(Value::Real(num))
-        },
-        TokenTypes::String => Ok(Value::Text(token.value.to_string())),
-        TokenTypes::Blob => {
-            let bytes = hex_decode(token.value)
-                .map_err(|_| parser.format_error())?;
-            Ok(Value::Blob(bytes))
-        },
-        TokenTypes::Null => Ok(Value::Null),
-        _ => Err(parser.format_error()),
-    }
-}
-
-// Returns a list of Values from the tokens when they are formated as "value, value, ..."
-pub fn tokens_to_value_list(parser: &mut Parser) -> Result<Vec<Value>, String> {
-    let mut values: Vec<Value> = vec![];
-    loop {
-        values.push(token_to_value(parser)?);
-        parser.advance()?;
-        let token = parser.current_token()?;
-        if token.token_type != TokenTypes::Comma {
-            break;
-        }
-        parser.advance()?;
-    }
-    return Ok(values);
-}
-
-
 pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     let token = parser.current_token()?;
     expect_token_type(parser, TokenTypes::Identifier)?;
@@ -132,21 +90,7 @@ pub fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::test_utils::token;
-    use crate::interpreter::ast::parser::Parser;
-    use crate::interpreter::tokenizer::token::TokenTypes;
-
-    #[test]
-    fn value_list_handles_single_value() {
-        // 1);...
-        let tokens = vec![
-            token(TokenTypes::IntLiteral, "1"),
-            token(TokenTypes::RightParen, ")"),
-        ];
-        let mut parser = Parser::new(tokens);
-        let result = tokens_to_value_list(&mut parser);
-        assert_eq!(result, Ok(vec![Value::Integer(1)]));
-    }
+    // TODO: add more tests
 
     #[test]
     fn decode_handles_valid_hex_string() {
