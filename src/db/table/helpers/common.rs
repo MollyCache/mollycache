@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use crate::db::table::{Table, Value, DataType};
+use crate::db::table::{Table, DataType, Row, Value};
 use crate::interpreter::ast::{SelectableStack, SelectableStackElement, Operator, LogicalOperator, MathOperator, WhereStackElement, OrderByClause, LimitClause};
 use crate::db::table::helpers::where_clause::row_matches_where_stack;
 
-pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Value>, String> {
+pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
     if row.len() != table.width() {
         return Err(format!("Rows have incorrect width"));
     }
 
-    let mut row_values: Vec<Value> = vec![];
+    let mut row_values: Row = Row(vec![]);
     for (i, value) in row.iter().enumerate() {
         if value.get_type() != table.columns[i].data_type && value.get_type() != DataType::Null {
             return Err(format!("Data type mismatch for column {}", table.columns[i].name));
@@ -20,13 +20,13 @@ pub fn validate_and_clone_row(table: &Table, row: &Vec<Value>) -> Result<Vec<Val
     return Ok(row_values);
 }
 
-pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &SelectableStack) -> Result<Vec<Value>, String> {
-    let mut row_values: Vec<Value> = vec![];
+pub fn get_columns_from_row(table: &Table, row: &Row, selected_columns: &SelectableStack) -> Result<Row, String> {
+    let mut row_values: Row = Row { 0: vec![] };
 
     let mut column_values = HashMap::new();
-    for (i, column) in table.columns.iter().enumerate() {
+    for (i, column) in table.get_columns().into_iter().enumerate() {
         if let Some(value) = row.get(i) {
-            column_values.insert(column.name.to_string(), value);
+            column_values.insert(column, value);
         } else {
             return Err(format!("Row does not have the expected number of columns (expected: {}, got: {}", table.columns.len(), row.len()));
         }
@@ -37,7 +37,8 @@ pub fn get_columns_from_row(table: &Table, row: &Vec<Value>, selected_columns: &
     for selectable in &selected_columns.selectables {
         match selectable {
             SelectableStackElement::All => {
-                for val in row {
+                for val in row.iter() {
+                    // TODO: can we do this?
                     row_values.push(val.clone());
                 }
             },
@@ -163,7 +164,7 @@ pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Ve
         )
     );
 
-    for (i, row) in table.rows.iter().skip(
+    for (i, row) in table.iter().skip(
         if order_by_clause.is_none() {offset} else {0}
     ).enumerate() {
         if limit != -1 && indices.len() as i64 >= limit && order_by_clause.is_none() {
@@ -176,9 +177,9 @@ pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Ve
     Ok(indices)
 }
 
-pub fn remove_duplicate_rows(rows: Vec<Vec<Value>>) -> Vec<Vec<Value>> {
-    let set = rows.into_iter().collect::<HashSet<Vec<Value>>>();
-    let result = set.into_iter().collect::<Vec<Vec<Value>>>();
+pub fn remove_duplicate_rows(rows: Vec<Row>) -> Vec<Row> {
+    let set = rows.into_iter().collect::<HashSet<Row>>();
+    let result = set.into_iter().collect::<Vec<Row>>();
     return result;
 }
 

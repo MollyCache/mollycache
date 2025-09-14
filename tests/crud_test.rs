@@ -1,6 +1,6 @@
 use mollydb::db::database::Database;
 use mollydb::interpreter::run_sql;
-use mollydb::db::table::Value;
+use mollydb::db::table::{Value, Row};
 
 #[test]
 fn test_basic_statements_crud() {
@@ -22,8 +22,8 @@ fn test_basic_statements_crud() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
     let expected = vec![
-        vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(2000.0)],
-        vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
+        Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(2000.0)]),
+        Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
     ];
     assert_eq!(result.pop().unwrap().unwrap().unwrap(), expected);
     assert!(result.into_iter().all(|result| result.is_ok() && result.unwrap().is_none()));
@@ -53,12 +53,12 @@ fn test_complex_statements_crud() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
     let expected_first = vec![
-        vec![Value::Text("Jim".to_string()), Value::Integer(35)],
-        vec![Value::Text("Jane".to_string()), Value::Integer(30)],
-        vec![Value::Text("John".to_string()), Value::Integer(25)],
+        Row(vec![Value::Text("Jim".to_string()), Value::Integer(35)]),
+        Row(vec![Value::Text("Jane".to_string()), Value::Integer(30)]),
+        Row(vec![Value::Text("John".to_string()), Value::Integer(25)]),
     ];
     let expected_second = vec![
-        vec![Value::Integer(80)],
+        Row(vec![Value::Integer(80)]),
     ];
     assert_eq!(expected_second, result.pop().unwrap().unwrap().unwrap());
     assert!(result.pop().unwrap().unwrap().is_none());
@@ -154,7 +154,7 @@ fn test_alter_table() {
     assert!(result[0..=5].iter().all(|result| result.is_ok() && result.as_ref().unwrap().is_none()));
 
     let expected = vec![
-        vec![Value::Text("John".to_string()), Value::Null],
+        Row(vec![Value::Text("John".to_string()), Value::Null]),
     ];
     let row = result[6].as_ref().unwrap().as_ref().unwrap();
     assert_eq!(expected, *row);
@@ -187,10 +187,35 @@ fn test_distinct_mode() {
     let result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
     let expected = vec![
-        vec![Value::Text("Jane".to_string())],
-        vec![Value::Text("Jim".to_string())],
-        vec![Value::Text("John".to_string())],
+        Row(vec![Value::Text("Jane".to_string())]),
+        Row(vec![Value::Text("Jim".to_string())]),
+        Row(vec![Value::Text("John".to_string())]),
     ];
     let row = result[5].as_ref().unwrap().as_ref().unwrap();
     assert_eq!(expected, *row);
 }
+
+#[test]
+fn test_distinct_with_limit_and_offset() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'John');
+    INSERT INTO users (id, name) VALUES (2, 'Jane');
+    INSERT INTO users (id, name) VALUES (3, 'Jim');
+    INSERT INTO users (id, name) VALUES (4, 'John');
+    SELECT DISTINCT name FROM users ORDER BY name DESC LIMIT 1 OFFSET 1;
+    ";
+    let result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+    let expected = vec![
+        Row(vec![Value::Text("Jim".to_string())]),
+    ];
+    let row = result[5].as_ref().unwrap().as_ref().unwrap();
+    assert_eq!(expected, *row);
+}
+
+

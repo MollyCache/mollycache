@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 use crate::db::table::helpers::order_by_clause::perform_comparisons;
 use crate::db::table::helpers::where_clause::row_matches_where_stack;
-use crate::db::table::{Table, Value};
+use crate::db::table::{Table, Row};
 use crate::interpreter::ast::{SelectStatement, SelectMode};
 use crate::db::table::helpers::common::{get_columns_from_row};
 
-pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Vec<Vec<Value>>, String> {
+pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Vec<Row>, String> {
     let mut rows_and_indexes = vec![];
     let (limit, offset) = statement.limit_clause.as_ref().map_or(
         (-1, 0),
@@ -20,7 +20,7 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
         SelectMode::Distinct => Some(HashSet::new()),
     };
 
-    for (i, row) in table.rows.iter().skip(
+    for (i, row) in table.iter().skip(
         if statement.order_by_clause.is_none() {offset} else {0}
     ).enumerate() {
         if limit != -1 && rows_and_indexes.len() as i64 >= limit && statement.order_by_clause.is_none() {
@@ -38,7 +38,7 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
     }
 
     if let Some(stmt) = &statement.order_by_clause {
-        rows_and_indexes.sort_by(|a, b| perform_comparisons(&table.rows[a.1], &table.rows[b.1], stmt));
+        rows_and_indexes.sort_by(|a, b| perform_comparisons(&table[a.1], &table[b.1], stmt));
         let end = if limit == -1 {rows_and_indexes.len()} else {offset + limit as usize};
         rows_and_indexes = rows_and_indexes[offset..end].to_vec();
     }
@@ -49,7 +49,7 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::Value;
+    use crate::db::table::{Value, Row};
     use crate::db::table::ColumnDefinition;
     use crate::db::table::DataType;
     use crate::interpreter::ast::{SelectableStack, SelectableStackElement, LimitClause, OrderByClause, OrderByDirection, Operator};
@@ -76,10 +76,10 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -104,10 +104,10 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Text("John".to_string()), Value::Integer(25)],
-            vec![Value::Text("Jane".to_string()), Value::Integer(30)],
-            vec![Value::Text("Jim".to_string()), Value::Integer(35)],
-            vec![Value::Null, Value::Integer(40)],
+            Row(vec![Value::Text("John".to_string()), Value::Integer(25)]),
+            Row(vec![Value::Text("Jane".to_string()), Value::Integer(30)]),
+            Row(vec![Value::Text("Jim".to_string()), Value::Integer(35)]),
+            Row(vec![Value::Null, Value::Integer(40)]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -135,7 +135,7 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -166,7 +166,7 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Text("John".to_string()), Value::Integer(25)],
+            Row(vec![Value::Text("John".to_string()), Value::Integer(25)]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -191,7 +191,7 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -238,29 +238,30 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)],
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)],
+            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
         ];
         assert_eq!(expected, result.unwrap());
     }
 
     #[test]
     fn select_with_distinct_mode_is_generated_correctly() {
-        let table = Table {
+        let mut table = Table {
             name: "users".to_string(),
             columns: vec![
                 ColumnDefinition {name: "id".to_string(), data_type: DataType::Integer, constraints: vec![]},
                 ColumnDefinition {name: "name".to_string(), data_type: DataType::Text, constraints: vec![]},
             ],
-            rows: vec![
-                vec![Value::Integer(1), Value::Text("John".to_string())],
-                vec![Value::Integer(2), Value::Text("Jane".to_string())],
-                vec![Value::Integer(3), Value::Text("Jane".to_string())],
-                vec![Value::Integer(4), Value::Null],
-            ],
+            rows: vec![],
         };
+        table.set_rows(vec![
+            Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
+            Row(vec![Value::Integer(3), Value::Text("Jane".to_string())]),
+            Row(vec![Value::Integer(4), Value::Null]),
+        ]);
         let statement = SelectStatement {
             table_name: "users".to_string(),
             column_names: vec!["name".to_string()],
@@ -275,9 +276,9 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            vec![Value::Text("John".to_string())],
-            vec![Value::Text("Jane".to_string())],
-            vec![Value::Null],
+            Row(vec![Value::Text("John".to_string())]),
+            Row(vec![Value::Text("Jane".to_string())]),
+            Row(vec![Value::Null]),
         ];
         assert_table_rows_eq_unordered(expected, result.unwrap());
     }

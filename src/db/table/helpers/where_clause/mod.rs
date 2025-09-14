@@ -1,7 +1,7 @@
 mod where_condition;
 mod where_stack;
 use crate::interpreter::ast::{WhereStackElement, WhereCondition};
-use crate::db::table::{Table, Value};
+use crate::db::table::{Table, Value, Row};
 
 
 // We create an interface here to allow us to create a spy for testing short circuiting.
@@ -18,7 +18,7 @@ impl MatchesWhereClause for WhereConditionEvaluator {
 }
 
 // This is the public function that is used to check if a row matches a where stack.
-pub fn row_matches_where_stack(table: &Table, row: &Vec<Value>, where_stack: &Vec<WhereStackElement>) -> Result<bool, String> {
+pub fn row_matches_where_stack(table: &Table, row: &Row, where_stack: &Vec<WhereStackElement>) -> Result<bool, String> {
     where_stack::matches_where_stack(table, row, where_stack, &mut WhereConditionEvaluator{})
 }
 
@@ -48,10 +48,10 @@ mod tests {
             ColumnDefinition {name:"name".to_string(),data_type:DataType::Text, constraints: vec![] },
         ]);
         let mut spy_where_condition_evaluator = SpyWhereConditionEvaluator{conditions_evaluated: vec![]};
-        let row = vec![
+        let row = Row(vec![
             Value::Integer(1),
             Value::Text("John".to_string()),
-        ];
+        ]);
         let condition_1 = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
         let condition_2 = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(2))};
         let where_stack = vec![
@@ -71,10 +71,10 @@ mod tests {
             ColumnDefinition {name:"name".to_string(),data_type:DataType::Text, constraints: vec![] },
         ]);
         let mut spy_where_condition_evaluator = SpyWhereConditionEvaluator{conditions_evaluated: vec![]};
-        let row = vec![
+        let row = Row(vec![
             Value::Integer(1),
             Value::Text("John".to_string()),
-        ];
+        ]);
         let condition_1 = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(2))};
         let condition_2 = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
         let where_stack = vec![

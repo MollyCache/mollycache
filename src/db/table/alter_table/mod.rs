@@ -31,7 +31,7 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
                 return Err(format!("Column `{}` already exists in table `{}`", column_def.name, statement.table_name));
             }
             table.columns.push(column_def);
-            table.rows.iter_mut().for_each(|row| {
+            table.get_rows_mut().iter_mut().for_each(|row| {
                 row.push(Value::Null);
             });
             Ok(())
@@ -45,7 +45,7 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
             // This is kind of bad because it's an O(n^2) operation however SQLite
             // preserves the order of the columns after drop column statements.
             table.columns.remove(index);
-            table.rows.iter_mut().for_each(|row| {
+            table.get_rows_mut().iter_mut().for_each(|row| {
                 row.remove(index);
             });
             Ok(())
@@ -57,7 +57,7 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
 mod tests {
     use super::*;
     use crate::db::table::test_utils::default_database;
-    use crate::db::table::{ColumnDefinition, DataType};
+    use crate::db::table::{ColumnDefinition, DataType, Row};
 
     #[test]
     fn alter_table_rename_table_works_correctly() {
@@ -99,8 +99,8 @@ mod tests {
         assert!(table.is_ok());
         let table = table.unwrap();
         assert!(table.columns.last().unwrap().name == "new_column");
-        assert!(table.columns.len() == table.rows.first().unwrap().len());
-        assert!(table.rows.iter().all(|row| row.last().unwrap() == &Value::Null));
+        assert!(table.columns.len() == table[0].len());
+        assert!(table.get_rows().iter().all(|row| row.last().unwrap() == &Value::Null));
     }
 
     #[test]
@@ -116,7 +116,7 @@ mod tests {
         assert!(table.is_ok());
         let table = table.unwrap();
         assert!(!table.columns.iter().any(|column| column.name == "age"));
-        assert!(table.columns.len() == table.rows.first().unwrap().len());
+        assert!(table.columns.len() == table[0].len());
         let expected_columns_in_order = 
         vec![
             ColumnDefinition {name: "id".to_string(), data_type: DataType::Integer, constraints: vec![]},
@@ -125,11 +125,11 @@ mod tests {
         ];
         assert_eq!( expected_columns_in_order, table.columns);
         let expected_rows = vec![
-            vec![Value::Integer(1), Value::Text("John".to_string()), Value::Real(1000.0)],
-            vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Real(2000.0)],
-            vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Real(3000.0)],
-            vec![Value::Integer(4), Value::Null, Value::Real(4000.0)],
+            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Real(1000.0)]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Real(2000.0)]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Real(3000.0)]),
+            Row(vec![Value::Integer(4), Value::Null, Value::Real(4000.0)]),
         ];
-        assert_eq!(expected_rows, table.rows);
+        assert_eq!(expected_rows, table.get_rows_clone());
     }
 }
