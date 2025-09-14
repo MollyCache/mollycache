@@ -1,6 +1,6 @@
 mod select_statement;
 mod set_operator_evaluator;
-use crate::db::{database::Database, table::Row};
+use crate::db::{database::Database, table::Row, table::Table};
 use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement};
 use crate::db::table::helpers::order_by_clause::apply_order_by_from_precomputed;
 
@@ -15,18 +15,21 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
+                let table = database.get_table(&select_statement.table_name)?;
+                let expanded_column_names = expand_all_column_names(table, &select_statement.column_names);
                 match &column_names {
                     Some(column_names) => {
-                        if select_statement.column_names.len() != column_names.len() {
-                            return Err(format!("Parse error: SELECTs to the left and right of UNION do not have the same number of result columns"));
+                        if expanded_column_names.len() != column_names.len() {
+                            return Err(format!("Columns mismatch between SELECT statements in Union"));
+                        } else if expanded_column_names.iter().zip(column_names).filter(|&(a, b)| a != b).count() != 0 {
+                            return Err(format!("Columns mismatch between SELECT statements in Union"));
                         }
                     },
                     None => {
-                        column_names = Some(select_statement.column_names.clone())
+                        column_names = Some(expanded_column_names);
                     }
                 }
 
-                let table = database.get_table(&select_statement.table_name)?;
                 let rows = select_statement::select_statement(table, &select_statement)?;
                 evaluator.push(rows);
 
@@ -85,7 +88,22 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
     Ok(result)
 }
 
-
+// TODO: add this logic in evaluation too
+fn expand_all_column_names(table: &Table, column_names: &Vec<String>) -> Vec<String> {
+    let mut new = vec![];
+    for column in column_names {
+        if *column == "*".to_string() {
+            for name in table.get_columns() {
+                if !column_names.contains(name) {
+                    new.push(name.clone());
+                }
+            }
+        } else {
+            new.push(column.clone());
+        }
+    }
+    new
+}
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -22,7 +22,7 @@ pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
 }
 
 pub fn get_columns_from_row(table: &Table, row: &Row, selected_columns: &SelectableStack) -> Result<Row, String> {
-    let mut row_values: Row = Row { 0: vec![] };
+    let mut row_values: Row = Row(vec![]);
 
     let mut column_values = HashMap::new();
     for (i, column) in table.get_columns().into_iter().enumerate() {
