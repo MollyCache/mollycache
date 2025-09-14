@@ -38,6 +38,8 @@ mod tests {
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::Operand;
+    use crate::interpreter::ast::SelectableStack;
+    use crate::interpreter::ast::SelectableStackElement;
     use crate::db::table::Value;
 
     #[test]
@@ -96,12 +98,12 @@ mod tests {
                     r_side: Operand::Value(Value::Integer(1)),
                 })
             ]),
-            order_by_clause: Some(vec![
-                OrderByClause {
-                    column: "id".to_string(),
-                    direction: OrderByDirection::Asc,
-                }
-            ]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                directions: vec![OrderByDirection::Asc],
+            }),
             limit_clause: Some(LimitClause {
                 limit: 10,
                 offset: Some(5),

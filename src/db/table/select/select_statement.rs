@@ -232,7 +232,12 @@ mod tests {
             },
             column_names: vec!["*".to_string()],
             where_clause: None,
-            order_by_clause: Some(vec![OrderByClause {column: "money".to_string(), direction: OrderByDirection::Desc}]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("money".to_string())],
+                },
+                directions: vec![OrderByDirection::Desc],
+            }),
             limit_clause: None,
         };
         let result = select_statement(&table, &statement);

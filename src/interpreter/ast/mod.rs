@@ -67,7 +67,7 @@ pub struct InsertIntoStatement {
 #[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatementStack {
     pub elements: Vec<SelectStatementStackElement>,
-    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
 
@@ -108,7 +108,7 @@ pub struct SelectStatement {
     pub mode: SelectMode,
     pub columns: SelectableStack,
     pub where_clause: Option<Vec<WhereStackElement>>,
-    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
 
@@ -116,7 +116,7 @@ pub struct SelectStatement {
 pub struct DeleteStatement {
     pub table_name: String,
     pub where_clause: Option<Vec<WhereStackElement>>,
-    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
 
@@ -125,7 +125,7 @@ pub struct UpdateStatement {
     pub table_name: String,
     pub update_values: Vec<ColumnValue>,
     pub where_clause: Option<Vec<WhereStackElement>>,
-    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
 
@@ -304,8 +304,8 @@ pub enum OrderByDirection {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct OrderByClause {
-    pub column: String,
-    pub direction: OrderByDirection,
+    pub columns: SelectableStack,
+    pub directions: Vec<OrderByDirection>,
 }
 
 #[derive(Debug, PartialEq, Clone)]

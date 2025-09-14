@@ -368,10 +368,12 @@ mod tests {
                 }),
                 SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
             ],
-            order_by_clause: Some(vec![OrderByClause {
-                column: "name".to_string(),
-                direction: OrderByDirection::Asc,
-            }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                },
+                directions: vec![OrderByDirection::Asc],
+            }),
             limit_clause: Some(LimitClause {
                 limit: 10,
                 offset: Some(15),
@@ -407,10 +409,12 @@ mod tests {
                 expected_simple_select_statement(2),
                 SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
             ],
-            order_by_clause: Some(vec![OrderByClause {
-                column: "name".to_string(),
-                direction: OrderByDirection::Asc,
-            }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                },
+                directions: vec![OrderByDirection::Asc],
+            }),
             limit_clause: Some(LimitClause {
                 limit: 10,
                 offset: Some(15),

@@ -1,9 +1,9 @@
-use crate::interpreter::ast::{parser::Parser, OrderByClause, OrderByDirection};
+use crate::interpreter::ast::{parser::Parser, OrderByClause, OrderByDirection, SelectableStack, SelectableStackElement};
 use crate::interpreter::tokenizer::token::TokenTypes;
 
 use crate::interpreter::ast::helpers::token::expect_token_type;
 
-pub fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, String> {
+pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String> {
     if expect_token_type(parser, TokenTypes::Order).is_err() {
         return Ok(None);
     }
@@ -12,7 +12,9 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, S
     expect_token_type(parser, TokenTypes::By)?;
     parser.advance()?;
 
-    let mut order_by_clauses = vec![];
+    let mut columns = vec![];
+    let mut directions = vec![];
+    /*
     loop {
         let token = parser.current_token()?;
         expect_token_type(parser, TokenTypes::Identifier)?;
@@ -43,7 +45,13 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<Vec<OrderByClause>>, S
         }
         parser.advance()?;
     }
-    return Ok(Some(order_by_clauses));
+    */
+    return Ok(Some(OrderByClause {
+        columns: SelectableStack {
+            selectables: columns,
+        },
+        directions: directions
+    }));
 }
 
 #[cfg(test)]
@@ -65,10 +73,12 @@ mod tests {
         let result = get_order_by(&mut parser);
         assert!(result.is_ok());
         let order_by_clause = result.unwrap();
-        let expected = Some(vec![OrderByClause {
-            column: "id".to_string(),
-            direction: OrderByDirection::Asc,
-        }]);
+        let expected = Some(OrderByClause {
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column("id".to_string())]
+            },
+            directions: vec![OrderByDirection::Asc],
+        });
         assert_eq!(expected, order_by_clause);
     }
 
@@ -103,13 +113,15 @@ mod tests {
         let result = get_order_by(&mut parser);
         assert!(result.is_ok());
         let order_by_clause = result.unwrap();
-        let expected = Some(vec![OrderByClause {
-            column: "id".to_string(),
-            direction: OrderByDirection::Asc,
-        }, OrderByClause {
-            column: "name".to_string(),
-            direction: OrderByDirection::Desc,
-        }]);
+        let expected = Some(OrderByClause {
+            columns: SelectableStack {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Column("name".to_string())
+                ]
+            },
+            directions: vec![OrderByDirection::Asc, OrderByDirection::Desc],
+        });
         assert_eq!(expected, order_by_clause);
     }
 }

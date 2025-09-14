@@ -28,7 +28,7 @@ mod tests {
     use crate::db::table::{Value, DataType, ColumnDefinition};
     use crate::interpreter::ast::ColumnValue;
     use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
-    use crate::interpreter::ast::{WhereStackElement, WhereCondition, Operand, Operator, OrderByClause, OrderByDirection, LimitClause};
+    use crate::interpreter::ast::{WhereStackElement, WhereCondition, Operand, Operator, OrderByClause, OrderByDirection, LimitClause, SelectableStack, SelectableStackElement};
     use crate::db::table::Row;
 
     #[test]
@@ -68,7 +68,12 @@ mod tests {
             table_name: "users".to_string(),
             update_values: vec![ColumnValue { column: "name".to_string(), value: Value::Text("Fletcher".to_string()) }],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition { l_side: Operand::Identifier("name".to_string()), operator: Operator::Equals, r_side: Operand::Value(Value::Text("John".to_string())) })]),
-            order_by_clause: Some(vec![OrderByClause { column: "id".to_string(), direction: OrderByDirection::Desc }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                directions: vec![OrderByDirection::Desc],
+            }),
             limit_clause: Some(LimitClause { limit: 1, offset: Some(2) }),
         };
         let result = update(&mut table, statement);

@@ -4,7 +4,7 @@ use crate::interpreter::ast::OrderByClause;
 use crate::db::table::{Row};
 
 // TODO: got changed
-pub fn perform_comparisons(row1: &Row, row2: &Row, order_by_clauses: &Vec<OrderByClause>) -> Ordering {
+pub fn perform_comparisons(row1: &Row, row2: &Row, order_by_clauses: &OrderByClause) -> Ordering {
     /*
     let mut result = Ordering::Equal;
     for comparison in order_by_clauses {

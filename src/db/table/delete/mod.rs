@@ -44,7 +44,7 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), 
 mod tests {
     use super::*;
     use crate::db::table::{Value, Row};
-    use crate::interpreter::ast::{WhereStackElement, Operator, Operand, WhereCondition, OrderByDirection, OrderByClause};
+    use crate::interpreter::ast::{WhereStackElement, Operator, Operand, WhereCondition, OrderByDirection, OrderByClause, SelectableStack, SelectableStackElement};
     use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
     use crate::interpreter::ast::LimitClause;
 
@@ -88,7 +88,12 @@ mod tests {
         let statement = DeleteStatement {
             table_name: "users".to_string(),
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition { l_side: Operand::Identifier("name".to_string()), operator: Operator::Equals, r_side: Operand::Value(Value::Text("John".to_string())) })]),
-            order_by_clause: Some(vec![OrderByClause { column: "id".to_string(), direction: OrderByDirection::Desc }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                directions: vec![OrderByDirection::Desc],
+            }),
             limit_clause: Some(LimitClause { limit: 1, offset: Some(2) }),
         };
         let result = delete(&mut table, statement);
@@ -171,10 +176,12 @@ mod tests {
                     r_side: Operand::Value(Value::Integer(30)),
                 }),
             ]),
-            order_by_clause: Some(vec![OrderByClause {
-                column: "id".to_string(),
-                direction: OrderByDirection::Desc,
-            }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                directions: vec![OrderByDirection::Desc],
+            }),
             limit_clause: Some(LimitClause {
                 limit: 2,
                 offset: Some(1),

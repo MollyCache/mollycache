@@ -154,7 +154,7 @@ pub fn get_columns_from_row(table: &Table, row: &Row, selected_columns: &Selecta
 }
 
 // Used for UPDATE and DELETE. Notget_row_indicies_matching_clauses used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
-pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Vec<WhereStackElement>>, order_by_clause: &Option<Vec<OrderByClause>>, limit_clause: &Option<LimitClause>) -> Result<Vec<usize>, String> {
+pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Vec<WhereStackElement>>, order_by_clause: &Option<OrderByClause>, limit_clause: &Option<LimitClause>) -> Result<Vec<usize>, String> {
     let mut indices = vec![];
     let (limit, offset) = limit_clause.as_ref().map_or(
         (-1, 0),

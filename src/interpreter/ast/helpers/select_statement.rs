@@ -341,20 +341,16 @@ mod tests {
                     r_side: Operand::Value(Value::Integer(1)),
                 }),
             ]),
-            order_by_clause: Some(vec![
-                OrderByClause {
-                    column: "id".to_string(),
-                    direction: OrderByDirection::Asc,
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![
+                        SelectableStackElement::Column("id".to_string()),
+                        SelectableStackElement::Column("name".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
+                    ]
                 },
-                OrderByClause {
-                    column: "name".to_string(),
-                    direction: OrderByDirection::Desc,
-                },
-                OrderByClause {
-                    column: "age".to_string(),
-                    direction: OrderByDirection::Asc,
-                }
-            ]),
+                directions: vec![OrderByDirection::Asc, OrderByDirection::Desc, OrderByDirection::Asc],
+            }),
             limit_clause: Some(LimitClause {
                 limit: 10,
                 offset: Some(5),
