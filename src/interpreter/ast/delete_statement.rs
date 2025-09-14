@@ -102,6 +102,7 @@ mod tests {
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
                 },
+                column_names: vec!["id".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {

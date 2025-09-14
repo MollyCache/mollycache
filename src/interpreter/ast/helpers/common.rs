@@ -109,6 +109,22 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
             continue;
         }
 
+        // Handle ASC and DESC if order_by_directions is set
+        if let Some(order_by_directions_vector) = order_by_directions {
+            let found = match token.token_type {
+                TokenTypes::Asc => Some(OrderByDirection::Asc),
+                TokenTypes::Desc => Some(OrderByDirection::Desc),
+                _ => None
+            };
+            if found.is_some() && depth != 0 {
+                return Err("Found unexpected ordering token".to_string());
+            } else if let Some(order) = found {
+                expect_new_value = true;
+                order_by_directions_vector.push(order);
+                continue;
+            }
+        }
+
         current_name += token.value;
 
         // Operators
@@ -157,22 +173,6 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
 
             operators.push(ExtendedSelectableStackElement::SelectableStackElement(value));
             continue;
-        }
-
-        // Handle ASC and DESC if order_by_directions is set
-        if let Some(order_by_directions_vector) = order_by_directions {
-            let found = match token.token_type {
-                TokenTypes::Asc => Some(OrderByDirection::Asc),
-                TokenTypes::Desc => Some(OrderByDirection::Desc),
-                _ => None
-            };
-            if found.is_some() && depth != 0 {
-                return Err("Found unexpected ordering token".to_string());
-            } else if let Some(order) = found {
-                expect_new_value = true;
-                order_by_directions_vector.push(order);
-                continue;
-            }
         }
 
         // Tokens that are automatically added to output

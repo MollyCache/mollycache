@@ -372,6 +372,7 @@ mod tests {
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
                 },
+                column_names: vec!["name".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {
@@ -413,6 +414,7 @@ mod tests {
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
                 },
+                column_names: vec!["name".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {

@@ -4,41 +4,13 @@ use crate::db::table::{Table, helpers::common::get_columns_from_row};
 use crate::interpreter::ast::OrderByClause;
 use crate::db::table::{Row};
 
-pub fn apply_order_by(table: &Table, rows: &mut Vec<Row>, order_by_clause: &OrderByClause) -> Result<(), String> {
-    let columns: Vec<Row> = rows.into_iter().enumerate().map(|row| {
-        let columns = get_columns_from_row(table, row.1, &order_by_clause.columns)?;
-        Ok(columns)
-    }).collect::<Result<Vec<Row>, String>>()?;
+pub fn apply_order_by_from_precomputed<T: Clone>(to_order: &mut Vec<T>, precomputed: Vec<Row>, default: T, order_by_clause: &OrderByClause) -> () {
+    let mut sorted_indices = (0..to_order.len()).collect::<Vec<usize>>();
+    sorted_indices.sort_by(|a, b| perform_comparisons(&precomputed[*a], &precomputed[*b], order_by_clause));
 
-    // TODO: there can be a much better way to do this using cycle permutations (minimize the amount of moving around)
-
-    let mut sorted_indices = (0..rows.len()).collect::<Vec<usize>>();
-    sorted_indices.sort_by(|a, b| perform_comparisons(&columns[*a], &columns[*b], order_by_clause));
-
-    let sorted_rows: Vec<Row> = sorted_indices.into_iter().map(|i| std::mem::replace(&mut rows[i], Row(vec![]))).collect();
-    rows.clear();
-    rows.extend(sorted_rows);
-    
-    Ok(())
-}
-
-pub fn apply_order_by_from_indices(table: &Table, row_indices: &mut Vec<usize>, order_by_clause: &OrderByClause) -> Result<(), String> {
-    let columns: Vec<Row> = row_indices.into_iter().map(|i| {
-        let row = table.get(*i).ok_or("Invalid index".to_string())?;
-        let columns = get_columns_from_row(table, row, &order_by_clause.columns)?;
-        Ok(columns)
-    }).collect::<Result<Vec<Row>, String>>()?;
-
-    // TODO: there can be a much better way to do this using cycle permutations (minimize the amount of moving around)
-
-    let mut sorted_indices = (0..row_indices.len()).collect::<Vec<usize>>();
-    sorted_indices.sort_by(|a, b| perform_comparisons(&columns[*a], &columns[*b], order_by_clause));
-
-    let sorted_row_indices: Vec<usize> = sorted_indices.into_iter().map(|i| std::mem::take(&mut row_indices[i])).collect();
-    row_indices.clear();
-    row_indices.extend(sorted_row_indices);
-
-    Ok(())
+    let sorted_vec: Vec<T> = sorted_indices.into_iter().map(|i| std::mem::replace(&mut to_order[i], default.clone())).collect();
+    to_order.clear();
+    to_order.extend(sorted_vec);
 }
 
 fn perform_comparisons(row1: &Row, row2: &Row, order_by_clause: &OrderByClause) -> Ordering {

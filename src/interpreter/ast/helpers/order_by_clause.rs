@@ -14,10 +14,12 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
     parser.advance()?;
 
     let mut directions = vec![];
-    let columns = get_selectables(parser, true, &mut Some(&mut directions), &mut None)?;
+    let mut column_names = vec![];
+    let columns = get_selectables(parser, true, &mut Some(&mut directions), &mut Some(&mut column_names))?;
     
     return Ok(Some(OrderByClause {
         columns: columns,
+        column_names: column_names,
         directions: directions
     }));
 }
@@ -45,6 +47,7 @@ mod tests {
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column("id".to_string())]
             },
+            column_names: vec!["id".to_string()],
             directions: vec![OrderByDirection::Asc],
         });
         assert_eq!(expected, order_by_clause);
@@ -88,6 +91,7 @@ mod tests {
                     SelectableStackElement::Column("name".to_string())
                 ]
             },
+            column_names: vec!["id".to_string(), "name".to_string()],
             directions: vec![OrderByDirection::Asc, OrderByDirection::Desc],
         });
         assert_eq!(expected, order_by_clause);

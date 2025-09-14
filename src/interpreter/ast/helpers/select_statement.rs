@@ -196,6 +196,7 @@ mod tests {
                         SelectableStackElement::Column("age".to_string()),
                     ]
                 },
+                column_names: vec!["id".to_string(), "name".to_string(), "age".to_string()],
                 directions: vec![OrderByDirection::Asc, OrderByDirection::Desc, OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {

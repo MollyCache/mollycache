@@ -305,6 +305,7 @@ pub enum OrderByDirection {
 #[derive(Debug, PartialEq, Clone)]
 pub struct OrderByClause {
     pub columns: SelectableStack,
+    pub column_names: Vec<String>,
     pub directions: Vec<OrderByDirection>,
 }
 

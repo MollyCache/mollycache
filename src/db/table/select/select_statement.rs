@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use crate::db::table::helpers::order_by_clause::{apply_order_by};
+use crate::db::table::helpers::order_by_clause::{apply_order_by_from_precomputed};
 use crate::db::table::helpers::where_clause::row_matches_where_stack;
 use crate::db::table::{Table, Row};
 use crate::interpreter::ast::{SelectStatement, SelectMode};
@@ -14,6 +14,8 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
             stmt.offset.map_or(0, |val| val)
         )
     );
+
+    let mut order_by_columns_precomputed = vec![];
 
     let mut distinct_map = match statement.mode {
         SelectMode::All => None,
@@ -30,15 +32,21 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
             if let Some(map) = &mut distinct_map {
                 if map.insert(columns.clone()) {
                     rows.push(columns);
+                    if let Some(stmt) = &statement.order_by_clause {
+                        order_by_columns_precomputed.push(get_columns_from_row(table, row, &stmt.columns)?);
+                    }
                 }
             } else {
                 rows.push(columns);
+                if let Some(stmt) = &statement.order_by_clause {
+                    order_by_columns_precomputed.push(get_columns_from_row(table, row, &stmt.columns)?);
+                }
             }
         }
     }
 
     if let Some(stmt) = &statement.order_by_clause {
-        apply_order_by(table, &mut rows, stmt)?;
+        apply_order_by_from_precomputed(&mut rows, order_by_columns_precomputed, Row(vec![]), stmt);
         if limit != -1 || offset != 0 {
             let end = if limit == -1 {rows.len()} else {offset + limit as usize};
             rows = rows[offset..end].to_vec();
@@ -238,6 +246,7 @@ mod tests {
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::Column("money".to_string())],
                 },
+                column_names: vec!["money".to_string()],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: None,

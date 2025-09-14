@@ -2,7 +2,7 @@ mod select_statement;
 mod set_operator_evaluator;
 use crate::db::{database::Database, table::Row};
 use crate::interpreter::ast::{SelectStatementStack, SetOperator, SelectStatementStackElement};
-use crate::db::table::helpers::order_by_clause::apply_order_by;
+use crate::db::table::helpers::order_by_clause::apply_order_by_from_precomputed;
 
 
 pub fn select_statement_stack(database: &Database, statement: SelectStatementStack) -> Result<Vec<Row>, String> {
@@ -56,7 +56,21 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
     if let Some(order_by_clause) = statement.order_by_clause {
         if let Some(table) = first_table {
             // TODO: this is just plain false when working with 2+ tables
-            apply_order_by(table, &mut result, &order_by_clause)?;
+            // When using ORDER BY at the end of set operations on SELECTs, the ordering columns are guaranteed (?) to be present in the selected columns
+            // TODO: this ^ is not quite accurate
+            let mut result_indices = vec![];
+            for order_by_column_name in &order_by_clause.column_names {
+                result_indices.push(column_names.as_ref().ok_or("No column names found".to_string())?.iter().position(|column_name| column_name == order_by_column_name).ok_or("Ordering column name not found in selected columns".to_string())?);
+            }
+
+            let precomputed = result.iter().map(|row| {
+                let mut order_columns = vec![];
+                result_indices.iter().for_each(|i| {
+                    order_columns.push(row[*i].clone());
+                });
+                Row(order_columns)
+            }).collect::<Vec<Row>>();
+            apply_order_by_from_precomputed(&mut result, precomputed, Row(vec![]), &order_by_clause);
         } else {
             unreachable!();
         }

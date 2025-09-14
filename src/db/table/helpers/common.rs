@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use crate::db::table::helpers::order_by_clause::apply_order_by_from_indices;
+use crate::db::table::helpers::order_by_clause::apply_order_by_from_precomputed;
 use crate::db::table::{Table, DataType, Row, Value};
 use crate::interpreter::ast::{SelectableStack, SelectableStackElement, Operator, LogicalOperator, MathOperator, WhereStackElement, OrderByClause, LimitClause};
 use crate::db::table::helpers::where_clause::row_matches_where_stack;
@@ -157,6 +157,7 @@ pub fn get_columns_from_row(table: &Table, row: &Row, selected_columns: &Selecta
 // Used for UPDATE and DELETE. Notget_row_indicies_matching_clauses used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
 pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Vec<WhereStackElement>>, order_by_clause: &Option<OrderByClause>, limit_clause: &Option<LimitClause>) -> Result<Vec<usize>, String> {
     let mut indices = vec![];
+    let mut order_by_columns_precomputed = vec![];
     let (limit, offset) = limit_clause.as_ref().map_or(
         (-1, 0),
         |stmt| (
@@ -173,11 +174,14 @@ pub fn get_row_indicies_matching_clauses(table: &Table, where_clause: &Option<Ve
             break;
         } else if where_clause.as_ref().map_or_else(|| Ok(true), |stmt| row_matches_where_stack(table, row, &stmt))? {
             indices.push(i);
+            if let Some(stmt) = order_by_clause {
+                order_by_columns_precomputed.push(get_columns_from_row(table, row, &stmt.columns)?);
+            }
         }
     }
 
     if let Some(stmt) = order_by_clause {
-        apply_order_by_from_indices(table, &mut indices, stmt)?;
+        apply_order_by_from_precomputed(&mut indices, order_by_columns_precomputed, 0, stmt);
         if limit != -1 || offset != 0 {
             let end = if limit == -1 {indices.len()} else {offset + limit as usize};
             indices = indices[offset..end].to_vec();
