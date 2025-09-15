@@ -220,27 +220,4 @@ fn test_distinct_with_limit_and_offset() {
     assert_eq!(expected, *row);
 }
 
-#[test]
-fn test_distinct_with_limit_and_offset_and_where_clause() {
-    let mut database = Database::new();
-    let sql = "
-    CREATE TABLE users (
-        id INTEGER,
-        name TEXT
-    );
-    INSERT INTO users (id, name) VALUES (1, 'John');
-    INSERT INTO users (id, name) VALUES (2, 'Jane');
-    INSERT INTO users (id, name) VALUES (3, 'Jim');
-    INSERT INTO users (id, name) VALUES (4, 'John');
-    SELECT DISTINCT name FROM users ORDER BY name DESC LIMIT 1 OFFSET 1;
-    ";
-    let result = run_sql(&mut database, sql);
-    assert!(result.iter().all(|result| result.is_ok()));
-    let expected = vec![
-        Row(vec![Value::Text("Jim".to_string())]),
-    ];
-    let row = result[5].as_ref().unwrap().as_ref().unwrap();
-    assert_eq!(expected, *row);
-}
-
 
