@@ -72,7 +72,7 @@ impl StatementBuilder for DefaultStatementBuilder {
 #[cfg(test)]
 pub struct MockStatementBuilder;
 #[cfg(test)]
-use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatementStack, SelectStatementColumns, SelectStatementStackElement, SelectStatement, SelectMode};
+use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatementStack, SelectableStack, SelectableStackElement, SelectStatementStackElement, SelectStatement, SelectMode};
 
 #[cfg(test)]
 impl StatementBuilder for MockStatementBuilder {
@@ -100,11 +100,13 @@ impl StatementBuilder for MockStatementBuilder {
         parser.advance()?;
         parser.advance_past_semicolon()?;
         return Ok(SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::All,
             elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                 table_name: "users".to_string(),
                 mode: SelectMode::All,
-                columns: SelectStatementColumns::All,
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::All]
+                },
+                column_names: vec!["*".to_string()],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,

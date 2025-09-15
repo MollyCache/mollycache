@@ -1,10 +1,10 @@
-use crate::db::table::{Table, Value};
+use crate::db::table::{Table, Value, Row};
 use crate::interpreter::ast::{Operator, Operand, WhereCondition};
 use crate::db::table::DataType;
 
 
 // This file holds the logic for whether a row matches a where condition.
-pub fn matches_where_clause(table: &Table, row: &Vec<Value>, where_clause: &WhereCondition) -> Result<bool, String> {
+pub fn matches_where_clause(table: &Table, row: &Row, where_clause: &WhereCondition) -> Result<bool, String> {
     let l_side = operand_to_value(table, row, &where_clause.l_side)?;
     match where_clause.operator {
         Operator::In | Operator::NotIn => {
@@ -81,7 +81,7 @@ pub fn matches_where_clause(table: &Table, row: &Vec<Value>, where_clause: &Wher
     }
 }
 
-fn operand_to_value<'a>(table: &'a Table, row: &'a Vec<Value>, operand: &'a Operand) -> Result<&'a Value, String> {
+fn operand_to_value<'a>(table: &'a Table, row: &'a Row, operand: &'a Operand) -> Result<&'a Value, String> {
     match operand {
         Operand::Value(value) => Ok(value),
         Operand::Identifier(column) => {
@@ -116,7 +116,7 @@ mod tests {
                 constraints: vec![] 
             },
         ]);
-        let row = vec![Value::Integer(1)];
+        let row = Row(vec![Value::Integer(1)]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && result.unwrap());
@@ -127,7 +127,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Integer(2)];
+        let row = Row(vec![Value::Integer(2)]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && !result.unwrap());
@@ -142,7 +142,7 @@ mod tests {
                 constraints: vec![] 
             },
         ]);
-        let row = vec![Value::Integer(1)];
+        let row = Row(vec![Value::Integer(1)]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Text("Fletcher".to_string()))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_err());
@@ -155,7 +155,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Integer(10)];
+        let row = Row(vec![Value::Integer(10)]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::GreaterThan,r_side: Operand::Value(Value::Integer(0))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && result.unwrap());
@@ -178,7 +178,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"name".to_string(),data_type:DataType::Text, constraints: vec![] },
         ]);
-        let row = vec![Value::Text("lop".to_string())];
+        let row = Row(vec![Value::Text("lop".to_string())]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("name".to_string()),operator:Operator::GreaterEquals,r_side: Operand::Value(Value::Text("abc".to_string()))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && result.unwrap());
@@ -204,7 +204,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Null];
+        let row = Row(vec![Value::Null]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::GreaterEquals,r_side: Operand::Value(Value::Integer(1))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && !result.unwrap());
@@ -215,7 +215,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Blob, constraints: vec![] },
         ]);
-        let row = vec![Value::Blob(vec![1, 2, 3])];
+        let row = Row(vec![Value::Blob(vec![1, 2, 3])]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::GreaterEquals,r_side: Operand::Value(Value::Blob(vec![1, 2, 3]))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_err());
@@ -228,7 +228,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Null];
+        let row = Row(vec![Value::Null]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Null)};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && !result.unwrap());
@@ -239,7 +239,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Null];
+        let row = Row(vec![Value::Null]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && !result.unwrap());
@@ -250,7 +250,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Integer(1)];
+        let row = Row(vec![Value::Integer(1)]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Is,r_side: Operand::Value(Value::Null)};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && !result.unwrap());
@@ -270,7 +270,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Integer(1)];
+        let row = Row(vec![Value::Integer(1)]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::In,r_side: Operand::ValueList(vec![Value::Integer(1)])};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && result.unwrap());
@@ -290,7 +290,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Text("hello".to_string())];
+        let row = Row(vec![Value::Text("hello".to_string())]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::In,r_side: Operand::ValueList(vec![Value::Integer(2), Value::Text("hello".to_string())])};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && result.unwrap());
@@ -305,7 +305,7 @@ mod tests {
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
             ColumnDefinition {name:"age".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Integer(1), Value::Integer(2)];
+        let row = Row(vec![Value::Integer(1), Value::Integer(2)]);
         let where_clause = WhereCondition {l_side: Operand::Identifier("id".to_string()),operator:Operator::Equals,r_side: Operand::Identifier("age".to_string())};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && !result.unwrap());
@@ -322,7 +322,7 @@ mod tests {
         let table = Table::new("users".to_string(), vec![
             ColumnDefinition {name:"id".to_string(),data_type:DataType::Integer, constraints: vec![] },
         ]);
-        let row = vec![Value::Integer(1)];
+        let row = Row(vec![Value::Integer(1)]);
         let where_clause = WhereCondition {l_side: Operand::Value(Value::Integer(1)),operator:Operator::Equals,r_side: Operand::Value(Value::Integer(1))};
         let result = matches_where_clause(&table, &row, &where_clause);
         assert!(result.is_ok() && result.unwrap());

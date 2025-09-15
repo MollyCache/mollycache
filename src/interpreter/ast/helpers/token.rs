@@ -53,24 +53,6 @@ pub fn tokens_to_value_list(parser: &mut Parser) -> Result<Vec<Value>, String> {
     return Ok(values);
 }
 
-// Returns a list of Strings from the tokens when they are formated as "identifier, identifier, ..."
-pub fn tokens_to_identifier_list(parser: &mut Parser) -> Result<Vec<String>, String> {
-    let mut identifiers: Vec<String> = vec![];
-    loop {
-        let token = parser.current_token()?;
-        expect_token_type(parser, TokenTypes::Identifier)?;
-
-        identifiers.push(token.value.to_string());
-        parser.advance()?;
-        let token = parser.current_token()?;
-        if token.token_type != TokenTypes::Comma {
-            break;
-        }
-        parser.advance()?;
-    }
-    return Ok(identifiers);
-}
-
 pub fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
     let token = parser.current_token()?;
     return match token.token_type {

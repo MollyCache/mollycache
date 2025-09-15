@@ -6,19 +6,19 @@ use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 
 
 pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<Vec<usize>, String> {
-    let row_indicies_to_delete = get_row_indicies_matching_clauses(table, None, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
+    let row_indicies_to_delete = get_row_indicies_matching_clauses(table, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
     swap_remove_bulk(table, &row_indicies_to_delete)?;
     Ok(row_indicies_to_delete)
 }
 
 fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), String> {
-    if table.rows.len() == 0 {
+    if table.len() == 0 {
         if row_indicies.len() != 0 {
             unreachable!();
         }
         return Ok(());
     }
-    let table_len = table.rows.len()-1;
+    let table_len = table.len()-1;
     let mut row_indicies_set = row_indicies.iter().collect::<HashSet<&usize>>();
     let mut right_pointer = 0;
     let mut iter = row_indicies.iter();
@@ -29,13 +29,13 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), 
             right_pointer += 1;
         }
         else {
-            table.rows.swap(*to_swap, table_len - right_pointer);
+            table.swap(*to_swap, table_len - right_pointer);
             row_indicies_set.remove(to_swap);
             right_pointer += 1;
         }
     }
     for _ in 0..right_pointer {
-        table.rows.pop();
+        table.pop();
     }
     Ok(())
 }
@@ -44,7 +44,7 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), 
 mod tests {
     use super::*;
     use crate::db::table::{Value, Row};
-    use crate::interpreter::ast::{WhereStackElement, Operator, Operand, WhereCondition, OrderByDirection, OrderByClause};
+    use crate::interpreter::ast::{WhereStackElement, Operator, Operand, WhereCondition, OrderByDirection, OrderByClause, SelectableStack, SelectableStackElement};
     use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
     use crate::interpreter::ast::LimitClause;
 
@@ -88,8 +88,14 @@ mod tests {
         let statement = DeleteStatement {
             table_name: "users".to_string(),
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition { l_side: Operand::Identifier("name".to_string()), operator: Operator::Equals, r_side: Operand::Value(Value::Text("John".to_string())) })]),
-            order_by_clause: Some(vec![OrderByClause { column: "id".to_string(), direction: OrderByDirection::Desc }]),
-            limit_clause: Some(LimitClause { limit: Value::Integer(1), offset: Some(Value::Integer(2)) }),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                column_names: vec!["id".to_string()],
+                directions: vec![OrderByDirection::Desc],
+            }),
+            limit_clause: Some(LimitClause { limit: 1, offset: Some(2) }),
         };
         let result = delete(&mut table, statement);
         assert!(result.is_ok());
@@ -171,13 +177,16 @@ mod tests {
                     r_side: Operand::Value(Value::Integer(30)),
                 }),
             ]),
-            order_by_clause: Some(vec![OrderByClause {
-                column: "id".to_string(),
-                direction: OrderByDirection::Desc,
-            }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                column_names: vec!["id".to_string()],
+                directions: vec![OrderByDirection::Desc],
+            }),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(2),
-                offset: Some(Value::Integer(1)),
+                limit: 2,
+                offset: Some(1),
             }),
         };
         let result = delete(&mut table, statement);

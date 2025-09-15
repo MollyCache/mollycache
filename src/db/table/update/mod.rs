@@ -4,7 +4,7 @@ use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
 use crate::db::table::DataType;
 
 pub fn update(table: &mut Table, statement: UpdateStatement) -> Result<Vec<usize>, String> {
-    let row_indicies = get_row_indicies_matching_clauses(table, None, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
+    let row_indicies = get_row_indicies_matching_clauses(table, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
     update_rows_from_indicies(table, &row_indicies, statement.update_values)?;
     Ok(row_indicies)
 }
@@ -28,7 +28,7 @@ mod tests {
     use crate::db::table::{Value, DataType, ColumnDefinition};
     use crate::interpreter::ast::ColumnValue;
     use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
-    use crate::interpreter::ast::{WhereStackElement, WhereCondition, Operand, Operator, OrderByClause, OrderByDirection, LimitClause};
+    use crate::interpreter::ast::{WhereStackElement, WhereCondition, Operand, Operator, OrderByClause, OrderByDirection, LimitClause, SelectableStack, SelectableStackElement};
     use crate::db::table::Row;
 
     #[test]
@@ -68,8 +68,14 @@ mod tests {
             table_name: "users".to_string(),
             update_values: vec![ColumnValue { column: "name".to_string(), value: Value::Text("Fletcher".to_string()) }],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition { l_side: Operand::Identifier("name".to_string()), operator: Operator::Equals, r_side: Operand::Value(Value::Text("John".to_string())) })]),
-            order_by_clause: Some(vec![OrderByClause { column: "id".to_string(), direction: OrderByDirection::Desc }]),
-            limit_clause: Some(LimitClause { limit: Value::Integer(1), offset: Some(Value::Integer(2)) }),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                column_names: vec!["id".to_string()],
+                directions: vec![OrderByDirection::Desc],
+            }),
+            limit_clause: Some(LimitClause { limit: 1, offset: Some(2) }),
         };
         let result = update(&mut table, statement);
         assert!(result.is_ok());

@@ -1,17 +1,59 @@
+use std::collections::HashSet;
+use crate::db::table::helpers::order_by_clause::{apply_order_by_from_precomputed};
+use crate::db::table::helpers::where_clause::row_matches_where_stack;
 use crate::db::table::{Table, Row};
 use crate::interpreter::ast::{SelectStatement, SelectMode};
-use crate::db::table::helpers::common::{get_row_indicies_matching_clauses, get_row_columns_from_indicies, DistinctOn};
-
-
-
+use crate::db::table::helpers::common::{get_columns_from_row};
 
 pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Vec<Row>, String> {
-    let mode = match statement.mode {
+    let mut rows = vec![];
+    let (limit, offset) = statement.limit_clause.as_ref().map_or(
+        (-1, 0),
+        |stmt| (
+            stmt.limit as i64,
+            stmt.offset.map_or(0, |val| val)
+        )
+    );
+
+    let mut order_by_columns_precomputed = vec![];
+
+    let mut distinct_map = match statement.mode {
         SelectMode::All => None,
-        SelectMode::Distinct => Some(DistinctOn { columns: &statement.columns }),
+        SelectMode::Distinct => Some(HashSet::new()),
     };
-    let row_indicies = get_row_indicies_matching_clauses(table, mode, &statement.where_clause, &statement.order_by_clause, &statement.limit_clause)?;
-    return Ok(get_row_columns_from_indicies(table, row_indicies, Some(&statement.columns))?);
+
+    for row in table.iter().skip(
+        if statement.order_by_clause.is_none() {offset} else {0}
+    ) {
+        if limit != -1 && rows.len() as i64 >= limit && statement.order_by_clause.is_none() {
+            break;
+        } else if statement.where_clause.as_ref().map_or_else(|| Ok(true), |stmt| row_matches_where_stack(table, row, &stmt))? {
+            let columns = get_columns_from_row(table, row, &statement.columns)?;
+            if let Some(map) = &mut distinct_map {
+                if map.insert(columns.clone()) {
+                    rows.push(columns);
+                    if let Some(stmt) = &statement.order_by_clause {
+                        order_by_columns_precomputed.push(get_columns_from_row(table, row, &stmt.columns)?);
+                    }
+                }
+            } else {
+                rows.push(columns);
+                if let Some(stmt) = &statement.order_by_clause {
+                    order_by_columns_precomputed.push(get_columns_from_row(table, row, &stmt.columns)?);
+                }
+            }
+        }
+    }
+
+    if let Some(stmt) = &statement.order_by_clause {
+        apply_order_by_from_precomputed(&mut rows, order_by_columns_precomputed, Row(vec![]), stmt);
+        if limit != -1 || offset != 0 {
+            let end = if (limit == -1) || (offset + limit as usize > rows.len()) {rows.len()} else {offset + limit as usize};
+            rows = rows[offset..end].to_vec();
+        }
+    }
+
+    Ok(rows)
 }
 
 #[cfg(test)]
@@ -20,7 +62,7 @@ mod tests {
     use crate::db::table::{Value, Row};
     use crate::db::table::ColumnDefinition;
     use crate::db::table::DataType;
-    use crate::interpreter::ast::{SelectStatementColumns, LimitClause, OrderByClause, OrderByDirection, Operator};
+    use crate::interpreter::ast::{SelectableStack, SelectableStackElement, LimitClause, OrderByClause, OrderByDirection, Operator};
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::Operand;
@@ -33,7 +75,10 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            },
+            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -55,7 +100,13 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::Specific(vec!["name".to_string(), "age".to_string()]),
+            columns: SelectableStack {
+                selectables: vec![
+                    SelectableStackElement::Column("name".to_string()),
+                    SelectableStackElement::Column("age".to_string()),
+                ]
+            },
+            column_names: vec!["name".to_string(), "age".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -77,7 +128,10 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            },
+            column_names: vec!["*".to_string()],
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("name".to_string()),
@@ -102,7 +156,13 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::Specific(vec!["name".to_string(), "age".to_string()]),
+            columns: SelectableStack {
+                selectables: vec![
+                    SelectableStackElement::Column("name".to_string()),
+                    SelectableStackElement::Column("age".to_string()),
+                ]
+            },
+            column_names: vec!["name".to_string(), "age".to_string()],
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("money".to_string()),
@@ -127,12 +187,15 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            },
+            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(1),
-                offset: Some(Value::Integer(1)),
+                limit: 1,
+                offset: Some(1),
             }),
         };
         let result = select_statement(&table, &statement);
@@ -149,7 +212,10 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            },
+            column_names: vec!["*".to_string()],
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("column_not_included".to_string()),
@@ -171,9 +237,18 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            },
+            column_names: vec!["*".to_string()],
             where_clause: None,
-            order_by_clause: Some(vec![OrderByClause {column: "money".to_string(), direction: OrderByDirection::Desc}]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("money".to_string())],
+                },
+                column_names: vec!["money".to_string()],
+                directions: vec![OrderByDirection::Desc],
+            }),
             limit_clause: None,
         };
         let result = select_statement(&table, &statement);
@@ -205,8 +280,11 @@ mod tests {
         ]);
         let statement = SelectStatement {
             table_name: "users".to_string(),
+            column_names: vec!["name".to_string()],
             mode: SelectMode::Distinct,
-            columns: SelectStatementColumns::Specific(vec!["name".to_string()]),
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column("name".to_string())]
+            },
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,

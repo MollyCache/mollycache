@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenTypes {
     // Keywords
     Create, Select, Insert, Table, From, Into, Values, Where,
@@ -6,6 +6,7 @@ pub enum TokenTypes {
     To, Column, Begin, Deferred, Immediate, Exclusive,
     Commit, End, Rollback, Savepoint, Release, Transaction,
     // Data Types 
+    // TODO: add Type suffix
     Integer, Real, Text, Blob, Null,
     // Constraints
     Primary, Key, Not, Unique, Default, AutoIncrement,
@@ -22,8 +23,10 @@ pub enum TokenTypes {
     // Single Character Tokens
     Asterisk, SemiColon, LeftParen, RightParen, Comma, Dot,
     // Math Operators
+    // TODO: add arithmetic
     Plus, Minus, Divide, Modulo,       
     // Literals
+    // TODO: add Literal
     String, IntLiteral, True, False, HexLiteral, RealLiteral,
     // Others
     Identifier,

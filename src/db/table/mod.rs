@@ -86,6 +86,22 @@ impl Value {
             result
         }
     }
+
+    pub fn as_i64(&self) -> Option<i64> {
+        match self {
+            Value::Integer(i) => Some(*i),
+            Value::Real(f) => Some(*f as i64),
+            _ => None
+        }
+    }
+
+    pub fn as_f64(&self) -> Option<f64> {
+        match self {
+            Value::Integer(i) => Some(*i as f64),
+            Value::Real(f) => Some(*f),
+            _ => None
+        }
+    }
 }
 
 impl PartialEq for Value {
@@ -101,7 +117,7 @@ impl PartialEq for Value {
             },
             (Value::Text(a), Value::Text(b)) => a == b,
             (Value::Blob(a), Value::Blob(b)) => a == b,
-            (Value::Null, Value::Null) => true, // Bad - NULL == NULL should be false but this breaks assert_eq!
+            (Value::Null, Value::Null) => true, // TODO: Bad - NULL == NULL should be false but this breaks assert_eq!
             _ => false,
         }
     }
@@ -185,6 +201,8 @@ impl IndexMut<usize> for Table {
     }
 }
 
+// TODO: add swap
+// TODO: add pop
 impl Table {
     pub fn new(name: String, columns: Vec<ColumnDefinition>) -> Self {
         Self {
@@ -194,12 +212,24 @@ impl Table {
         }
     }
 
+    pub fn get(&self, i: usize) -> Option<&Row> {
+        self.rows.get(i)?.stack.last()
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &Row> {
         self.rows.iter().map(|s| s.stack.last().unwrap())
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Row> {
         self.rows.iter_mut().map(|s| s.stack.last_mut().unwrap())
+    }
+
+    pub fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    pub fn swap(&mut self, a: usize, b: usize) -> () {
+        self.rows.swap(a, b);
     }
 
     pub fn get_rows_clone(&self) -> Vec<Row> {
@@ -220,6 +250,10 @@ impl Table {
 
     pub fn push(&mut self, row: Row) {
         self.rows.push(RowStack::new(row));
+    }
+
+    pub fn pop(&mut self) -> Option<Row> {
+        self.rows.pop().and_then(|mut value| value.stack.pop())
     }
 
     pub fn commit_transaction(&mut self) {

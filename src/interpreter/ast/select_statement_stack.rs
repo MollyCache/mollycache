@@ -1,6 +1,6 @@
 use crate::interpreter::ast::helpers::order_by_clause::get_order_by;
 use crate::interpreter::ast::helpers::limit_clause::get_limit;
-use crate::interpreter::ast::{parser::Parser, SqlStatement, SelectStatementStack, SelectStatementStackElement, SetOperator, SelectStackOperators, SelectStatementColumns};
+use crate::interpreter::ast::{parser::Parser, SqlStatement, SelectStatementStack, SelectStatementStackElement, SetOperator, SelectStackOperators};
 use crate::interpreter::ast::helpers::select_statement;
 use crate::interpreter::ast::Parentheses;
 use crate::interpreter::tokenizer::token::TokenTypes;
@@ -8,7 +8,6 @@ use crate::interpreter::tokenizer::token::TokenTypes;
 // Returns a SelectStatementStack which is an RPN representation of the SELECT statements and set operators.
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     let mut statement_stack = SelectStatementStack {
-        columns: SelectStatementColumns::All,
         elements: vec![],
         order_by_clause: None,
         limit_clause: None,
@@ -115,10 +114,6 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
             return Err("Mismatched parentheses found.".to_string());
         }
     }
-    match columns {
-        Some(columns) => statement_stack.columns = columns,
-        None => return Err("Error parsing SELECT statement. Columns not found.".to_string()),
-    }
     return Ok(SqlStatement::Select(statement_stack));
 }
 
@@ -151,7 +146,8 @@ mod tests {
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::ast::SelectStatement;
     use crate::interpreter::ast::SetOperator;
-    use crate::interpreter::ast::SelectStatementColumns;
+    use crate::interpreter::ast::SelectableStack;
+    use crate::interpreter::ast::SelectableStackElement;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::Operand;
@@ -181,7 +177,10 @@ mod tests {
         SelectStatementStackElement::SelectStatement(SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::All]
+            },
+            column_names: vec!["*".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
@@ -203,7 +202,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::All,
             elements: vec![expected_simple_select_statement(1)],
             order_by_clause: None,
             limit_clause: None,
@@ -223,7 +221,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -251,7 +248,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -288,7 +284,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -340,12 +335,14 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::Specific(vec!["name".to_string()]),
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectStatementColumns::Specific(vec!["name".to_string()]),
+                    columns: SelectableStack {
+                        selectables: vec![SelectableStackElement::Column("name".to_string())]
+                    },
+                    column_names: vec!["name".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
                         operator: Operator::Equals,
@@ -357,7 +354,10 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectStatementColumns::Specific(vec!["name".to_string()]),
+                    columns: SelectableStack {
+                        selectables: vec![SelectableStackElement::Column("name".to_string())]
+                    },
+                    column_names: vec!["name".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
                         operator: Operator::Equals,
@@ -368,13 +368,16 @@ mod tests {
                 }),
                 SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
             ],
-            order_by_clause: Some(vec![OrderByClause {
-                column: "name".to_string(),
-                direction: OrderByDirection::Asc,
-            }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                },
+                column_names: vec!["name".to_string()],
+                directions: vec![OrderByDirection::Asc],
+            }),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(15)),
+                limit: 10,
+                offset: Some(15),
             }),
         });
         assert_eq!(expected, statement);
@@ -402,19 +405,21 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
                 SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
             ],
-            order_by_clause: Some(vec![OrderByClause {
-                column: "name".to_string(),
-                direction: OrderByDirection::Asc,
-            }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                },
+                column_names: vec!["name".to_string()],
+                directions: vec![OrderByDirection::Asc],
+            }),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(15)),
+                limit: 10,
+                offset: Some(15),
             }),
         });
         assert_eq!(expected, statement);
@@ -438,7 +443,6 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::Select(SelectStatementStack {
-            columns: SelectStatementColumns::All,
             elements: vec![
                 expected_simple_select_statement(1),
                 expected_simple_select_statement(2),
@@ -446,8 +450,8 @@ mod tests {
             ],
             order_by_clause: None,
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(15)),
+                limit: 10,
+                offset: Some(15),
             }),
         });
         assert_eq!(expected, statement);

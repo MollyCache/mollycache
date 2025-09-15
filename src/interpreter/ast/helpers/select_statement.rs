@@ -1,13 +1,13 @@
 use crate::{interpreter::{
     ast::{
-        parser::Parser, SelectStatement, SelectStatementColumns, WhereStackElement, SelectMode,
+        parser::Parser, SelectStatement, SelectableStack, WhereStackElement, SelectMode,
         helpers::{
-            token::{tokens_to_identifier_list, expect_token_type},
-            common::get_table_name,
+            token::{expect_token_type},
+            common::{get_table_name, get_selectables},
             order_by_clause::get_order_by, where_clause::get_where_clause, limit_clause::get_limit
         }
     }, 
-    tokenizer::token::TokenTypes
+    tokenizer::token::TokenTypes,
 }};
 
 pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
@@ -19,8 +19,8 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
         }
         _ => SelectMode::All
     };
-    let columns = get_columns(parser)?;
-    expect_token_type(parser, TokenTypes::From)?;
+    let (columns, column_names) = get_columns_and_names(parser)?;
+    expect_token_type(parser, TokenTypes::From)?; // TODO: this is not true, you can do SELECT 1;
     parser.advance()?;
     let table_name = get_table_name(parser)?;
     let where_clause: Option<Vec<WhereStackElement>> = get_where_clause(parser)?;
@@ -31,22 +31,16 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
             table_name: table_name,
             mode: mode,
             columns: columns,
+            column_names: column_names,
             where_clause: where_clause,
             order_by_clause: order_by_clause,
             limit_clause: limit_clause,
     });
 }
 
-fn get_columns(parser: &mut Parser) -> Result<SelectStatementColumns, String> {
-    let token = parser.current_token()?;
-    
-    if token.token_type == TokenTypes::Asterisk {
-        parser.advance()?;
-        Ok(SelectStatementColumns::All)
-    } else {
-        let columns = tokens_to_identifier_list(parser)?;
-        Ok(SelectStatementColumns::Specific(columns))
-    }
+fn get_columns_and_names(parser: &mut Parser) -> Result<(SelectableStack, Vec<String>), String> {
+    let mut column_names: Vec<String> = vec![];
+    Ok((get_selectables(parser, true, &mut None, &mut Some(&mut column_names))?, column_names))
 }
 
 #[cfg(test)]
@@ -61,6 +55,7 @@ mod tests {
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::ast::Operand;
+    use crate::interpreter::ast::SelectableStackElement;
 
     #[test]
     fn select_statement_with_all_tokens_is_generated_correctly() {
@@ -79,7 +74,10 @@ mod tests {
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::All],
+            },
+            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -103,9 +101,10 @@ mod tests {
         assert_eq!(statement, SelectStatement {
             table_name: "guests".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-            ]),
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column("id".to_string())],
+            },
+            column_names: vec!["id".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -131,10 +130,13 @@ mod tests {
         assert_eq!(statement, SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-                "name".to_string(),
-            ]),
+            columns: SelectableStack {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Column("name".to_string()),
+                ],
+            },
+            column_names: vec!["id".to_string(), "name".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -175,9 +177,10 @@ mod tests {
         let expected = SelectStatement {
             table_name: "guests".to_string(),
             mode: SelectMode::All,
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-            ]),
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column("id".to_string())]
+            },
+            column_names: vec!["id".to_string()],
             where_clause: Some(vec![
                 WhereStackElement::Condition(WhereCondition {
                     l_side: Operand::Identifier("id".to_string()),
@@ -185,23 +188,20 @@ mod tests {
                     r_side: Operand::Value(Value::Integer(1)),
                 }),
             ]),
-            order_by_clause: Some(vec![
-                OrderByClause {
-                    column: "id".to_string(),
-                    direction: OrderByDirection::Asc,
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![
+                        SelectableStackElement::Column("id".to_string()),
+                        SelectableStackElement::Column("name".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
+                    ]
                 },
-                OrderByClause {
-                    column: "name".to_string(),
-                    direction: OrderByDirection::Desc,
-                },
-                OrderByClause {
-                    column: "age".to_string(),
-                    direction: OrderByDirection::Asc,
-                }
-            ]),
+                column_names: vec!["id".to_string(), "name".to_string(), "age".to_string()],
+                directions: vec![OrderByDirection::Asc, OrderByDirection::Desc, OrderByDirection::Asc],
+            }),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(5)),
+                limit: 10,
+                offset: Some(5),
             }),
         };
         assert_eq!(expected, statement);
@@ -224,10 +224,11 @@ mod tests {
         let statement = result.unwrap();
         assert_eq!(statement, SelectStatement {
             table_name: "guests".to_string(),
+            column_names: vec!["id".to_string()],
             mode: SelectMode::Distinct,
-            columns: SelectStatementColumns::Specific(vec![
-                "id".to_string(),
-            ]),
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column("id".to_string())],
+            },
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,

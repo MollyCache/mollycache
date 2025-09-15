@@ -1,46 +1,27 @@
 use std::cmp::Ordering;
 
 use crate::interpreter::ast::OrderByClause;
-use crate::db::table::Table;
 use crate::db::table::{Row};
 
+pub fn apply_order_by_from_precomputed<T: Clone>(to_order: &mut Vec<T>, precomputed: Vec<Row>, default: T, order_by_clause: &OrderByClause) -> () {
+    let mut sorted_indices = (0..to_order.len()).collect::<Vec<usize>>();
+    sorted_indices.sort_by(|a, b| perform_comparisons(&precomputed[*a], &precomputed[*b], order_by_clause));
 
-
-// This sorting algorithm will always return a stable sort, this is given by all of the order columns
-// then the input order of the rows is maintained with any required tie breaking.
-pub fn get_ordered_row_indicies(table: &Table, mut row_indicies: Vec<usize>, order_by_clauses: &Vec<OrderByClause>) -> Result<Vec<usize>, String> {
-    let columns: Vec<&String> = table.columns.iter().map(|column| &column.name).collect();
-    row_indicies.sort_by(|a, b| {
-        perform_comparions(&columns, &table[*a], &table[*b], order_by_clauses)
-    });
-    return Ok(row_indicies);
+    let sorted_vec: Vec<T> = sorted_indices.into_iter().map(|i| std::mem::replace(&mut to_order[i], default.clone())).collect();
+    to_order.clear();
+    to_order.extend(sorted_vec);
 }
 
-pub fn perform_comparions(columns: &Vec<&String>, row1: &Row, row2: &Row, order_by_clauses: &Vec<OrderByClause>) -> Ordering {
-    let mut result = Ordering::Equal;
-    for comparison in order_by_clauses {
-        let index = get_index_of_column(columns, &comparison.column);
-        let index = match index {
-            Ok(index) => index,
-            Err(_) => unreachable!(),
-        };
-        let ordering = row1[index].compare(&row2[index], &comparison.direction);
+fn perform_comparisons(row1: &Row, row2: &Row, order_by_clause: &OrderByClause) -> Ordering {
+    // TODO: small optimization: only compute subsequent selectables if the previous ordering resulted in equality
+    for (i, direction) in order_by_clause.directions.iter().enumerate() {
+        let ordering =  row1[i].compare(&row2[i], direction);
         if ordering != Ordering::Equal {
-            result = ordering;
-            break;
+            return ordering;
         }
     }
-    return result;
-}
 
-fn get_index_of_column(columns: &Vec<&String>, column_name: &String) -> Result<usize, String> {
-    let result = columns.iter().position(|column| column_name == *column);
-    if let Some(index) = result {
-        return Ok(index);
-    }
-    else {
-        return Err(format!("Column {} does not exist in table", column_name));
-    }
+    Ordering::Equal
 }
 
 #[cfg(test)]
@@ -69,48 +50,5 @@ mod tests {
             ],
         }
     }
-    
-    #[test]
-    fn get_ordered_rows_returns_rows_with_id_column_returns_rows_in_correct_order() {
-        let table = default_table();
-        let row_indicies: Vec<usize> = vec![0, 1, 2, 3, 4, 5, 6];
-        let order_by_clauses = vec![OrderByClause {column: "id".to_string(), direction: OrderByDirection::Asc}];
-        let result = get_ordered_row_indicies(&table, row_indicies, &order_by_clauses);
-        assert!(result.is_ok());
-        let expected = vec![2, 1, 6, 3, 0, 4, 5];
-        assert_eq!(expected, result.unwrap());
-    }
-
-    #[test]
-    fn get_ordered_rows_returns_rows_with_name_column_returns_rows_in_correct_order() {
-        let table = default_table();
-        let row_indicies: Vec<usize> = vec![0, 1, 2, 3, 4, 5, 6];
-        let order_by_clauses = vec![OrderByClause {column: "name".to_string(), direction: OrderByDirection::Asc}];
-        let result = get_ordered_row_indicies(&table, row_indicies, &order_by_clauses);
-        assert!(result.is_ok());
-        let expected = vec![2, 5, 6, 1, 3, 4, 0];
-        assert_eq!(expected, result.unwrap());
-    }
-
-    #[test]
-    fn get_ordered_rows_ordered_descending_returns_rows_in_correct_order() {
-        let table = default_table();
-        let row_indicies: Vec<usize> = vec![0, 1, 2, 3, 4, 5, 6];
-        let order_by_clauses = vec![OrderByClause {column: "money".to_string(), direction: OrderByDirection::Desc}];
-        let result = get_ordered_row_indicies(&table, row_indicies, &order_by_clauses);
-        assert!(result.is_ok());
-        let expected = vec![6, 0, 3, 4, 1, 5, 2];
-        assert_eq!(expected, result.unwrap());
-    }
-
-    #[test]
-    fn get_ordered_rows_multiple_sort_orders_returns_rows_in_correct_order() {  
-        let table = default_table();
-        let row_indicies: Vec<usize> = vec![0, 1, 2, 3, 4, 5, 6];
-        let order_by_clauses = vec![OrderByClause {column: "name".to_string(), direction: OrderByDirection::Desc}, OrderByClause {column: "some_data".to_string(), direction: OrderByDirection::Asc}];
-        let result = get_ordered_row_indicies(&table, row_indicies, &order_by_clauses);
-        assert!(result.is_ok());
-        let expected = vec![0, 4, 3, 1, 5, 6, 2];
-        assert_eq!(expected, result.unwrap());
-    }
+    // TODO: tests
 }

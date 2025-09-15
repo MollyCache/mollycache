@@ -72,6 +72,8 @@ mod tests {
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::LimitClause;
+    use crate::interpreter::ast::SelectableStack;
+    use crate::interpreter::ast::SelectableStackElement;
     
     #[test]
     fn update_statement_with_all_tokens_is_generated_correctly() {
@@ -232,13 +234,16 @@ mod tests {
                     r_side: Operand::Value(Value::Integer(1)),
                 }),
             ]),
-            order_by_clause: Some(vec![OrderByClause {
-                column: "id".to_string(),
-                direction: OrderByDirection::Asc,
-            }]),
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                column_names: vec!["id".to_string()],
+                directions: vec![OrderByDirection::Asc],
+            }),
             limit_clause: Some(LimitClause {
-                limit: Value::Integer(10),
-                offset: Some(Value::Integer(5)),
+                limit: 10,
+                offset: Some(5),
             }),
         });
         assert_eq!(expected, statement);

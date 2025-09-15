@@ -66,9 +66,8 @@ pub struct InsertIntoStatement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatementStack {
-    pub columns: SelectStatementColumns,
     pub elements: Vec<SelectStatementStackElement>,
-    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
 
@@ -105,10 +104,11 @@ impl SetOperator {
 #[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatement {
     pub table_name: String,
+    pub column_names: Vec<String>,
     pub mode: SelectMode,
-    pub columns: SelectStatementColumns,
+    pub columns: SelectableStack,
     pub where_clause: Option<Vec<WhereStackElement>>,
-    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
 
@@ -116,7 +116,7 @@ pub struct SelectStatement {
 pub struct DeleteStatement {
     pub table_name: String,
     pub where_clause: Option<Vec<WhereStackElement>>,
-    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
 
@@ -125,7 +125,7 @@ pub struct UpdateStatement {
     pub table_name: String,
     pub update_values: Vec<ColumnValue>,
     pub where_clause: Option<Vec<WhereStackElement>>,
-    pub order_by_clause: Option<Vec<OrderByClause>>,
+    pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
 
@@ -179,18 +179,41 @@ pub enum SelectMode {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum SelectStatementColumns {
-    All,
-    Specific(Vec<String>),
+pub struct FunctionSignature {
+    pub name: FunctionName,
+    pub input_count: i32,
+    pub has_parentheses: bool,
 }
 
-impl SelectStatementColumns {
-    pub fn columns(&self) -> Result<Vec<&String>, String> {
-        return match self {
-            SelectStatementColumns::All => Err("Cannot get columns from all columns".to_string()),
-            SelectStatementColumns::Specific(columns) => Ok(columns.iter().map(|column| column).collect()),
-        }
-    }
+#[derive(Debug, PartialEq, Clone)]
+pub enum FunctionName {
+    CountFunction,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum MathOperator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Modulo,
+}
+
+#[derive (Debug, PartialEq, Clone)]
+pub struct SelectableStack {
+    pub selectables: Vec<SelectableStackElement>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum SelectableStackElement {
+    All,
+    Column(String),
+    Value(Value),
+    ValueList(Vec<Value>), // TODO: add column as data type in Value
+    Function(FunctionSignature),
+    Operator(Operator),
+    LogicalOperator(LogicalOperator),
+    MathOperator(MathOperator),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -281,17 +304,58 @@ pub enum OrderByDirection {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct OrderByClause {
-    pub column: String,
-    pub direction: OrderByDirection,
+    pub columns: SelectableStack,
+    pub column_names: Vec<String>,
+    pub directions: Vec<OrderByDirection>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LimitClause {
-    pub limit: Value,
-    pub offset: Option<Value>,
+    pub limit: usize,
+    pub offset: Option<usize>,
 }
 
+pub trait StatementBuilder {
+    fn build_create(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_insert(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_delete(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_drop(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+    fn build_alter(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String>;
+}
 
+pub struct DefaultStatementBuilder;
+
+impl StatementBuilder for DefaultStatementBuilder {
+    fn build_create(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        create_statement::build(parser)
+    }
+    
+    fn build_insert(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        insert_statement::build(parser)
+    }
+    
+    fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        select_statement_stack::build(parser)
+    }
+
+    fn build_update(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        update_statement::build(parser)
+    }
+
+    fn build_delete(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        delete_statement::build(parser)
+    }
+
+    fn build_drop(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        drop_statement::build(parser)
+    }
+
+    fn build_alter(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
+        alter_table_statement::build(parser)
+    }
+}
 
 pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>> {
     let mut results: Vec<Result<DatabaseSqlStatement, String>> = vec![];
@@ -404,11 +468,13 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
-                    columns: SelectStatementColumns::All,
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
                         mode: SelectMode::All,
-                        columns: SelectStatementColumns::All,
+                        columns: SelectableStack {
+                            selectables: vec![SelectableStackElement::All]
+                        },
+                        column_names: vec!["*".to_string()],
                         where_clause: None,
                         order_by_clause: None,
                         limit_clause: None,
@@ -498,11 +564,13 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
-                    columns: SelectStatementColumns::All,
                     elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
                         table_name: "users".to_string(),
                         mode: SelectMode::All,
-                        columns: SelectStatementColumns::All,
+                        columns: SelectableStack {
+                            selectables: vec![SelectableStackElement::All]
+                        },
+                        column_names: vec!["*".to_string()],
                         where_clause: None,
                         order_by_clause: None,
                         limit_clause: None,

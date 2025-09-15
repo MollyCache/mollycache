@@ -54,7 +54,7 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
     let mut row_indicies: Vec<usize> = vec![];
     for row in rows {
         table.push(row);
-        row_indicies.push(table.rows.len() - 1);
+        row_indicies.push(table.len() - 1);
     }
     return Ok(row_indicies);
 }

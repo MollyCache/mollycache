@@ -1,3 +1,5 @@
+mod test_utils;
+
 use mollydb::db::database::Database;
 use mollydb::interpreter::run_sql;
 use mollydb::db::table::{Value, Row};
@@ -45,7 +47,7 @@ fn test_complex_statements_crud() {
         (3, 'Jim', 35, 3000.0), 
         (4, 'John', 70, 1000.0), 
         (Null, Null, 80, Null);
-    DELETE FROM users WHERE id >= 2 LIMIT 1 OFFSET 2;
+    DELETE FROM users WHERE id >= 2 ORDER BY id LIMIT 1 OFFSET 2;
     SELECT name, age FROM users ORDER BY age DESC LIMIT 10 OFFSET 1;
     UPDATE users SET money = 1000.0 WHERE money IS NULL;
     SELECT age FROM users WHERE money = 1000.0;
@@ -60,7 +62,7 @@ fn test_complex_statements_crud() {
     let expected_second = vec![
         Row(vec![Value::Integer(80)]),
     ];
-    assert_eq!(expected_second, result.pop().unwrap().unwrap().unwrap());
+    test_utils::assert_table_rows_eq_unordered(expected_second, result.pop().unwrap().unwrap().unwrap());
     assert!(result.pop().unwrap().unwrap().is_none());
     assert_eq!(expected_first, result.pop().unwrap().unwrap().unwrap());
     assert!(result.into_iter().all(|result| result.is_ok() && result.unwrap().is_none()));
@@ -84,7 +86,7 @@ fn test_parsing_errors() {
     let expected = vec![
         Err("Parsing Error: Error at line 3, column 11: Unexpected value: hello".to_string()),
         Err("Parsing Error: Error at line 8, column 24: Unexpected value: wherea".to_string()),
-        Err("Parsing Error: Error at line 9, column 13: Unexpected value: users".to_string()),
+        Err("Parsing Error: Error at line 9, column 18: Unexpected value: ;".to_string()),
     ];
     assert_eq!(expected, result);
 }
