@@ -28,6 +28,7 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
 mod tests {
     use super::*;
     use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::{SelectableStack, SelectableStackElement, OrderByDirection};
 
     #[test]
     fn order_by_clause_is_generated_correctly() {
