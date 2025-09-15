@@ -172,7 +172,7 @@ mod tests {
             token(TokenTypes::True, "TRUE", 17, 15),
             token(TokenTypes::False, "FALSE", 22, 15),
             token(TokenTypes::Identifier, "fletchers_table", 8, 16),
-            token(TokenTypes::EOF, "", 0, 0)
+            token(TokenTypes::EOF, "", 0, 0),
         ];
         assert_eq!(expected, result);
     }
@@ -196,7 +196,7 @@ mod tests {
     fn tokenizer_parses_hex_literals() {
         let result = tokenize("X\'0A1A3F\' 12 X\'ZZZZZ\'");
         let expected = vec![
-            token(TokenTypes::HexLiteral, "0A1A3F" , 0, 1),
+            token(TokenTypes::HexLiteral, "0A1A3F", 0, 1),
             token(TokenTypes::IntLiteral, "12", 10, 1),
             token(TokenTypes::Error, "X\'Z", 13, 1),
             token(TokenTypes::Identifier, "ZZZZ", 16, 1),
@@ -252,9 +252,11 @@ mod tests {
 
     #[test]
     fn tokenizer_parses_comments_with_newlines() {
-        let result = tokenize("
+        let result = tokenize(
+            "
         SELECT * FROM users; -- This is a comment
-        SELECT * FROM users;");
+        SELECT * FROM users;",
+        );
         let expected = vec![
             token(TokenTypes::Select, "SELECT", 8, 2),
             token(TokenTypes::Asterisk, "*", 15, 2),
@@ -284,11 +286,13 @@ mod tests {
 
     #[test]
     fn tokenizer_parses_comments_with_asterisks_and_newlines() {
-        let result = tokenize("
+        let result = tokenize(
+            "
         SELECT  
         /* This is a comment */ 
         SELECT
-        ");
+        ",
+        );
         let expected = vec![
             token(TokenTypes::Select, "SELECT", 8, 2),
             token(TokenTypes::Select, "SELECT", 8, 4),
@@ -296,17 +300,19 @@ mod tests {
         ];
         assert_eq!(expected, result);
     }
-    
+
     #[test]
     fn tokenizer_parses_comment_block_spans_multiple_lines() {
-        let result = tokenize("
+        let result = tokenize(
+            "
         SELECT 
         /* 
         This is a comment
         that is multi line
         */
         SELECT
-        ");
+        ",
+        );
         let expected = vec![
             token(TokenTypes::Select, "SELECT", 8, 2),
             token(TokenTypes::Select, "SELECT", 8, 7),
@@ -339,7 +345,9 @@ mod tests {
 
     #[test]
     fn tokenizer_parses_transaction_keywords() {
-        let result = tokenize("BEGIN DEFERRED IMMEDIATE EXCLUSIVE COMMIT END ROLLBACK SAVEPOINT RELEASE TRANSACTION");
+        let result = tokenize(
+            "BEGIN DEFERRED IMMEDIATE EXCLUSIVE COMMIT END ROLLBACK SAVEPOINT RELEASE TRANSACTION",
+        );
         let expected = vec![
             token(TokenTypes::Begin, "BEGIN", 0, 1),
             token(TokenTypes::Deferred, "DEFERRED", 6, 1),

@@ -1,5 +1,5 @@
 use crate::interpreter::ast::helpers::common::get_selectables;
-use crate::interpreter::ast::{parser::Parser, OrderByClause};
+use crate::interpreter::ast::{OrderByClause, parser::Parser};
 use crate::interpreter::tokenizer::token::TokenTypes;
 
 use crate::interpreter::ast::helpers::token::expect_token_type;
@@ -15,12 +15,17 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
 
     let mut directions = vec![];
     let mut column_names = vec![];
-    let columns = get_selectables(parser, true, &mut Some(&mut directions), &mut Some(&mut column_names))?;
-    
+    let columns = get_selectables(
+        parser,
+        true,
+        &mut Some(&mut directions),
+        &mut Some(&mut column_names),
+    )?;
+
     return Ok(Some(OrderByClause {
         columns: columns,
         column_names: column_names,
-        directions: directions
+        directions: directions,
     }));
 }
 
@@ -28,7 +33,7 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
 mod tests {
     use super::*;
     use crate::interpreter::ast::test_utils::token;
-    use crate::interpreter::ast::{SelectableStack, SelectableStackElement, OrderByDirection};
+    use crate::interpreter::ast::{OrderByDirection, SelectableStack, SelectableStackElement};
 
     #[test]
     fn order_by_clause_is_generated_correctly() {
@@ -46,7 +51,7 @@ mod tests {
         let order_by_clause = result.unwrap();
         let expected = Some(OrderByClause {
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column("id".to_string())]
+                selectables: vec![SelectableStackElement::Column("id".to_string())],
             },
             column_names: vec!["id".to_string()],
             directions: vec![OrderByDirection::Asc],
@@ -65,7 +70,10 @@ mod tests {
         let result = get_order_by(&mut parser);
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Select);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::Select
+        );
     }
 
     #[test]
@@ -89,8 +97,8 @@ mod tests {
             columns: SelectableStack {
                 selectables: vec![
                     SelectableStackElement::Column("id".to_string()),
-                    SelectableStackElement::Column("name".to_string())
-                ]
+                    SelectableStackElement::Column("name".to_string()),
+                ],
             },
             column_names: vec!["id".to_string(), "name".to_string()],
             directions: vec![OrderByDirection::Asc, OrderByDirection::Desc],

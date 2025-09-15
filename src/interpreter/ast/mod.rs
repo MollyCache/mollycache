@@ -1,19 +1,19 @@
-use crate::interpreter::tokenizer::{scanner::Token, token::TokenTypes};
 use crate::db::table::{ColumnDefinition, Value};
+use crate::interpreter::tokenizer::{scanner::Token, token::TokenTypes};
 
+mod alter_table_statement;
 mod create_statement;
+mod delete_statement;
+mod drop_statement;
+mod helpers;
 mod insert_statement;
 mod parser;
 mod select_statement_stack;
-mod update_statement;
-mod delete_statement;
-mod helpers;
-mod drop_statement;
-mod alter_table_statement;
 mod statement_builder;
-mod transaction_statements;
 #[cfg(test)]
 mod test_utils;
+mod transaction_statements;
+mod update_statement;
 
 #[derive(Debug, PartialEq)]
 pub struct DatabaseSqlStatement {
@@ -52,7 +52,8 @@ pub struct DropTableStatement {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum ExistenceCheck  { // Eventually expand to temp tables
+pub enum ExistenceCheck {
+    // Eventually expand to temp tables
     IfNotExists,
     IfExists,
 }
@@ -137,10 +138,19 @@ pub struct AlterTableStatement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum AlterTableAction {
-    RenameTable { new_table_name: String },
-    RenameColumn { old_column_name: String, new_column_name: String },
-    AddColumn { column_def: ColumnDefinition },
-    DropColumn { column_name: String },
+    RenameTable {
+        new_table_name: String,
+    },
+    RenameColumn {
+        old_column_name: String,
+        new_column_name: String,
+    },
+    AddColumn {
+        column_def: ColumnDefinition,
+    },
+    DropColumn {
+        column_name: String,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -164,7 +174,6 @@ pub struct SavepointStatement {
 pub struct ReleaseStatement {
     pub savepoint_name: String,
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ColumnValue {
@@ -199,7 +208,7 @@ pub enum MathOperator {
     Modulo,
 }
 
-#[derive (Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SelectableStack {
     pub selectables: Vec<SelectableStackElement>,
 }
@@ -237,14 +246,12 @@ pub struct WhereCondition {
     pub r_side: Operand,
 }
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operand {
     Value(Value),
     ValueList(Vec<Value>),
     Identifier(String),
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum WhereStackElement {
@@ -262,8 +269,12 @@ pub enum WhereStackOperators {
 impl WhereStackOperators {
     pub fn into_where_stack_element(self) -> WhereStackElement {
         match self {
-            WhereStackOperators::LogicalOperator(logical_operator) => WhereStackElement::LogicalOperator(logical_operator),
-            WhereStackOperators::Parentheses(parentheses) => WhereStackElement::Parentheses(parentheses),
+            WhereStackOperators::LogicalOperator(logical_operator) => {
+                WhereStackElement::LogicalOperator(logical_operator)
+            }
+            WhereStackOperators::Parentheses(parentheses) => {
+                WhereStackElement::Parentheses(parentheses)
+            }
         }
     }
 }
@@ -331,11 +342,11 @@ impl StatementBuilder for DefaultStatementBuilder {
     fn build_create(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
         create_statement::build(parser)
     }
-    
+
     fn build_insert(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
         insert_statement::build(parser)
     }
-    
+
     fn build_select(&self, parser: &mut parser::Parser) -> Result<SqlStatement, String> {
         select_statement_stack::build(parser)
     }
@@ -378,18 +389,15 @@ pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>>
                         if let Ok(token) = parser.current_token() {
                             if token.token_type == TokenTypes::EOF {
                                 break;
-                            }
-                            else if token.token_type == TokenTypes::SemiColon {
+                            } else if token.token_type == TokenTypes::SemiColon {
                                 let _ = parser.advance_past_semicolon();
                                 break;
-                            }
-                            else {
+                            } else {
                                 if parser.advance().is_err() {
                                     return results;
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             break;
                         }
                     }
@@ -400,13 +408,11 @@ pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>>
                         results.push(Err(parser_advance_result.err().unwrap()));
                         return results;
                     }
-                    results.push(
-                        Ok(DatabaseSqlStatement {
-                            sql_statement: sql_statement,
-                            line_num: line_num,
-                            statement_text: parser.get_sql_statement_text(),
-                        })
-                    );
+                    results.push(Ok(DatabaseSqlStatement {
+                        sql_statement: sql_statement,
+                        line_num: line_num,
+                        statement_text: parser.get_sql_statement_text(),
+                    }));
                 }
             }
         } else {
@@ -418,8 +424,8 @@ pub fn generate(tokens: Vec<Token>) -> Vec<Result<DatabaseSqlStatement, String>>
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::test_utils::token;
+    use super::*;
 
     #[test]
     fn ast_handles_invalid_statements_gracefully() {
@@ -437,7 +443,9 @@ mod tests {
         ];
         let result = generate(tokens);
         assert!(result[0].is_err());
-        let expected = vec![Err("Error at line 1, column 0: Unexpected value: INTO".to_string())];
+        let expected = vec![Err(
+            "Error at line 1, column 0: Unexpected value: INTO".to_string()
+        )];
         assert_eq!(expected, result);
     }
 
@@ -468,17 +476,19 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
-                    elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
-                        table_name: "users".to_string(),
-                        mode: SelectMode::All,
-                        columns: SelectableStack {
-                            selectables: vec![SelectableStackElement::All]
+                    elements: vec![SelectStatementStackElement::SelectStatement(
+                        SelectStatement {
+                            table_name: "users".to_string(),
+                            mode: SelectMode::All,
+                            columns: SelectableStack {
+                                selectables: vec![SelectableStackElement::All],
+                            },
+                            column_names: vec!["*".to_string()],
+                            where_clause: None,
+                            order_by_clause: None,
+                            limit_clause: None,
                         },
-                        column_names: vec!["*".to_string()],
-                        where_clause: None,
-                        order_by_clause: None,
-                        limit_clause: None,
-                    })],
+                    )],
                     order_by_clause: None,
                     limit_clause: None,
                 }),
@@ -486,15 +496,13 @@ mod tests {
                 statement_text: "SELECT * FROM users;".to_string(),
             }),
             Ok(DatabaseSqlStatement {
-                    sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
-                        table_name: "users".to_string(),
-                        columns: None,
-                        values: vec![
-                            vec![Value::Integer(1), Value::Text("Alice".to_string())],
-                        ],
+                sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
+                    table_name: "users".to_string(),
+                    columns: None,
+                    values: vec![vec![Value::Integer(1), Value::Text("Alice".to_string())]],
                 }),
-                    line_num: 1,
-                    statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
+                line_num: 1,
+                statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
             }),
         ];
         assert_eq!(expected, result);
@@ -527,9 +535,7 @@ mod tests {
                 sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
                     table_name: "users".to_string(),
                     columns: None,
-                    values: vec![
-                        vec![Value::Integer(1), Value::Text("Alice".to_string())],
-                    ],
+                    values: vec![vec![Value::Integer(1), Value::Text("Alice".to_string())]],
                 }),
                 line_num: 1,
                 statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),
@@ -564,17 +570,19 @@ mod tests {
         let expected = vec![
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
-                    elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
-                        table_name: "users".to_string(),
-                        mode: SelectMode::All,
-                        columns: SelectableStack {
-                            selectables: vec![SelectableStackElement::All]
+                    elements: vec![SelectStatementStackElement::SelectStatement(
+                        SelectStatement {
+                            table_name: "users".to_string(),
+                            mode: SelectMode::All,
+                            columns: SelectableStack {
+                                selectables: vec![SelectableStackElement::All],
+                            },
+                            column_names: vec!["*".to_string()],
+                            where_clause: None,
+                            order_by_clause: None,
+                            limit_clause: None,
                         },
-                        column_names: vec!["*".to_string()],
-                        where_clause: None,
-                        order_by_clause: None,
-                        limit_clause: None,
-                    })],
+                    )],
                     order_by_clause: None,
                     limit_clause: None,
                 }),
@@ -585,9 +593,7 @@ mod tests {
                 sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
                     table_name: "users".to_string(),
                     columns: None,
-                    values: vec![
-                        vec![Value::Integer(1), Value::Text("Alice".to_string())],
-                    ],
+                    values: vec![vec![Value::Integer(1), Value::Text("Alice".to_string())]],
                 }),
                 line_num: 1,
                 statement_text: "INSERT INTO users VALUES (1, 'Alice');".to_string(),

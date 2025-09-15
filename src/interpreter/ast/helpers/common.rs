@@ -1,4 +1,10 @@
-use crate::interpreter::{ast::{parser::Parser, ExistenceCheck, SelectableStack, SelectableStackElement, Operator, LogicalOperator, MathOperator, OrderByDirection, helpers::token::token_to_value}, tokenizer::token::TokenTypes};
+use crate::interpreter::{
+    ast::{
+        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection, SelectableStack,
+        SelectableStackElement, helpers::token::token_to_value, parser::Parser,
+    },
+    tokenizer::token::TokenTypes,
+};
 
 // Returns an error if the current token does not match the given token type
 pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), String> {
@@ -17,11 +23,16 @@ pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     Ok(result)
 }
 
-pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_directions: &mut Option<&mut Vec<OrderByDirection>>, selectable_names: &mut Option<&mut Vec<String>>) -> Result<SelectableStack, String> {
+pub fn get_selectables(
+    parser: &mut Parser,
+    allow_multiple: bool,
+    order_by_directions: &mut Option<&mut Vec<OrderByDirection>>,
+    selectable_names: &mut Option<&mut Vec<String>>,
+) -> Result<SelectableStack, String> {
     #[derive(PartialEq)]
     enum ExtendedSelectableStackElement {
         SelectableStackElement(SelectableStackElement),
-        LeftParen
+        LeftParen,
     }
     let mut output: Vec<SelectableStackElement> = vec![];
     let mut operators: Vec<ExtendedSelectableStackElement> = vec![];
@@ -33,7 +44,9 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
     loop {
         let last_token_type = parser.current_token()?.token_type.clone();
 
-        if !first { parser.advance()?; }
+        if !first {
+            parser.advance()?;
+        }
         let was_first = first;
         first = false;
 
@@ -41,7 +54,15 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
 
         // Tokens needing special handling
         // TODO: more tokens should be added here (e.g. Group for GROUP BY)
-        if [TokenTypes::From, TokenTypes::SemiColon, TokenTypes::Where, TokenTypes::Order, TokenTypes::Limit].contains(&token.token_type) {
+        if [
+            TokenTypes::From,
+            TokenTypes::SemiColon,
+            TokenTypes::Where,
+            TokenTypes::Order,
+            TokenTypes::Limit,
+        ]
+        .contains(&token.token_type)
+        {
             // Default ordering is ASC
             if !expect_new_value && let Some(order_by_directions_vector) = order_by_directions {
                 order_by_directions_vector.push(OrderByDirection::Asc);
@@ -51,7 +72,9 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
             return Err("Unexpected token after ordering direction".to_string());
         }
 
-        if token.token_type == TokenTypes::Asterisk && (was_first || [TokenTypes::Comma, TokenTypes::LeftParen].contains(&last_token_type)) {
+        if token.token_type == TokenTypes::Asterisk
+            && (was_first || [TokenTypes::Comma, TokenTypes::LeftParen].contains(&last_token_type))
+        {
             // * (All) is only allowed at certain places, otherwise it's * (Multiply)
             output.push(SelectableStackElement::All);
             current_name += token.value;
@@ -85,7 +108,7 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
                 match operator {
                     ExtendedSelectableStackElement::LeftParen => {
                         break;
-                    },
+                    }
                     ExtendedSelectableStackElement::SelectableStackElement(value) => {
                         output.push(value);
                     }
@@ -100,10 +123,10 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
                             if function.has_parentheses {
                                 output.push(SelectableStackElement::Function(function.clone()));
                             }
-                        },
-                        _ => {},
+                        }
+                        _ => {}
                     },
-                    _ => {},
+                    _ => {}
                 }
             };
             continue;
@@ -114,7 +137,7 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
             let found = match token.token_type {
                 TokenTypes::Asc => Some(OrderByDirection::Asc),
                 TokenTypes::Desc => Some(OrderByDirection::Desc),
-                _ => None
+                _ => None,
             };
             if found.is_some() && depth != 0 {
                 return Err("Found unexpected ordering token".to_string());
@@ -133,21 +156,31 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
             TokenTypes::Equals => Some(SelectableStackElement::Operator(Operator::Equals)),
             TokenTypes::NotEquals => Some(SelectableStackElement::Operator(Operator::NotEquals)),
             TokenTypes::LessThan => Some(SelectableStackElement::Operator(Operator::LessThan)),
-            TokenTypes::GreaterThan => Some(SelectableStackElement::Operator(Operator::GreaterThan)),
+            TokenTypes::GreaterThan => {
+                Some(SelectableStackElement::Operator(Operator::GreaterThan))
+            }
             TokenTypes::LessEquals => Some(SelectableStackElement::Operator(Operator::LessEquals)),
-            TokenTypes::GreaterEquals => Some(SelectableStackElement::Operator(Operator::GreaterEquals)),
+            TokenTypes::GreaterEquals => {
+                Some(SelectableStackElement::Operator(Operator::GreaterEquals))
+            }
             TokenTypes::In => Some(SelectableStackElement::Operator(Operator::In)),
             // TODO: handle NOT IN (not a token)
             TokenTypes::Is => Some(SelectableStackElement::Operator(Operator::Is)),
             // TODO: handle IS NOT (not a token)
             // Logical operators
-            TokenTypes::Not => Some(SelectableStackElement::LogicalOperator(LogicalOperator::Not)),
-            TokenTypes::And => Some(SelectableStackElement::LogicalOperator(LogicalOperator::And)),
+            TokenTypes::Not => Some(SelectableStackElement::LogicalOperator(
+                LogicalOperator::Not,
+            )),
+            TokenTypes::And => Some(SelectableStackElement::LogicalOperator(
+                LogicalOperator::And,
+            )),
             TokenTypes::Or => Some(SelectableStackElement::LogicalOperator(LogicalOperator::Or)),
             // Math operators
             TokenTypes::Plus => Some(SelectableStackElement::MathOperator(MathOperator::Add)),
             TokenTypes::Minus => Some(SelectableStackElement::MathOperator(MathOperator::Subtract)),
-            TokenTypes::Asterisk => Some(SelectableStackElement::MathOperator(MathOperator::Multiply)),
+            TokenTypes::Asterisk => {
+                Some(SelectableStackElement::MathOperator(MathOperator::Multiply))
+            }
             TokenTypes::Divide => Some(SelectableStackElement::MathOperator(MathOperator::Divide)),
             TokenTypes::Modulo => Some(SelectableStackElement::MathOperator(MathOperator::Modulo)),
             _ => None,
@@ -164,14 +197,20 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
                             } else {
                                 break;
                             }
-                        },
-                        _ => { break; }
+                        }
+                        _ => {
+                            break;
+                        }
+                    },
+                    None => {
+                        break;
                     }
-                    None => { break; }
                 }
             }
 
-            operators.push(ExtendedSelectableStackElement::SelectableStackElement(value));
+            operators.push(ExtendedSelectableStackElement::SelectableStackElement(
+                value,
+            ));
             continue;
         }
 
@@ -187,7 +226,7 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
             TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
             // TODO: handle ValueList (arrays)
             TokenTypes::Identifier => SelectableStackElement::Column(token.value.to_string()), // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
-            _ => { return Err(parser.format_error()) } // TODO: better error handling
+            _ => return Err(parser.format_error()), // TODO: better error handling
         };
         output.push(element);
     }
@@ -197,9 +236,9 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
             Some(value) => match value {
                 ExtendedSelectableStackElement::SelectableStackElement(inner) => {
                     output.push(inner.clone());
-                },
+                }
                 _ => {}
-            }
+            },
             _ => {}
         }
     }
@@ -208,10 +247,15 @@ pub fn get_selectables(parser: &mut Parser, allow_multiple: bool, order_by_direc
         selectable_names_vector.push(current_name);
     }
 
-    Ok(SelectableStack { selectables: output })
+    Ok(SelectableStack {
+        selectables: output,
+    })
 }
 
-pub fn exists_clause(parser: &mut Parser, check_type: ExistenceCheck) -> Result<Option<ExistenceCheck>, String> {
+pub fn exists_clause(
+    parser: &mut Parser,
+    check_type: ExistenceCheck,
+) -> Result<Option<ExistenceCheck>, String> {
     if parser.current_token()?.token_type == TokenTypes::If {
         parser.advance()?;
         let token = parser.current_token()?;
@@ -220,10 +264,8 @@ pub fn exists_clause(parser: &mut Parser, check_type: ExistenceCheck) -> Result<
                 parser.advance()?;
                 expect_token_type(parser, TokenTypes::Exists)?;
                 ExistenceCheck::IfNotExists
-            },
-            (TokenTypes::Exists, ExistenceCheck::IfExists) => {
-                ExistenceCheck::IfExists
-            },
+            }
+            (TokenTypes::Exists, ExistenceCheck::IfExists) => ExistenceCheck::IfExists,
             (_, _) => return Err(parser.format_error()),
         };
         parser.advance()?;
@@ -232,10 +274,19 @@ pub fn exists_clause(parser: &mut Parser, check_type: ExistenceCheck) -> Result<
     return Ok(None);
 }
 
-pub fn compare_precedence(first: &SelectableStackElement, second: &SelectableStackElement) -> Result<i32, String> {
+pub fn compare_precedence(
+    first: &SelectableStackElement,
+    second: &SelectableStackElement,
+) -> Result<i32, String> {
     let first_precedence = get_precedence(first)?;
     let second_precedence = get_precedence(second)?;
-    return if second_precedence == first_precedence { Ok(0) } else if second_precedence > first_precedence { Ok(-1) } else { Ok(1) };
+    return if second_precedence == first_precedence {
+        Ok(0)
+    } else if second_precedence > first_precedence {
+        Ok(-1)
+    } else {
+        Ok(1)
+    };
 }
 
 fn get_precedence(operator: &SelectableStackElement) -> Result<i32, String> {
@@ -273,10 +324,13 @@ pub fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
         return Err("Hex string must have even length".to_string());
     }
 
-    (0..hex.len()).step_by(2).map(|i| {
+    (0..hex.len())
+        .step_by(2)
+        .map(|i| {
             u8::from_str_radix(&hex[i..i + 2], 16)
                 .map_err(|e| format!("Invalid hex at {}: {}", i, e))
-        }).collect()
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -298,7 +352,7 @@ mod tests {
         assert!(result.is_err());
         let expected = "Invalid hex at 2: invalid digit found in string";
         assert_eq!(expected, result.err().unwrap());
-        
+
         let result = hex_decode("0A1");
         assert!(result.is_err());
         let expected = "Hex string must have even length";

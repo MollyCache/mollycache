@@ -1,6 +1,9 @@
-use crate::interpreter::ast::{create_statement, insert_statement, select_statement_stack, update_statement, delete_statement, drop_statement, alter_table_statement, transaction_statements};
-use crate::interpreter::ast::parser::Parser;
 use crate::interpreter::ast::SqlStatement;
+use crate::interpreter::ast::parser::Parser;
+use crate::interpreter::ast::{
+    alter_table_statement, create_statement, delete_statement, drop_statement, insert_statement,
+    select_statement_stack, transaction_statements, update_statement,
+};
 
 pub trait StatementBuilder {
     fn build_create(&self, parser: &mut Parser) -> Result<SqlStatement, String>;
@@ -23,11 +26,11 @@ impl StatementBuilder for DefaultStatementBuilder {
     fn build_create(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         create_statement::build(parser)
     }
-    
+
     fn build_insert(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         insert_statement::build(parser)
     }
-    
+
     fn build_select(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         select_statement_stack::build(parser)
     }
@@ -55,7 +58,7 @@ impl StatementBuilder for DefaultStatementBuilder {
     fn build_commit(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         transaction_statements::build_commit(parser)
     }
-    
+
     fn build_rollback(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         transaction_statements::build_rollback(parser)
     }
@@ -63,7 +66,7 @@ impl StatementBuilder for DefaultStatementBuilder {
     fn build_savepoint(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         transaction_statements::build_savepoint(parser)
     }
-    
+
     fn build_release(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         transaction_statements::build_release(parser)
     }
@@ -72,7 +75,10 @@ impl StatementBuilder for DefaultStatementBuilder {
 #[cfg(test)]
 pub struct MockStatementBuilder;
 #[cfg(test)]
-use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatementStack, SelectableStack, SelectableStackElement, SelectStatementStackElement, SelectStatement, SelectMode};
+use crate::interpreter::ast::{
+    CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement, SelectStatementStack,
+    SelectStatementStackElement, SelectableStack, SelectableStackElement,
+};
 
 #[cfg(test)]
 impl StatementBuilder for MockStatementBuilder {
@@ -85,7 +91,7 @@ impl StatementBuilder for MockStatementBuilder {
             columns: vec![],
         }));
     }
-    
+
     fn build_insert(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         parser.advance()?;
         parser.advance_past_semicolon()?;
@@ -95,22 +101,24 @@ impl StatementBuilder for MockStatementBuilder {
             values: vec![],
         }));
     }
-    
+
     fn build_select(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         parser.advance()?;
         parser.advance_past_semicolon()?;
         return Ok(SqlStatement::Select(SelectStatementStack {
-            elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
-                table_name: "users".to_string(),
-                mode: SelectMode::All,
-                columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::All]
+            elements: vec![SelectStatementStackElement::SelectStatement(
+                SelectStatement {
+                    table_name: "users".to_string(),
+                    mode: SelectMode::All,
+                    columns: SelectableStack {
+                        selectables: vec![SelectableStackElement::All],
+                    },
+                    column_names: vec!["*".to_string()],
+                    where_clause: None,
+                    order_by_clause: None,
+                    limit_clause: None,
                 },
-                column_names: vec!["*".to_string()],
-                where_clause: None,
-                order_by_clause: None,
-                limit_clause: None,
-            })],
+            )],
             order_by_clause: None,
             limit_clause: None,
         }));

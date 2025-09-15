@@ -1,6 +1,6 @@
-use std::io;
 use crate::db;
 use crate::interpreter::run_sql;
+use std::io;
 
 pub fn cli(database: &mut db::database::Database) {
     clear_screen();
@@ -33,11 +33,9 @@ pub fn cli(database: &mut db::database::Database) {
                 for row in rows {
                     println!("{:?}", row);
                 }
-            }
-            else if let Ok(None) = result {
+            } else if let Ok(None) = result {
                 println!("Executed Successfully");
-            }
-            else {
+            } else {
                 println!("Error: {}", result.unwrap_err());
             }
         }
@@ -49,4 +47,3 @@ fn clear_screen() {
     print!("\x1B[2J\x1B[1;1H");
     io::Write::flush(&mut io::stdout()).unwrap();
 }
-

@@ -1,4 +1,4 @@
-use crate::interpreter::tokenizer::token::{TokenTypes};
+use crate::interpreter::tokenizer::token::TokenTypes;
 
 #[derive(Debug, PartialEq)]
 pub struct Token<'a> {
@@ -47,7 +47,10 @@ impl<'a> Scanner<'a> {
     }
 
     fn peek_char(&self) -> char {
-        return self.input[self.current + 1..].chars().next().unwrap_or('\0');
+        return self.input[self.current + 1..]
+            .chars()
+            .next()
+            .unwrap_or('\0');
     }
 
     fn build_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
@@ -55,31 +58,31 @@ impl<'a> Scanner<'a> {
         return Token {
             token_type: token_type,
             value: &self.input[start..self.current],
-            col_num: start-self.col_num,
+            col_num: start - self.col_num,
             line_num: self.line_num,
         };
     }
 
     fn build_string_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
         return match token_type {
-            TokenTypes::String => { 
-            self.advance();
+            TokenTypes::String => {
+                self.advance();
                 Token {
                     token_type: token_type,
-                    value: &self.input[start+1..self.current-1],
-                    col_num: start-self.col_num,
+                    value: &self.input[start + 1..self.current - 1],
+                    col_num: start - self.col_num,
                     line_num: self.line_num,
                 }
             }
-            _ => self.build_token(start, token_type)
+            _ => self.build_token(start, token_type),
         };
     }
 
     fn build_string_identifier_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
         return Token {
             token_type: token_type,
-            value: &self.input[start+1..self.current-1],
-            col_num: start-self.col_num,
+            value: &self.input[start + 1..self.current - 1],
+            col_num: start - self.col_num,
             line_num: self.line_num,
         };
     }
@@ -90,13 +93,13 @@ impl<'a> Scanner<'a> {
                 self.advance();
                 Token {
                     token_type: token_type,
-                    value: &self.input[start+2..self.current-1],
-                    col_num: start-self.col_num,
+                    value: &self.input[start + 2..self.current - 1],
+                    col_num: start - self.col_num,
                     line_num: self.line_num,
                 }
             }
-            _ => self.build_token(start, token_type)
-        }
+            _ => self.build_token(start, token_type),
+        };
     }
 
     fn read_string(&mut self) -> TokenTypes {
@@ -210,7 +213,11 @@ impl<'a> Scanner<'a> {
 
     fn read_digit(&mut self) -> TokenTypes {
         let mut token_type = TokenTypes::IntLiteral;
-        while self.peek_char().is_ascii_digit() || self.peek_char() == '.' || self.peek_char() == 'e' || self.peek_char() == '-' {
+        while self.peek_char().is_ascii_digit()
+            || self.peek_char() == '.'
+            || self.peek_char() == 'e'
+            || self.peek_char() == '-'
+        {
             if self.peek_char() == '.' || self.peek_char() == 'e' {
                 token_type = TokenTypes::RealLiteral;
             }
@@ -235,22 +242,25 @@ impl<'a> Scanner<'a> {
     fn read_block_comment(&mut self, start: usize) -> Option<Token<'a>> {
         self.advance();
         self.advance();
-        
+
         while self.current < self.input.len() {
-            if self.current_char() == '*' && self.current + 1 < self.input.len() && self.peek_char() == '/' {
+            if self.current_char() == '*'
+                && self.current + 1 < self.input.len()
+                && self.peek_char() == '/'
+            {
                 self.advance();
                 self.advance();
                 return self.next_token();
             }
-            
+
             if self.current_char() == '\n' {
                 self.line_num += 1;
                 self.col_num = self.current + 1;
             }
-            
+
             self.advance();
         }
-        
+
         Some(Token {
             token_type: TokenTypes::Error,
             value: &self.input[start + 2..self.current],
@@ -315,12 +325,10 @@ impl<'a> Scanner<'a> {
                             self.advance();
                         }
                         self.next_token()
-                    }
-                    else {
+                    } else {
                         return Some(self.build_token(start, TokenTypes::Error));
                     }
-                }
-                else {
+                } else {
                     Some(self.build_token(start, TokenTypes::Minus))
                 }
             }
@@ -340,7 +348,7 @@ impl<'a> Scanner<'a> {
                 } else {
                     Some(self.build_token(start, TokenTypes::Error))
                 }
-            },
+            }
             '<' => {
                 if self.peek_char() == '=' {
                     self.advance();
@@ -348,7 +356,7 @@ impl<'a> Scanner<'a> {
                 } else {
                     Some(self.build_token(start, TokenTypes::LessThan))
                 }
-            },
+            }
             '>' => {
                 if self.peek_char() == '=' {
                     self.advance();
@@ -356,7 +364,7 @@ impl<'a> Scanner<'a> {
                 } else {
                     Some(self.build_token(start, TokenTypes::GreaterThan))
                 }
-            },
+            }
             _ => Some(self.build_token(start, TokenTypes::Error)),
         };
     }

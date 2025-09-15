@@ -1,25 +1,25 @@
+use crate::db::table::ColumnDefinition;
 use crate::interpreter::{
     ast::{
-        parser::Parser, CreateTableStatement, SqlStatement::{self, CreateTable}, ExistenceCheck,
+        CreateTableStatement, ExistenceCheck,
+        SqlStatement::{self, CreateTable},
+        helpers::common::{exists_clause, get_table_name},
         helpers::token::{expect_token_type, token_to_data_type},
-        helpers::common::{get_table_name, exists_clause},
-    }, 
-    tokenizer::token::TokenTypes
+        parser::Parser,
+    },
+    tokenizer::token::TokenTypes,
 };
-use crate::db::table::ColumnDefinition;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     let statement: Result<SqlStatement, String>;
-    
+
     let token = parser.current_token()?;
     match token.token_type {
         TokenTypes::Table => {
             statement = table_statement(parser);
-        },
-        _ => {
-            return Err(parser.format_error())
-        },
+        }
+        _ => return Err(parser.format_error()),
     }
 
     // Ensure SemiColon
@@ -52,7 +52,7 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
         expect_token_type(parser, TokenTypes::Identifier)?;
         let column_name = token.value.to_string();
         parser.advance()?;
-        
+
         // Grab the column data type
         let column_data_type = token_to_data_type(parser)?;
         parser.advance()?;
@@ -66,7 +66,7 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
                 columns.push(ColumnDefinition {
                     name: column_name,
                     data_type: column_data_type,
-                    constraints: vec![] // TODO,
+                    constraints: vec![], // TODO,
                 });
                 parser.advance()?;
             }
@@ -74,11 +74,11 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
                 columns.push(ColumnDefinition {
                     name: column_name,
                     data_type: column_data_type,
-                    constraints: vec![] // TODO,
+                    constraints: vec![], // TODO,
                 });
                 parser.advance()?;
                 break;
-            },
+            }
             _ => return Err(parser.format_error()),
         }
     }
@@ -88,12 +88,12 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::test_utils::token;
-    use crate::interpreter::ast::ExistenceCheck;
     use crate::db::table::DataType;
+    use crate::interpreter::ast::ExistenceCheck;
+    use crate::interpreter::ast::test_utils::token;
 
     #[test]
-    fn create_table_generates_proper_statement(){
+    fn create_table_generates_proper_statement() {
         // CREATE TABLE users (id INTEGER, name TEXT);
         let tokens = vec![
             token(TokenTypes::Create, "CREATE"),
@@ -220,7 +220,11 @@ mod tests {
         let expected = SqlStatement::CreateTable(CreateTableStatement {
             table_name: "users".to_string(),
             existence_check: Some(ExistenceCheck::IfNotExists),
-            columns: vec![ColumnDefinition { name: "id".to_string(), data_type: DataType::Integer, constraints: vec![] }],
+            columns: vec![ColumnDefinition {
+                name: "id".to_string(),
+                data_type: DataType::Integer,
+                constraints: vec![],
+            }],
         });
         assert_eq!(expected, result.unwrap());
     }

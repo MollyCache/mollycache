@@ -1,8 +1,8 @@
 mod test_utils;
 
 use mollydb::db::database::Database;
+use mollydb::db::table::{Row, Value};
 use mollydb::interpreter::run_sql;
-use mollydb::db::table::{Value, Row};
 
 #[test]
 fn test_basic_statements_crud() {
@@ -24,11 +24,25 @@ fn test_basic_statements_crud() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
     let expected = vec![
-        Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(2000.0)]),
-        Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
+        Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+            Value::Integer(25),
+            Value::Real(2000.0),
+        ]),
+        Row(vec![
+            Value::Integer(3),
+            Value::Text("Jim".to_string()),
+            Value::Integer(35),
+            Value::Real(3000.0),
+        ]),
     ];
     assert_eq!(result.pop().unwrap().unwrap().unwrap(), expected);
-    assert!(result.into_iter().all(|result| result.is_ok() && result.unwrap().is_none()));
+    assert!(
+        result
+            .into_iter()
+            .all(|result| result.is_ok() && result.unwrap().is_none())
+    );
 }
 
 #[test]
@@ -59,13 +73,18 @@ fn test_complex_statements_crud() {
         Row(vec![Value::Text("Jane".to_string()), Value::Integer(30)]),
         Row(vec![Value::Text("John".to_string()), Value::Integer(25)]),
     ];
-    let expected_second = vec![
-        Row(vec![Value::Integer(80)]),
-    ];
-    test_utils::assert_table_rows_eq_unordered(expected_second, result.pop().unwrap().unwrap().unwrap());
+    let expected_second = vec![Row(vec![Value::Integer(80)])];
+    test_utils::assert_table_rows_eq_unordered(
+        expected_second,
+        result.pop().unwrap().unwrap().unwrap(),
+    );
     assert!(result.pop().unwrap().unwrap().is_none());
     assert_eq!(expected_first, result.pop().unwrap().unwrap().unwrap());
-    assert!(result.into_iter().all(|result| result.is_ok() && result.unwrap().is_none()));
+    assert!(
+        result
+            .into_iter()
+            .all(|result| result.is_ok() && result.unwrap().is_none())
+    );
 }
 
 #[test]
@@ -99,7 +118,10 @@ fn test_execution_errors() {
     ";
     let result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_err()));
-    let expected = vec![Err("Execution Error with statement starting on line 2 \n Error: Table `users` does not exist".to_string())];
+    let expected = vec![Err(
+        "Execution Error with statement starting on line 2 \n Error: Table `users` does not exist"
+            .to_string(),
+    )];
     assert_eq!(expected, result);
 }
 
@@ -122,11 +144,13 @@ fn test_drop_table() {
     assert!(result[1].is_ok() && result[1].as_ref().unwrap().is_none());
     assert!(result[2].is_ok() && result[2].as_ref().unwrap().is_none());
     assert!(result[3].is_err());
-    let expected_first = "Execution Error with statement starting on line 8 \n Error: Table `users` does not exist";
+    let expected_first =
+        "Execution Error with statement starting on line 8 \n Error: Table `users` does not exist";
     assert_eq!(expected_first, result[3].as_ref().err().unwrap());
-    
+
     assert!(result[4].is_err());
-    let expected_second = "Execution Error with statement starting on line 9 \n Error: Table `users` does not exist";
+    let expected_second =
+        "Execution Error with statement starting on line 9 \n Error: Table `users` does not exist";
     assert_eq!(expected_second, result[4].as_ref().err().unwrap());
 }
 
@@ -153,11 +177,13 @@ fn test_alter_table() {
     ";
     let result = run_sql(&mut database, sql);
 
-    assert!(result[0..=5].iter().all(|result| result.is_ok() && result.as_ref().unwrap().is_none()));
+    assert!(
+        result[0..=5]
+            .iter()
+            .all(|result| result.is_ok() && result.as_ref().unwrap().is_none())
+    );
 
-    let expected = vec![
-        Row(vec![Value::Text("John".to_string()), Value::Null]),
-    ];
+    let expected = vec![Row(vec![Value::Text("John".to_string()), Value::Null])];
     let row = result[6].as_ref().unwrap().as_ref().unwrap();
     assert_eq!(expected, *row);
 
@@ -169,7 +195,13 @@ fn test_alter_table() {
     ];
 
     assert!(result[7..=10].iter().all(|result| result.is_err()));
-    assert_eq!(expected_errors, result[7..=10].iter().map(|result| result.as_ref().err().unwrap()).collect::<Vec<&String>>());
+    assert_eq!(
+        expected_errors,
+        result[7..=10]
+            .iter()
+            .map(|result| result.as_ref().err().unwrap())
+            .collect::<Vec<&String>>()
+    );
 }
 
 #[test]
@@ -213,11 +245,7 @@ fn test_distinct_with_limit_and_offset() {
     ";
     let result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
-    let expected = vec![
-        Row(vec![Value::Text("Jim".to_string())]),
-    ];
+    let expected = vec![Row(vec![Value::Text("Jim".to_string())])];
     let row = result[5].as_ref().unwrap().as_ref().unwrap();
     assert_eq!(expected, *row);
 }
-
-

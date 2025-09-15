@@ -1,7 +1,8 @@
-use crate::interpreter::ast::{parser::Parser, WhereCondition, Operand, Operator};
+use crate::interpreter::ast::helpers::token::{
+    expect_token_type, token_to_value, tokens_to_value_list,
+};
+use crate::interpreter::ast::{Operand, Operator, WhereCondition, parser::Parser};
 use crate::interpreter::tokenizer::token::TokenTypes;
-use crate::interpreter::ast::helpers::token::{expect_token_type, token_to_value, tokens_to_value_list};
-
 
 pub fn get_condition(parser: &mut Parser) -> Result<WhereCondition, String> {
     let l_side = get_operand(parser)?;
@@ -68,7 +69,7 @@ pub fn get_operand(parser: &mut Parser) -> Result<Operand, String> {
             expect_token_type(parser, TokenTypes::RightParen)?;
 
             Ok(Operand::ValueList(values))
-        },
+        }
         _ => return Err(parser.format_error()),
     }
 }
@@ -76,15 +77,22 @@ pub fn get_operand(parser: &mut Parser) -> Result<Operand, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::{Operator, WhereCondition, Operand};
-    use crate::interpreter::ast::test_utils::token;
     use crate::db::table::Value;
+    use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::{Operand, Operator, WhereCondition};
 
-    fn assert_where_condition(result: Result<WhereCondition, String>, expected: WhereCondition, parser: &mut Parser) {
+    fn assert_where_condition(
+        result: Result<WhereCondition, String>,
+        expected: WhereCondition,
+        parser: &mut Parser,
+    ) {
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::SemiColon
+        );
     }
 
     #[test]
@@ -126,7 +134,11 @@ mod tests {
         let expected = WhereCondition {
             l_side: Operand::Identifier("id".to_string()),
             operator: Operator::In,
-            r_side: Operand::ValueList(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]),
+            r_side: Operand::ValueList(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3),
+            ]),
         };
         assert_where_condition(result, expected, &mut parser);
     }
@@ -224,7 +236,10 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = get_condition(&mut parser);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Error at line 1, column 0: Unexpected value: (");
+        assert_eq!(
+            result.unwrap_err(),
+            "Error at line 1, column 0: Unexpected value: ("
+        );
     }
 
     #[test]

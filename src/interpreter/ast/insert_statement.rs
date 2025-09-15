@@ -1,12 +1,14 @@
-use crate::interpreter::{
-    ast::{ 
-        helpers::token::{token_to_value, expect_token_type},
-        helpers::common::get_table_name,
-        parser::Parser, InsertIntoStatement, SqlStatement::{self, InsertInto}
-    }, 
-    tokenizer::token::TokenTypes
-};
 use crate::db::table::Value;
+use crate::interpreter::{
+    ast::{
+        InsertIntoStatement,
+        SqlStatement::{self, InsertInto},
+        helpers::common::get_table_name,
+        helpers::token::{expect_token_type, token_to_value},
+        parser::Parser,
+    },
+    tokenizer::token::TokenTypes,
+};
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
@@ -15,10 +17,10 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     match token.token_type {
         TokenTypes::Into => {
             statement = into_statement(parser);
-        },
+        }
         TokenTypes::Or => {
             statement = or_statement(parser);
-        },
+        }
         _ => return Err(parser.format_error()),
     }
 
@@ -50,7 +52,7 @@ fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
             match token.token_type {
                 TokenTypes::Comma => {
                     parser.advance()?;
-                },
+                }
                 _ => break,
             }
         }
@@ -93,11 +95,11 @@ fn get_values(parser: &mut Parser) -> Result<Vec<Value>, String> {
         match token.token_type {
             TokenTypes::Comma => {
                 parser.advance()?;
-            },
+            }
             TokenTypes::RightParen => {
                 parser.advance()?;
                 return Ok(values);
-            },
+            }
             _ => return Err(parser.format_error()),
         }
     }
@@ -111,7 +113,7 @@ fn get_columns(parser: &mut Parser) -> Result<Vec<String>, String> {
         expect_token_type(parser, TokenTypes::Identifier)?;
         columns.push(token.value.to_string());
         parser.advance()?;
-        
+
         let token = parser.current_token()?;
         match token.token_type {
             TokenTypes::Comma => {
@@ -121,9 +123,7 @@ fn get_columns(parser: &mut Parser) -> Result<Vec<String>, String> {
                 parser.advance()?;
                 break;
             }
-            _ => {
-                return Err(parser.format_error())
-            }
+            _ => return Err(parser.format_error()),
         }
     }
     return Ok(columns);
@@ -132,7 +132,6 @@ fn get_columns(parser: &mut Parser) -> Result<Vec<String>, String> {
 fn or_statement(_parser: &mut Parser) -> Result<SqlStatement, String> {
     return Err("INSERT OR ... not yet implemented".to_string());
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -158,16 +157,14 @@ mod tests {
         let result = build(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::InsertInto(InsertIntoStatement {
-            table_name: "users".to_string(),
-            columns: None,
-            values: vec![
-                vec![
-                    Value::Integer(1),
-                    Value::Text("Alice".to_string()),
-                ]
-            ],
-        }));
+        assert_eq!(
+            statement,
+            SqlStatement::InsertInto(InsertIntoStatement {
+                table_name: "users".to_string(),
+                columns: None,
+                values: vec![vec![Value::Integer(1), Value::Text("Alice".to_string()),]],
+            })
+        );
     }
 
     #[test]
@@ -195,22 +192,19 @@ mod tests {
         let result = build(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
-        assert_eq!(statement, SqlStatement::InsertInto(InsertIntoStatement {
-            table_name: "guests".to_string(),
-            columns: None,
-            values: vec![
-                vec![
-                    Value::Integer(1),
-                    Value::Text("Alice".to_string()),
+        assert_eq!(
+            statement,
+            SqlStatement::InsertInto(InsertIntoStatement {
+                table_name: "guests".to_string(),
+                columns: None,
+                values: vec![
+                    vec![Value::Integer(1), Value::Text("Alice".to_string()),],
+                    vec![Value::Integer(2), Value::Text("Bob".to_string()),]
                 ],
-                vec![
-                    Value::Integer(2),
-                    Value::Text("Bob".to_string()),
-                ]
-            ],
-        }));
+            })
+        );
     }
-    
+
     #[test]
     fn single_row_insert_with_column_specifiers_is_generated_correctly() {
         // INSERT INTO users (id, name, email) VALUES (1, "Fletcher", NULL);
@@ -246,13 +240,11 @@ mod tests {
                 "name".to_string(),
                 "email".to_string(),
             ]),
-            values: vec![
-                vec![
-                    Value::Real(1.1),
-                    Value::Blob(vec![0xAA, 0xB0, 0x00]),
-                    Value::Null,
-                ]
-            ],
+            values: vec![vec![
+                Value::Real(1.1),
+                Value::Blob(vec![0xAA, 0xB0, 0x00]),
+                Value::Null,
+            ]],
         });
         assert_eq!(expected, statement);
     }

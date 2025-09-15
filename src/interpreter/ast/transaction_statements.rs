@@ -1,20 +1,23 @@
-use crate::interpreter::ast::{parser::Parser, SqlStatement, BeginStatement, RollbackStatement, SavepointStatement, ReleaseStatement};
-use crate::interpreter::tokenizer::token::TokenTypes;
 use crate::interpreter::ast::helpers::token::expect_token_type;
+use crate::interpreter::ast::{
+    BeginStatement, ReleaseStatement, RollbackStatement, SavepointStatement, SqlStatement,
+    parser::Parser,
+};
+use crate::interpreter::tokenizer::token::TokenTypes;
 
 pub fn build_begin(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
-    let statement = if expect_token_type(parser, TokenTypes::Deferred).is_ok() || expect_token_type(parser, TokenTypes::SemiColon).is_ok() {
+    let statement = if expect_token_type(parser, TokenTypes::Deferred).is_ok()
+        || expect_token_type(parser, TokenTypes::SemiColon).is_ok()
+    {
         SqlStatement::BeginTransaction(BeginStatement::Deferred)
     } else if expect_token_type(parser, TokenTypes::Exclusive).is_ok() {
         SqlStatement::BeginTransaction(BeginStatement::Exclusive)
-    }
-    else if expect_token_type(parser, TokenTypes::Immediate).is_ok() {
+    } else if expect_token_type(parser, TokenTypes::Immediate).is_ok() {
         SqlStatement::BeginTransaction(BeginStatement::Immediate)
-    }
-    else {
+    } else {
         return Err(parser.format_error());
-    };  
+    };
     if parser.current_token()?.token_type != TokenTypes::SemiColon {
         parser.advance()?;
         expect_token_type(parser, TokenTypes::SemiColon)?;
@@ -75,11 +78,11 @@ pub fn build_release(parser: &mut Parser) -> Result<SqlStatement, String> {
 mod tests {
     use super::*;
     use crate::interpreter::ast::test_utils::token;
-        
+
     #[test]
     fn build_begin_with_all_tokens_is_generated_correctly() {
         // BEGIN DEFERRED; BEGIN EXCLUSIVE; BEGIN IMMEDIATE; BEGIN;
-        let begin_tokens = vec! [
+        let begin_tokens = vec![
             token(TokenTypes::Begin, "BEGIN"),
             token(TokenTypes::Deferred, "DEFERRED"),
             token(TokenTypes::SemiColon, ";"),
@@ -93,12 +96,16 @@ mod tests {
             token(TokenTypes::SemiColon, ";"),
         ];
         let expected = vec![
-            Some(Ok(SqlStatement::BeginTransaction(BeginStatement::Deferred))), 
-            Some(Ok(SqlStatement::BeginTransaction(BeginStatement::Exclusive))), 
-            Some(Ok(SqlStatement::BeginTransaction(BeginStatement::Immediate))),
-            Some(Ok(SqlStatement::BeginTransaction(BeginStatement::Deferred)))
+            Some(Ok(SqlStatement::BeginTransaction(BeginStatement::Deferred))),
+            Some(Ok(SqlStatement::BeginTransaction(
+                BeginStatement::Exclusive,
+            ))),
+            Some(Ok(SqlStatement::BeginTransaction(
+                BeginStatement::Immediate,
+            ))),
+            Some(Ok(SqlStatement::BeginTransaction(BeginStatement::Deferred))),
         ];
-        let mut  parser = Parser::new(begin_tokens);
+        let mut parser = Parser::new(begin_tokens);
         for i in 0..3 {
             let result = parser.next_statement();
             assert_eq!(expected[i], result);
@@ -163,9 +170,8 @@ mod tests {
             token(TokenTypes::Identifier, "savepoint_name"),
             token(TokenTypes::SemiColon, ";"),
         ];
-        let expected = 
-        Some(Ok(SqlStatement::Savepoint(SavepointStatement {
-                savepoint_name: "savepoint_name".to_string(),
+        let expected = Some(Ok(SqlStatement::Savepoint(SavepointStatement {
+            savepoint_name: "savepoint_name".to_string(),
         })));
         let mut parser = Parser::new(savepoint_tokens);
         let result = parser.next_statement();

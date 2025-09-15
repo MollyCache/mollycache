@@ -1,8 +1,8 @@
 mod test_utils;
 
 use mollydb::db::database::Database;
+use mollydb::db::table::{Row, Value};
 use mollydb::interpreter::run_sql;
-use mollydb::db::table::{Value, Row};
 
 #[test]
 fn test_set_operators() {
@@ -23,7 +23,11 @@ fn test_set_operators() {
     ];
     let row = result.pop().unwrap().unwrap().unwrap();
     test_utils::assert_table_rows_eq_unordered(expected, row);
-    assert!(result.into_iter().all(|result| result.is_ok() && result.unwrap().is_none()));
+    assert!(
+        result
+            .into_iter()
+            .all(|result| result.is_ok() && result.unwrap().is_none())
+    );
 }
 
 #[test]
@@ -46,12 +50,17 @@ fn test_set_operators_order_by_clauses_and_parentheses() {
         Row(vec![Value::Integer(3), Value::Text("Jane".to_string())]),
         Row(vec![Value::Integer(2), Value::Text("zane".to_string())]),
     ];
-    let expected_first = vec![
-        Row(vec![Value::Integer(2), Value::Text("zane".to_string())]),
-    ];
+    let expected_first = vec![Row(vec![
+        Value::Integer(2),
+        Value::Text("zane".to_string()),
+    ])];
     assert_eq!(expected_first, result.pop().unwrap().unwrap().unwrap());
     assert_eq!(expected_second, result.pop().unwrap().unwrap().unwrap());
-    assert!(result.into_iter().all(|result| result.is_ok() && result.unwrap().is_none()));
+    assert!(
+        result
+            .into_iter()
+            .all(|result| result.is_ok() && result.unwrap().is_none())
+    );
 }
 
 #[test]
@@ -88,9 +97,15 @@ fn test_set_operators_with_different_tables_and_clause() {
         Row(vec![Value::Text("Jim".to_string())]),
         Row(vec![Value::Text("Jack".to_string())]),
     ];
-    test_utils::assert_table_rows_eq_unordered(expected_first, result.pop().unwrap().unwrap().unwrap());
-    assert!(result.into_iter().all(|result| result.is_ok() && result.unwrap().is_none()));
-
+    test_utils::assert_table_rows_eq_unordered(
+        expected_first,
+        result.pop().unwrap().unwrap().unwrap(),
+    );
+    assert!(
+        result
+            .into_iter()
+            .all(|result| result.is_ok() && result.unwrap().is_none())
+    );
 }
 
 // ADD TESTS with two seperate tables with different columns and using SELECT *

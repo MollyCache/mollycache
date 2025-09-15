@@ -1,11 +1,17 @@
-mod where_condition;
 mod expected_token_matches_current;
+mod where_condition;
 mod where_stack_element;
-use expected_token_matches_current::{next_expected_token_from_current, WhereClauseExpectedNextToken};
+use expected_token_matches_current::{
+    WhereClauseExpectedNextToken, next_expected_token_from_current,
+};
 
-use crate::interpreter::{ast::{
-    helpers::{token::expect_token_type, where_clause::where_stack_element::get_where_stack_element}, 
-    parser::Parser, WhereStackElement, WhereStackOperators, Parentheses}};
+use crate::interpreter::ast::{
+    Parentheses, WhereStackElement, WhereStackOperators,
+    helpers::{
+        token::expect_token_type, where_clause::where_stack_element::get_where_stack_element,
+    },
+    parser::Parser,
+};
 use crate::interpreter::tokenizer::token::TokenTypes;
 
 // The WhereStack is a the method that is used to store the order of operations with Reverse Polish Notation.
@@ -24,9 +30,12 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
     let mut expected_token = WhereClauseExpectedNextToken::ConditionLeftParenNot;
 
     while let Some(where_stack_element) = get_where_stack_element(parser, &operator_stack)? {
-        expected_token = next_expected_token_from_current(&expected_token, &where_stack_element, parser)?;
+        expected_token =
+            next_expected_token_from_current(&expected_token, &where_stack_element, parser)?;
         match where_stack_element {
-            WhereStackElement::Condition(condition) => where_stack.push(WhereStackElement::Condition(condition)),
+            WhereStackElement::Condition(condition) => {
+                where_stack.push(WhereStackElement::Condition(condition))
+            }
             WhereStackElement::Parentheses(parentheses) => {
                 if parentheses == Parentheses::Left {
                     operator_stack.push(WhereStackOperators::Parentheses(parentheses));
@@ -34,46 +43,53 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
                 }
                 while let Some(current_operator) = operator_stack.pop() {
                     match (current_operator, operator_stack.len()) {
-                        (WhereStackOperators::LogicalOperator(_), 0) => return Err("Mismatched parentheses found.".to_string()),
+                        (WhereStackOperators::LogicalOperator(_), 0) => {
+                            return Err("Mismatched parentheses found.".to_string());
+                        }
                         (WhereStackOperators::Parentheses(Parentheses::Left), _) => break,
-                        (WhereStackOperators::LogicalOperator(logical_operator), _) => where_stack.push(WhereStackElement::LogicalOperator(logical_operator)),
+                        (WhereStackOperators::LogicalOperator(logical_operator), _) => {
+                            where_stack.push(WhereStackElement::LogicalOperator(logical_operator))
+                        }
                         _ => unreachable!(),
                     }
                 }
-            },
-            WhereStackElement::LogicalOperator(logical_operator) => {
-                loop { 
-                    let current_operator =  match operator_stack.pop() {
-                        Some(operator) => operator,
-                        None => {
-                            operator_stack.push(WhereStackOperators::LogicalOperator(logical_operator));
+            }
+            WhereStackElement::LogicalOperator(logical_operator) => loop {
+                let current_operator = match operator_stack.pop() {
+                    Some(operator) => operator,
+                    None => {
+                        operator_stack.push(WhereStackOperators::LogicalOperator(logical_operator));
+                        break;
+                    }
+                };
+                match current_operator {
+                    WhereStackOperators::LogicalOperator(current_logical_operator) => {
+                        if !logical_operator.is_greater_precedence(&current_logical_operator) {
+                            where_stack
+                                .push(WhereStackElement::LogicalOperator(current_logical_operator));
+                        } else {
+                            operator_stack.push(WhereStackOperators::LogicalOperator(
+                                current_logical_operator,
+                            ));
+                            operator_stack
+                                .push(WhereStackOperators::LogicalOperator(logical_operator));
                             break;
-                        },
-                    };
-                    match current_operator {
-                        WhereStackOperators::LogicalOperator(current_logical_operator) => {
-                            if !logical_operator.is_greater_precedence(&current_logical_operator) {
-                                where_stack.push(WhereStackElement::LogicalOperator(current_logical_operator));
-                            }
-                            else {
-                                operator_stack.push(WhereStackOperators::LogicalOperator(current_logical_operator));
-                                operator_stack.push(WhereStackOperators::LogicalOperator(logical_operator));
-                                break;
-                            }
-                        },
-                        _ => {
-                            operator_stack.push(current_operator);
-                            operator_stack.push(WhereStackOperators::LogicalOperator(logical_operator));
-                            break;
-                        },
+                        }
+                    }
+                    _ => {
+                        operator_stack.push(current_operator);
+                        operator_stack.push(WhereStackOperators::LogicalOperator(logical_operator));
+                        break;
                     }
                 }
-            }
+            },
         }
     }
     while let Some(operator) = operator_stack.pop() {
         match operator {
-            WhereStackOperators::LogicalOperator(_) => where_stack.push(operator.into_where_stack_element()),
+            WhereStackOperators::LogicalOperator(_) => {
+                where_stack.push(operator.into_where_stack_element())
+            }
             _ => return Err("Mismatched parentheses found.".to_string()),
         }
     }
@@ -84,9 +100,9 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::{LogicalOperator, Operator, WhereCondition, Operand};
-    use crate::interpreter::ast::test_utils::token;
     use crate::db::table::Value;
+    use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::{LogicalOperator, Operand, Operator, WhereCondition};
 
     fn simple_condition(l_side: &str, operator: Operator, r_side: Value) -> WhereStackElement {
         WhereStackElement::Condition(WhereCondition {
@@ -107,7 +123,10 @@ mod tests {
         let result = get_where_clause(&mut parser);
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Select);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::Select
+        );
     }
 
     #[test]
@@ -134,7 +153,10 @@ mod tests {
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::SemiColon
+        );
     }
 
     #[test]
@@ -169,7 +191,10 @@ mod tests {
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::SemiColon
+        );
     }
 
     #[test]
@@ -206,7 +231,10 @@ mod tests {
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::SemiColon
+        );
     }
 
     #[test]
@@ -251,7 +279,10 @@ mod tests {
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::SemiColon
+        );
     }
 
     #[test]
@@ -290,7 +321,10 @@ mod tests {
         assert!(result.is_ok());
         let where_clause = result.unwrap();
         assert_eq!(expected, where_clause);
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::SemiColon
+        );
     }
 
     #[test]
@@ -312,7 +346,10 @@ mod tests {
         let result = get_where_clause(&mut parser);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Mismatched parentheses found.");
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::SemiColon
+        );
     }
 
     #[test]
@@ -336,12 +373,18 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = get_where_clause(&mut parser);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Some(vec![
-            simple_condition("id", Operator::Equals, Value::Integer(1)),
-            simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
-            WhereStackElement::LogicalOperator(LogicalOperator::Or),
-        ]));
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::RightParen);
+        assert_eq!(
+            result.unwrap(),
+            Some(vec![
+                simple_condition("id", Operator::Equals, Value::Integer(1)),
+                simple_condition("name", Operator::Equals, Value::Text("John".to_string())),
+                WhereStackElement::LogicalOperator(LogicalOperator::Or),
+            ])
+        );
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::RightParen
+        );
     }
 
     #[test]
@@ -359,11 +402,17 @@ mod tests {
         let result = get_where_clause(&mut parser);
         assert!(result.is_ok());
         let where_clause = result.unwrap();
-        assert_eq!(where_clause, Some(vec![
-            simple_condition("id", Operator::Equals, Value::Integer(1)),
-            WhereStackElement::LogicalOperator(LogicalOperator::Not),
-        ]));
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::SemiColon);
+        assert_eq!(
+            where_clause,
+            Some(vec![
+                simple_condition("id", Operator::Equals, Value::Integer(1)),
+                WhereStackElement::LogicalOperator(LogicalOperator::Not),
+            ])
+        );
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::SemiColon
+        );
     }
 
     #[test]

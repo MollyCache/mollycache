@@ -1,21 +1,20 @@
+use std::cmp::Eq;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
-use std::cmp::Eq;
 
 use crate::interpreter::ast::OrderByDirection;
 
-pub mod select;
-pub mod insert;
-pub mod delete;
-pub mod update;
-pub mod create_table;
-pub mod helpers;
-pub mod drop_table;
 pub mod alter_table;
+pub mod create_table;
+pub mod delete;
+pub mod drop_table;
+pub mod helpers;
+pub mod insert;
+pub mod select;
 #[cfg(test)]
 pub mod test_utils;
-
+pub mod update;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum DataType {
@@ -44,7 +43,7 @@ pub enum Value {
     Real(f64),
     Text(String),
     Blob(Vec<u8>),
-    Null
+    Null,
 }
 
 impl Value {
@@ -74,7 +73,7 @@ impl Value {
                 } else {
                     a.partial_cmp(b).unwrap_or(Ordering::Equal)
                 }
-            },
+            }
             (Value::Text(a), Value::Text(b)) => a.cmp(b),
             (Value::Blob(a), Value::Blob(b)) => a.cmp(b),
             _ => return Ordering::Equal, // Bad - returns equal if data types are different
@@ -91,7 +90,7 @@ impl Value {
         match self {
             Value::Integer(i) => Some(*i),
             Value::Real(f) => Some(*f as i64),
-            _ => None
+            _ => None,
         }
     }
 
@@ -99,7 +98,7 @@ impl Value {
         match self {
             Value::Integer(i) => Some(*i as f64),
             Value::Real(f) => Some(*f),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -114,7 +113,7 @@ impl PartialEq for Value {
                 } else {
                     a == b
                 }
-            },
+            }
             (Value::Text(a), Value::Text(b)) => a == b,
             (Value::Blob(a), Value::Blob(b)) => a == b,
             (Value::Null, Value::Null) => true, // TODO: Bad - NULL == NULL should be false but this breaks assert_eq!
@@ -160,17 +159,21 @@ impl Hash for Value {
 pub struct Row(pub Vec<Value>);
 
 #[derive(Debug)]
-pub struct RowStack{
+pub struct RowStack {
     pub stack: Vec<Row>,
 }
 
 impl Deref for Row {
     type Target = Vec<Value>;
-    fn deref(&self) -> &Self::Target { &self.0 }
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl DerefMut for Row {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 impl RowStack {
@@ -178,7 +181,6 @@ impl RowStack {
         Self { stack: vec![stack] }
     }
 }
-
 
 #[derive(Debug)]
 pub struct Table {
@@ -233,7 +235,10 @@ impl Table {
     }
 
     pub fn get_rows_clone(&self) -> Vec<Row> {
-        self.rows.iter().map(|s| s.stack.last().unwrap().clone()).collect()
+        self.rows
+            .iter()
+            .map(|s| s.stack.last().unwrap().clone())
+            .collect()
     }
 
     pub fn get_rows(&self) -> Vec<&Row> {
@@ -241,7 +246,10 @@ impl Table {
     }
 
     pub fn get_rows_mut(&mut self) -> Vec<&mut Row> {
-        self.rows.iter_mut().map(|s| s.stack.last_mut().unwrap()).collect()
+        self.rows
+            .iter_mut()
+            .map(|s| s.stack.last_mut().unwrap())
+            .collect()
     }
 
     pub fn set_rows(&mut self, rows: Vec<Row>) {
@@ -259,7 +267,7 @@ impl Table {
     pub fn commit_transaction(&mut self) {
         todo!()
     }
-        
+
     pub fn rollback_transaction(&mut self) {
         todo!()
     }
@@ -287,7 +295,10 @@ impl Table {
                 return Ok(i);
             }
         }
-        return Err(format!("Column {} does not exist in table {}", column, self.name));
+        return Err(format!(
+            "Column {} does not exist in table {}",
+            column, self.name
+        ));
     }
 
     pub fn get_columns(&self) -> Vec<&String> {

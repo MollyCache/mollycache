@@ -1,9 +1,9 @@
-use crate::interpreter::ast::{parser::Parser, LimitClause};
-use crate::interpreter::tokenizer::token::TokenTypes;
 use crate::db::table::Value;
 use crate::interpreter::ast::helpers::token::{expect_token_type, token_to_value};
+use crate::interpreter::ast::{LimitClause, parser::Parser};
+use crate::interpreter::tokenizer::token::TokenTypes;
 
-pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> { 
+pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
     if expect_token_type(parser, TokenTypes::Limit).is_err() {
         return Ok(None);
     }
@@ -13,11 +13,11 @@ pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
     let limit = match token_to_value(parser)? {
         Value::Integer(v) => {
             if v < 0 {
-                return Err("Invalid LIMIT value: must be positive.".to_string())
+                return Err("Invalid LIMIT value: must be positive.".to_string());
             }
             v as usize
-        },
-        _ => return Err("Invalid LIMIT value: must be integer.".to_string())
+        }
+        _ => return Err("Invalid LIMIT value: must be integer.".to_string()),
     };
     parser.advance()?;
 
@@ -34,11 +34,11 @@ pub fn get_limit(parser: &mut Parser) -> Result<Option<LimitClause>, String> {
     let offset = match token_to_value(parser)? {
         Value::Integer(v) => {
             if v < 0 {
-                return Err(parser.format_error())
+                return Err(parser.format_error());
             }
             v as usize
-        },
-        _ => return Err(parser.format_error())
+        }
+        _ => return Err(parser.format_error()),
     };
     parser.advance()?;
 
@@ -104,7 +104,10 @@ mod tests {
         let result = get_limit(&mut parser);
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
-        assert_eq!(parser.current_token().unwrap().token_type, TokenTypes::Select);
+        assert_eq!(
+            parser.current_token().unwrap().token_type,
+            TokenTypes::Select
+        );
     }
 
     #[test]
@@ -120,6 +123,9 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = get_limit(&mut parser);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Error at line 1, column 0: Unexpected value: -5");
+        assert_eq!(
+            result.unwrap_err(),
+            "Error at line 1, column 0: Unexpected value: -5"
+        );
     }
 }
