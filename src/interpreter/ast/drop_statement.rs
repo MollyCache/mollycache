@@ -1,10 +1,11 @@
 use crate::interpreter::{
     ast::{
-        parser::Parser, SqlStatement, DropTableStatement, ExistenceCheck,
+        DropTableStatement, ExistenceCheck, SqlStatement,
+        helpers::common::{exists_clause, get_table_name},
         helpers::token::expect_token_type,
-        helpers::common::{get_table_name, exists_clause},
+        parser::Parser,
     },
-    tokenizer::token::TokenTypes
+    tokenizer::token::TokenTypes,
 };
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
@@ -66,5 +67,4 @@ mod tests {
         });
         assert_eq!(expected, statement);
     }
-
 }

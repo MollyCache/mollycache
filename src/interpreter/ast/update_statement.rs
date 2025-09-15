@@ -1,10 +1,11 @@
-use crate::interpreter::ast::{
-    parser::Parser, SqlStatement, UpdateStatement, ColumnValue, 
-    helpers::token::{expect_token_type, token_to_value},
-    helpers::common::get_table_name,
-    helpers::{order_by_clause::get_order_by, limit_clause::get_limit},
-};
 use crate::interpreter::ast::helpers::where_clause::get_where_clause;
+use crate::interpreter::ast::{
+    ColumnValue, SqlStatement, UpdateStatement,
+    helpers::common::get_table_name,
+    helpers::token::{expect_token_type, token_to_value},
+    helpers::{limit_clause::get_limit, order_by_clause::get_order_by},
+    parser::Parser,
+};
 use crate::interpreter::tokenizer::token::TokenTypes;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
@@ -46,14 +47,14 @@ fn get_update_values(parser: &mut Parser) -> Result<Vec<ColumnValue>, String> {
             column: column,
             value: value,
         });
-        
+
         parser.advance()?;
         let token = parser.current_token()?;
 
         match token.token_type {
             TokenTypes::Comma => {
                 parser.advance()?;
-            },
+            }
             _ => break,
         }
     }
@@ -64,17 +65,17 @@ fn get_update_values(parser: &mut Parser) -> Result<Vec<ColumnValue>, String> {
 mod tests {
     use super::*;
     use crate::db::table::Value;
-    use crate::interpreter::ast::Operator;
-    use crate::interpreter::ast::WhereStackElement;
-    use crate::interpreter::ast::WhereCondition;
-    use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::Operand;
+    use crate::interpreter::ast::Operator;
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
-    use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::SelectableStack;
     use crate::interpreter::ast::SelectableStackElement;
-    
+    use crate::interpreter::ast::WhereCondition;
+    use crate::interpreter::ast::WhereStackElement;
+    use crate::interpreter::ast::test_utils::token;
+
     #[test]
     fn update_statement_with_all_tokens_is_generated_correctly() {
         // UPDATE users SET column = value;
@@ -130,13 +131,11 @@ mod tests {
                 column: "column".to_string(),
                 value: Value::Integer(1),
             }],
-            where_clause: Some(vec![
-                WhereStackElement::Condition(WhereCondition {
-                    l_side: Operand::Identifier("id".to_string()),
-                    operator: Operator::GreaterThan,
-                    r_side: Operand::Value(Value::Integer(2)),
-                }),
-            ]),
+            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("id".to_string()),
+                operator: Operator::GreaterThan,
+                r_side: Operand::Value(Value::Integer(2)),
+            })]),
             order_by_clause: None,
             limit_clause: None,
         });
@@ -162,7 +161,6 @@ mod tests {
             token(TokenTypes::Equals, "="),
             token(TokenTypes::IntLiteral, "3"),
             token(TokenTypes::SemiColon, ";"),
-
         ];
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
@@ -180,13 +178,11 @@ mod tests {
                     value: Value::Text("False".to_string()),
                 },
             ],
-            where_clause: Some(vec![
-                WhereStackElement::Condition(WhereCondition {
-                    l_side: Operand::Identifier("id".to_string()),
-                    operator: Operator::Equals,
-                    r_side: Operand::Value(Value::Integer(3)),
-                }),
-            ]),
+            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("id".to_string()),
+                operator: Operator::Equals,
+                r_side: Operand::Value(Value::Integer(3)),
+            })]),
             order_by_clause: None,
             limit_clause: None,
         });
@@ -227,13 +223,11 @@ mod tests {
                 column: "column".to_string(),
                 value: Value::Integer(1),
             }],
-            where_clause: Some(vec![
-                WhereStackElement::Condition(WhereCondition {
-                    l_side: Operand::Identifier("id".to_string()),
-                    operator: Operator::Equals,
-                    r_side: Operand::Value(Value::Integer(1)),
-                }),
-            ]),
+            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("id".to_string()),
+                operator: Operator::Equals,
+                r_side: Operand::Value(Value::Integer(1)),
+            })]),
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],

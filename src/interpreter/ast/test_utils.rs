@@ -1,8 +1,7 @@
-
-#[cfg(test)]
-use crate::interpreter::tokenizer::token::TokenTypes;
 #[cfg(test)]
 use crate::interpreter::tokenizer::scanner::Token;
+#[cfg(test)]
+use crate::interpreter::tokenizer::token::TokenTypes;
 
 #[cfg(test)]
 pub fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
@@ -15,7 +14,12 @@ pub fn token(tt: TokenTypes, val: &'static str) -> Token<'static> {
 }
 
 #[cfg(test)]
-pub fn token_with_location(tt: TokenTypes, val: &'static str, col: usize, line: usize) -> Token<'static> {
+pub fn token_with_location(
+    tt: TokenTypes,
+    val: &'static str,
+    col: usize,
+    line: usize,
+) -> Token<'static> {
     Token {
         token_type: tt,
         value: val,

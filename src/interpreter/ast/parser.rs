@@ -1,9 +1,12 @@
 use crate::interpreter::{
-    ast::{helpers::token::format_statement_tokens, SqlStatement, statement_builder::{StatementBuilder, DefaultStatementBuilder}},
-    tokenizer::scanner::Token, tokenizer::token::TokenTypes  
+    ast::{
+        SqlStatement,
+        helpers::token::format_statement_tokens,
+        statement_builder::{DefaultStatementBuilder, StatementBuilder},
+    },
+    tokenizer::scanner::Token,
+    tokenizer::token::TokenTypes,
 };
-
-
 
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
@@ -14,18 +17,18 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token<'a>>) -> Self {
-        return Self { 
+        return Self {
             tokens,
             start: 0,
-            current: 0, 
-            builder: &DefaultStatementBuilder{},
+            current: 0,
+            builder: &DefaultStatementBuilder {},
         };
     }
 
     pub fn line_num(&self) -> Result<usize, String> {
         return Ok(self.current_token()?.line_num);
     }
-    
+
     pub fn current_token(&self) -> Result<&Token<'a>, String> {
         if self.current >= self.tokens.len() {
             return Err(self.format_error());
@@ -69,7 +72,9 @@ impl<'a> Parser<'a> {
             let token = &self.tokens[self.current];
             return format!(
                 "Error at line {:?}, column {:?}: Unexpected value: {}",
-                token.line_num, token.col_num, token.value.to_string()
+                token.line_num,
+                token.col_num,
+                token.value.to_string()
             );
         } else {
             return "Error at end of input.".to_string();
@@ -94,19 +99,21 @@ impl<'a> Parser<'a> {
             (Ok(token), Ok(peek_token)) => match (&token.token_type, &peek_token.token_type) {
                 (TokenTypes::Create, _) => Some(self.builder.build_create(self)),
                 (TokenTypes::Insert, _) => Some(self.builder.build_insert(self)),
-                (TokenTypes::Select, _) | (TokenTypes::LeftParen, TokenTypes::Select) => Some(self.builder.build_select(self)),
+                (TokenTypes::Select, _) | (TokenTypes::LeftParen, TokenTypes::Select) => {
+                    Some(self.builder.build_select(self))
+                }
                 (TokenTypes::Update, _) => Some(self.builder.build_update(self)),
                 (TokenTypes::Delete, _) => Some(self.builder.build_delete(self)),
                 (TokenTypes::Drop, _) => Some(self.builder.build_drop(self)),
                 (TokenTypes::Alter, _) => Some(self.builder.build_alter(self)),
                 (TokenTypes::Begin, _) => Some(self.builder.build_begin(self)),
-                (TokenTypes::Commit, _) | (TokenTypes::End, _) => Some(self.builder.build_commit(self)),
+                (TokenTypes::Commit, _) | (TokenTypes::End, _) => {
+                    Some(self.builder.build_commit(self))
+                }
                 (TokenTypes::Rollback, _) => Some(self.builder.build_rollback(self)),
                 (TokenTypes::Savepoint, _) => Some(self.builder.build_savepoint(self)),
                 (TokenTypes::Release, _) => Some(self.builder.build_release(self)),
-                _ => {
-                    Some(Err(self.format_error()))
-                }
+                _ => Some(Err(self.format_error())),
             },
             (Ok(token), Err(_)) => match token.token_type {
                 TokenTypes::EOF => None,
@@ -117,13 +124,15 @@ impl<'a> Parser<'a> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::{CreateTableStatement, InsertIntoStatement, SelectStatement, SelectableStack, SelectableStackElement, SelectStatementStack, SelectStatementStackElement, SelectMode};
-    use crate::interpreter::ast::test_utils::{token_with_location, token};
     use crate::interpreter::ast::statement_builder::MockStatementBuilder;
+    use crate::interpreter::ast::test_utils::{token, token_with_location};
+    use crate::interpreter::ast::{
+        CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement,
+        SelectStatementStack, SelectStatementStackElement, SelectableStack, SelectableStackElement,
+    };
 
     #[test]
     fn parser_formats_error_when_at_end_of_input() {
@@ -138,7 +147,10 @@ mod tests {
         let tokens = vec![token_with_location(TokenTypes::Insert, "INSERT", 15, 3)];
         let parser = Parser::new(tokens);
         let result = parser.format_error();
-        assert_eq!(result, "Error at line 3, column 15: Unexpected value: INSERT");
+        assert_eq!(
+            result,
+            "Error at line 3, column 15: Unexpected value: INSERT"
+        );
     }
 
     #[test]
@@ -179,17 +191,19 @@ mod tests {
         // Select
         let result = parser.next_statement();
         let expected = Some(Ok(SqlStatement::Select(SelectStatementStack {
-            elements: vec![SelectStatementStackElement::SelectStatement(SelectStatement {
-                table_name: "users".to_string(),
-                mode: SelectMode::All,
-                columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::All]
+            elements: vec![SelectStatementStackElement::SelectStatement(
+                SelectStatement {
+                    table_name: "users".to_string(),
+                    mode: SelectMode::All,
+                    columns: SelectableStack {
+                        selectables: vec![SelectableStackElement::All],
+                    },
+                    column_names: vec!["*".to_string()],
+                    where_clause: None,
+                    order_by_clause: None,
+                    limit_clause: None,
                 },
-                column_names: vec!["*".to_string()],
-                where_clause: None,
-                order_by_clause: None,
-                limit_clause: None,
-            })],
+            )],
             order_by_clause: None,
             limit_clause: None,
         })));
@@ -215,7 +229,9 @@ mod tests {
             builder: &MockStatementBuilder,
         };
         let result = parser.next_statement();
-        let expected = Some(Err("Error at line 1, column 0: Unexpected value: users".to_string()));
+        let expected = Some(Err(
+            "Error at line 1, column 0: Unexpected value: users".to_string()
+        ));
         assert_eq!(result, expected);
     }
 }

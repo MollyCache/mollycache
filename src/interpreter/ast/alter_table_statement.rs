@@ -1,10 +1,10 @@
+use crate::db::table::ColumnDefinition;
 use crate::interpreter::{
-    ast::{parser::Parser, SqlStatement, AlterTableStatement, AlterTableAction},
-    ast::helpers::token::{expect_token_type, token_to_data_type},
     ast::helpers::common::get_table_name,
+    ast::helpers::token::{expect_token_type, token_to_data_type},
+    ast::{AlterTableAction, AlterTableStatement, SqlStatement, parser::Parser},
     tokenizer::token::TokenTypes,
 };
-use crate::db::table::ColumnDefinition;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
@@ -34,7 +34,10 @@ fn get_action(parser: &mut Parser) -> Result<AlterTableAction, String> {
                     parser.advance()?;
                     expect_token_type(parser, TokenTypes::Identifier)?;
                     let new_column_name = parser.current_token()?.value.to_string();
-                    AlterTableAction::RenameColumn { old_column_name, new_column_name }
+                    AlterTableAction::RenameColumn {
+                        old_column_name,
+                        new_column_name,
+                    }
                 }
                 TokenTypes::To => {
                     parser.advance()?;
@@ -45,7 +48,7 @@ fn get_action(parser: &mut Parser) -> Result<AlterTableAction, String> {
                 _ => return Err(parser.format_error()),
             };
             Ok(action)
-        },
+        }
         TokenTypes::Add => {
             parser.advance()?;
             expect_token_type(parser, TokenTypes::Column)?;
@@ -54,7 +57,13 @@ fn get_action(parser: &mut Parser) -> Result<AlterTableAction, String> {
             let name = parser.current_token()?.value.to_string();
             parser.advance()?;
             let data_type = token_to_data_type(parser)?;
-            Ok(AlterTableAction::AddColumn { column_def: ColumnDefinition { name, data_type, constraints: vec![] } })
+            Ok(AlterTableAction::AddColumn {
+                column_def: ColumnDefinition {
+                    name,
+                    data_type,
+                    constraints: vec![],
+                },
+            })
         }
         TokenTypes::Drop => {
             parser.advance()?;
@@ -65,16 +74,14 @@ fn get_action(parser: &mut Parser) -> Result<AlterTableAction, String> {
             Ok(AlterTableAction::DropColumn { column_name })
         }
         _ => return Err(parser.format_error()),
-    }
+    };
 }
-
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::test_utils::token;
     use crate::db::table::DataType;
+    use crate::interpreter::ast::test_utils::token;
 
     #[test]
     fn alter_table_statement_with_all_tokens_is_generated_correctly() {
@@ -96,9 +103,9 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::AlterTable(AlterTableStatement {
             table_name: "users".to_string(),
-            action: AlterTableAction::RenameColumn { 
-                old_column_name: "name".to_string(), 
-                new_column_name: "new_name".to_string() 
+            action: AlterTableAction::RenameColumn {
+                old_column_name: "name".to_string(),
+                new_column_name: "new_name".to_string(),
             },
         });
         assert_eq!(expected, statement);
@@ -122,8 +129,8 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::AlterTable(AlterTableStatement {
             table_name: "users".to_string(),
-            action: AlterTableAction::RenameTable { 
-                new_table_name: "new_name".to_string() 
+            action: AlterTableAction::RenameTable {
+                new_table_name: "new_name".to_string(),
             },
         });
         assert_eq!(expected, statement);
@@ -148,12 +155,12 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::AlterTable(AlterTableStatement {
             table_name: "users".to_string(),
-            action: AlterTableAction::AddColumn { 
-                column_def: ColumnDefinition { 
-                    name: "name".to_string(), 
-                    data_type: DataType::Blob, 
-                    constraints: vec![] 
-                } 
+            action: AlterTableAction::AddColumn {
+                column_def: ColumnDefinition {
+                    name: "name".to_string(),
+                    data_type: DataType::Blob,
+                    constraints: vec![],
+                },
             },
         });
         assert_eq!(expected, statement);
@@ -177,8 +184,8 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::AlterTable(AlterTableStatement {
             table_name: "users".to_string(),
-            action: AlterTableAction::DropColumn { 
-                column_name: "name".to_string()
+            action: AlterTableAction::DropColumn {
+                column_name: "name".to_string(),
             },
         });
         assert_eq!(expected, statement);

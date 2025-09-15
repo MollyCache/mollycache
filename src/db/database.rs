@@ -1,11 +1,11 @@
-use crate::db::table::{drop_table, Table, Row};
-use crate::interpreter::ast::{SqlStatement};
-use crate::db::table::select;
-use crate::db::table::insert;
-use crate::db::table::delete;
-use crate::db::table::update;
-use crate::db::table::create_table;
 use crate::db::table::alter_table;
+use crate::db::table::create_table;
+use crate::db::table::delete;
+use crate::db::table::insert;
+use crate::db::table::select;
+use crate::db::table::update;
+use crate::db::table::{Row, Table, drop_table};
+use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
 
 pub struct Database {
@@ -43,29 +43,29 @@ impl Database {
                 create_table::create_table(self, statement)?;
                 self.append_to_transaction(sql_statement_clone, vec![])?;
                 Ok(None)
-            },
+            }
             SqlStatement::InsertInto(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
                 let rows_inserted = insert::insert(table, statement)?;
                 self.append_to_transaction(sql_statement_clone, rows_inserted)?;
                 Ok(None)
-            },
+            }
             SqlStatement::Select(statement) => {
                 let result = select::select_statement_stack(self, statement)?;
                 Ok(Some(result))
-            },
+            }
             SqlStatement::UpdateStatement(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
                 let rows_updated = update::update(table, statement)?;
                 self.append_to_transaction(sql_statement_clone, rows_updated)?;
                 Ok(None)
-            },
+            }
             SqlStatement::DeleteStatement(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
                 let rows_deleted = delete::delete(table, statement)?;
                 self.append_to_transaction(sql_statement_clone, rows_deleted)?;
                 Ok(None)
-            },
+            }
             SqlStatement::DropTable(statement) => {
                 drop_table::drop_table(self, statement)?;
                 self.append_to_transaction(sql_statement_clone, vec![])?;
@@ -114,7 +114,9 @@ impl Database {
             SqlStatement::Release(statement) => {
                 match &mut self.transaction {
                     Some(transaction) => {
-                        transaction.savepoint_name.retain(|savepoint| savepoint.name != statement.savepoint_name);
+                        transaction
+                            .savepoint_name
+                            .retain(|savepoint| savepoint.name != statement.savepoint_name);
                     }
                     None => {
                         return Err("No transaction is currently active".to_string());
@@ -122,7 +124,7 @@ impl Database {
                 }
                 Ok(None)
             }
-        }
+        };
     }
 
     pub fn has_table(&self, table_name: &str) -> bool {
@@ -143,7 +145,11 @@ impl Database {
         Ok(self.tables.get_mut(table_name).unwrap())
     }
 
-    fn append_to_transaction(&mut self, sql_statement: SqlStatement, affected_rows: Vec<usize>) -> Result<(), String> {
+    fn append_to_transaction(
+        &mut self,
+        sql_statement: SqlStatement,
+        affected_rows: Vec<usize>,
+    ) -> Result<(), String> {
         let table_name = match &sql_statement {
             SqlStatement::CreateTable(statement) => statement.table_name.clone(),
             SqlStatement::InsertInto(statement) => statement.table_name.clone(),
@@ -154,7 +160,7 @@ impl Database {
             SqlStatement::Savepoint(_) => "".to_string(),
             _ => unreachable!(),
         };
-        
+
         if let Some(transaction) = &mut self.transaction {
             transaction.entries.push(TransactionEntry {
                 statement: sql_statement,
@@ -171,23 +177,26 @@ mod tests {
     use super::*;
     use crate::db::table::{ColumnDefinition, DataType};
 
-
     fn default_database() -> Database {
         Database {
-            tables: HashMap::from([
-                ("users".to_string(), Table::new("users".to_string(), vec![
-                    ColumnDefinition {
-                        name: "id".to_string(),
-                        data_type: DataType::Integer,
-                        constraints: vec![]
-                    },
-                    ColumnDefinition {
-                        name: "name".to_string(),
-                        data_type: DataType::Text,
-                        constraints: vec![]
-                    },
-                ]))
-            ]),
+            tables: HashMap::from([(
+                "users".to_string(),
+                Table::new(
+                    "users".to_string(),
+                    vec![
+                        ColumnDefinition {
+                            name: "id".to_string(),
+                            data_type: DataType::Integer,
+                            constraints: vec![],
+                        },
+                        ColumnDefinition {
+                            name: "name".to_string(),
+                            data_type: DataType::Text,
+                            constraints: vec![],
+                        },
+                    ],
+                ),
+            )]),
             transaction: None,
         }
     }
@@ -207,7 +216,7 @@ mod tests {
         assert_eq!("users", table.unwrap().name);
         let table = database.get_table("not_users");
         assert!(table.is_err());
-        assert_eq!("Table `not_users` does not exist",table.unwrap_err());
+        assert_eq!("Table `not_users` does not exist", table.unwrap_err());
         let table = database.get_table_mut("users");
         assert!(table.is_ok());
         assert_eq!("users", table.unwrap().name);

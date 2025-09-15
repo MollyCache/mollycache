@@ -1,19 +1,15 @@
-use std::collections::HashSet;
-use crate::db::table::helpers::order_by_clause::{apply_order_by_from_precomputed};
+use crate::db::table::helpers::common::get_columns_from_row;
+use crate::db::table::helpers::order_by_clause::apply_order_by_from_precomputed;
 use crate::db::table::helpers::where_clause::row_matches_where_stack;
-use crate::db::table::{Table, Row};
-use crate::interpreter::ast::{SelectStatement, SelectMode};
-use crate::db::table::helpers::common::{get_columns_from_row};
+use crate::db::table::{Row, Table};
+use crate::interpreter::ast::{SelectMode, SelectStatement};
+use std::collections::HashSet;
 
 pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Vec<Row>, String> {
     let mut rows = vec![];
-    let (limit, offset) = statement.limit_clause.as_ref().map_or(
-        (-1, 0),
-        |stmt| (
-            stmt.limit as i64,
-            stmt.offset.map_or(0, |val| val)
-        )
-    );
+    let (limit, offset) = statement.limit_clause.as_ref().map_or((-1, 0), |stmt| {
+        (stmt.limit as i64, stmt.offset.map_or(0, |val| val))
+    });
 
     let mut order_by_columns_precomputed = vec![];
 
@@ -22,24 +18,37 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
         SelectMode::Distinct => Some(HashSet::new()),
     };
 
-    for row in table.iter().skip(
-        if statement.order_by_clause.is_none() {offset} else {0}
-    ) {
+    for row in table.iter().skip(if statement.order_by_clause.is_none() {
+        offset
+    } else {
+        0
+    }) {
         if limit != -1 && rows.len() as i64 >= limit && statement.order_by_clause.is_none() {
             break;
-        } else if statement.where_clause.as_ref().map_or_else(|| Ok(true), |stmt| row_matches_where_stack(table, row, &stmt))? {
+        } else if statement.where_clause.as_ref().map_or_else(
+            || Ok(true),
+            |stmt| row_matches_where_stack(table, row, &stmt),
+        )? {
             let columns = get_columns_from_row(table, row, &statement.columns)?;
             if let Some(map) = &mut distinct_map {
                 if map.insert(columns.clone()) {
                     rows.push(columns);
                     if let Some(stmt) = &statement.order_by_clause {
-                        order_by_columns_precomputed.push(get_columns_from_row(table, row, &stmt.columns)?);
+                        order_by_columns_precomputed.push(get_columns_from_row(
+                            table,
+                            row,
+                            &stmt.columns,
+                        )?);
                     }
                 }
             } else {
                 rows.push(columns);
                 if let Some(stmt) = &statement.order_by_clause {
-                    order_by_columns_precomputed.push(get_columns_from_row(table, row, &stmt.columns)?);
+                    order_by_columns_precomputed.push(get_columns_from_row(
+                        table,
+                        row,
+                        &stmt.columns,
+                    )?);
                 }
             }
         }
@@ -48,7 +57,11 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
     if let Some(stmt) = &statement.order_by_clause {
         apply_order_by_from_precomputed(&mut rows, order_by_columns_precomputed, Row(vec![]), stmt);
         if limit != -1 || offset != 0 {
-            let end = if (limit == -1) || (offset + limit as usize > rows.len()) {rows.len()} else {offset + limit as usize};
+            let end = if (limit == -1) || (offset + limit as usize > rows.len()) {
+                rows.len()
+            } else {
+                offset + limit as usize
+            };
             rows = rows[offset..end].to_vec();
         }
     }
@@ -59,15 +72,18 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{Value, Row};
     use crate::db::table::ColumnDefinition;
     use crate::db::table::DataType;
-    use crate::interpreter::ast::{SelectableStack, SelectableStackElement, LimitClause, OrderByClause, OrderByDirection, Operator};
-    use crate::interpreter::ast::WhereStackElement;
-    use crate::interpreter::ast::WhereCondition;
+    use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
+    use crate::db::table::{Row, Value};
     use crate::interpreter::ast::Operand;
-    use crate::db::table::test_utils::{default_table, assert_table_rows_eq_unordered};
     use crate::interpreter::ast::SelectMode;
+    use crate::interpreter::ast::WhereCondition;
+    use crate::interpreter::ast::WhereStackElement;
+    use crate::interpreter::ast::{
+        LimitClause, Operator, OrderByClause, OrderByDirection, SelectableStack,
+        SelectableStackElement,
+    };
 
     #[test]
     fn select_with_all_tokens_is_generated_correctly() {
@@ -76,7 +92,7 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
+                selectables: vec![SelectableStackElement::All],
             },
             column_names: vec!["*".to_string()],
             where_clause: None,
@@ -86,10 +102,30 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
-            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
-            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
-            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
+            Row(vec![
+                Value::Integer(1),
+                Value::Text("John".to_string()),
+                Value::Integer(25),
+                Value::Real(1000.0),
+            ]),
+            Row(vec![
+                Value::Integer(2),
+                Value::Text("Jane".to_string()),
+                Value::Integer(30),
+                Value::Real(2000.0),
+            ]),
+            Row(vec![
+                Value::Integer(3),
+                Value::Text("Jim".to_string()),
+                Value::Integer(35),
+                Value::Real(3000.0),
+            ]),
+            Row(vec![
+                Value::Integer(4),
+                Value::Null,
+                Value::Integer(40),
+                Value::Real(4000.0),
+            ]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -104,7 +140,7 @@ mod tests {
                 selectables: vec![
                     SelectableStackElement::Column("name".to_string()),
                     SelectableStackElement::Column("age".to_string()),
-                ]
+                ],
             },
             column_names: vec!["name".to_string(), "age".to_string()],
             where_clause: None,
@@ -129,24 +165,25 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
+                selectables: vec![SelectableStackElement::All],
             },
             column_names: vec!["*".to_string()],
-            where_clause: Some(vec![
-                WhereStackElement::Condition(WhereCondition {
-                    l_side: Operand::Identifier("name".to_string()),
-                    operator: Operator::Equals,
-                    r_side: Operand::Value(Value::Text("John".to_string())),
-                }),
-            ]),
+            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("name".to_string()),
+                operator: Operator::Equals,
+                r_side: Operand::Value(Value::Text("John".to_string())),
+            })]),
             order_by_clause: None,
             limit_clause: None,
         };
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
-        let expected = vec![
-            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
-        ];
+        let expected = vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+            Value::Integer(25),
+            Value::Real(1000.0),
+        ])];
         assert_eq!(expected, result.unwrap());
     }
 
@@ -160,24 +197,23 @@ mod tests {
                 selectables: vec![
                     SelectableStackElement::Column("name".to_string()),
                     SelectableStackElement::Column("age".to_string()),
-                ]
+                ],
             },
             column_names: vec!["name".to_string(), "age".to_string()],
-            where_clause: Some(vec![
-                WhereStackElement::Condition(WhereCondition {
-                    l_side: Operand::Identifier("money".to_string()),
-                    operator: Operator::Equals,
-                    r_side: Operand::Value(Value::Real(1000.0)),
-                }),
-            ]),
+            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("money".to_string()),
+                operator: Operator::Equals,
+                r_side: Operand::Value(Value::Real(1000.0)),
+            })]),
             order_by_clause: None,
             limit_clause: None,
         };
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
-        let expected = vec![
-            Row(vec![Value::Text("John".to_string()), Value::Integer(25)]),
-        ];
+        let expected = vec![Row(vec![
+            Value::Text("John".to_string()),
+            Value::Integer(25),
+        ])];
         assert_eq!(expected, result.unwrap());
     }
 
@@ -188,7 +224,7 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
+                selectables: vec![SelectableStackElement::All],
             },
             column_names: vec!["*".to_string()],
             where_clause: None,
@@ -200,9 +236,12 @@ mod tests {
         };
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
-        let expected = vec![
-            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
-        ];
+        let expected = vec![Row(vec![
+            Value::Integer(2),
+            Value::Text("Jane".to_string()),
+            Value::Integer(30),
+            Value::Real(2000.0),
+        ])];
         assert_eq!(expected, result.unwrap());
     }
 
@@ -213,22 +252,23 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
+                selectables: vec![SelectableStackElement::All],
             },
             column_names: vec!["*".to_string()],
-            where_clause: Some(vec![
-                WhereStackElement::Condition(WhereCondition {
-                    l_side: Operand::Identifier("column_not_included".to_string()),
-                    operator: Operator::Equals,
-                    r_side: Operand::Value(Value::Text("John".to_string())),
-                }),
-            ]),
+            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("column_not_included".to_string()),
+                operator: Operator::Equals,
+                r_side: Operand::Value(Value::Text("John".to_string())),
+            })]),
             order_by_clause: None,
             limit_clause: None,
         };
         let result = select_statement(&table, &statement);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Column column_not_included does not exist in table users");
+        assert_eq!(
+            result.unwrap_err(),
+            "Column column_not_included does not exist in table users"
+        );
     }
 
     #[test]
@@ -238,7 +278,7 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
+                selectables: vec![SelectableStackElement::All],
             },
             column_names: vec!["*".to_string()],
             where_clause: None,
@@ -254,10 +294,30 @@ mod tests {
         let result = select_statement(&table, &statement);
         assert!(result.is_ok());
         let expected = vec![
-            Row(vec![Value::Integer(4), Value::Null, Value::Integer(40), Value::Real(4000.0)]),
-            Row(vec![Value::Integer(3), Value::Text("Jim".to_string()), Value::Integer(35), Value::Real(3000.0)]),
-            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
-            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
+            Row(vec![
+                Value::Integer(4),
+                Value::Null,
+                Value::Integer(40),
+                Value::Real(4000.0),
+            ]),
+            Row(vec![
+                Value::Integer(3),
+                Value::Text("Jim".to_string()),
+                Value::Integer(35),
+                Value::Real(3000.0),
+            ]),
+            Row(vec![
+                Value::Integer(2),
+                Value::Text("Jane".to_string()),
+                Value::Integer(30),
+                Value::Real(2000.0),
+            ]),
+            Row(vec![
+                Value::Integer(1),
+                Value::Text("John".to_string()),
+                Value::Integer(25),
+                Value::Real(1000.0),
+            ]),
         ];
         assert_eq!(expected, result.unwrap());
     }
@@ -267,8 +327,16 @@ mod tests {
         let mut table = Table {
             name: "users".to_string(),
             columns: vec![
-                ColumnDefinition {name: "id".to_string(), data_type: DataType::Integer, constraints: vec![]},
-                ColumnDefinition {name: "name".to_string(), data_type: DataType::Text, constraints: vec![]},
+                ColumnDefinition {
+                    name: "id".to_string(),
+                    data_type: DataType::Integer,
+                    constraints: vec![],
+                },
+                ColumnDefinition {
+                    name: "name".to_string(),
+                    data_type: DataType::Text,
+                    constraints: vec![],
+                },
             ],
             rows: vec![],
         };
@@ -283,7 +351,7 @@ mod tests {
             column_names: vec!["name".to_string()],
             mode: SelectMode::Distinct,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column("name".to_string())]
+                selectables: vec![SelectableStackElement::Column("name".to_string())],
             },
             where_clause: None,
             order_by_clause: None,

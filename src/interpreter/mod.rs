@@ -3,7 +3,10 @@ use crate::db::table::Row;
 pub mod ast;
 mod tokenizer;
 
-pub fn run_sql(database: &mut db::database::Database, sql: &str) -> Vec<Result<Option<Vec<Row>>, String>> {
+pub fn run_sql(
+    database: &mut db::database::Database,
+    sql: &str,
+) -> Vec<Result<Option<Vec<Row>>, String>> {
     let tokens = tokenizer::tokenize(sql);
     let ast = ast::generate(tokens);
 
@@ -16,19 +19,21 @@ pub fn run_sql(database: &mut db::database::Database, sql: &str) -> Vec<Result<O
                     Ok(values) => {
                         if let Some(rows) = values {
                             sql_results.push(Ok(Some(rows)));
-                        }
-                        else {
+                        } else {
                             sql_results.push(Ok(None));
                         }
                     }
                     Err(error) => {
-                        sql_results.push(Err(format!("Execution Error with statement starting on line {} \n Error: {}", statement.line_num, error)));
+                        sql_results.push(Err(format!(
+                            "Execution Error with statement starting on line {} \n Error: {}",
+                            statement.line_num, error
+                        )));
                     }
                 }
-            },
+            }
             Err(parser_error) => {
                 sql_results.push(Err(format!("Parsing Error: {}", parser_error)));
-            },
+            }
         }
     }
     return sql_results;

@@ -1,9 +1,8 @@
 use std::collections::{HashMap, VecDeque};
 
-use crate::db::table::{Table, Value, Row};
-use crate::interpreter::ast::InsertIntoStatement;
 use crate::db::table::helpers::common::validate_and_clone_row;
-
+use crate::db::table::{Row, Table, Value};
+use crate::interpreter::ast::InsertIntoStatement;
 
 pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<usize>, String> {
     // Validate columns
@@ -14,7 +13,7 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
             }
         }
     }
-    
+
     let mut rows: Vec<Row> = vec![];
     // Creates a hash map from the statement values with the columns as the keys
     // The values are stored in a queue to match the order of the columns, we push back to the queue
@@ -35,8 +34,7 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
                     let queue = map.get_mut(&table_column.name).unwrap();
                     let value = queue.pop_front().unwrap();
                     row.push(value);
-                }
-                else {
+                } else {
                     row.push(Value::Null);
                 }
             }
@@ -59,22 +57,36 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
     return Ok(row_indicies);
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{Table, Value, DataType, ColumnDefinition};
+    use crate::db::table::{ColumnDefinition, DataType, Table, Value};
 
     fn default_table() -> Table {
         Table::new(
-            "users".to_string(), 
+            "users".to_string(),
             vec![
-                ColumnDefinition {name: "id".to_string(), data_type: DataType::Integer, constraints: vec![]},
-                ColumnDefinition {name: "name".to_string(), data_type: DataType::Text, constraints: vec![]},
-                ColumnDefinition {name: "age".to_string(), data_type: DataType::Integer, constraints: vec![]},
-                ColumnDefinition {name: "money".to_string(), data_type: DataType::Real, constraints: vec![]},
-            ]
+                ColumnDefinition {
+                    name: "id".to_string(),
+                    data_type: DataType::Integer,
+                    constraints: vec![],
+                },
+                ColumnDefinition {
+                    name: "name".to_string(),
+                    data_type: DataType::Text,
+                    constraints: vec![],
+                },
+                ColumnDefinition {
+                    name: "age".to_string(),
+                    data_type: DataType::Integer,
+                    constraints: vec![],
+                },
+                ColumnDefinition {
+                    name: "money".to_string(),
+                    data_type: DataType::Real,
+                    constraints: vec![],
+                },
+            ],
         )
     }
 
@@ -84,10 +96,20 @@ mod tests {
         let statement = InsertIntoStatement {
             table_name: "users".to_string(),
             columns: None,
-            values: vec![vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]],
+            values: vec![vec![
+                Value::Integer(1),
+                Value::Text("John".to_string()),
+                Value::Integer(25),
+                Value::Real(1000.0),
+            ]],
         };
         assert!(insert(&mut table, statement).is_ok());
-        let expected = vec![Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)])];
+        let expected = vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+            Value::Integer(25),
+            Value::Real(1000.0),
+        ])];
         assert_eq!(table.get_rows_clone(), expected);
     }
 
@@ -95,14 +117,24 @@ mod tests {
     fn insert_into_table_with_columns_is_generated_correctly() {
         let mut table = default_table();
         table.set_rows(vec![
-            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
-            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
+            Row(vec![
+                Value::Integer(1),
+                Value::Text("John".to_string()),
+                Value::Integer(25),
+                Value::Real(1000.0),
+            ]),
+            Row(vec![
+                Value::Integer(2),
+                Value::Text("Jane".to_string()),
+                Value::Integer(30),
+                Value::Real(2000.0),
+            ]),
         ]);
         let statement = InsertIntoStatement {
             table_name: "users".to_string(),
             columns: Some(vec!["id".to_string(), "name".to_string()]),
             values: vec![
-                vec![Value::Integer(3), Value::Text("John".to_string()),],
+                vec![Value::Integer(3), Value::Text("John".to_string())],
                 vec![Value::Integer(4), Value::Text("Jane".to_string())],
             ],
         };
@@ -111,10 +143,30 @@ mod tests {
         let row_indicies = result.unwrap();
         assert_eq!(row_indicies, vec![2, 3]);
         let expected = vec![
-            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Integer(25), Value::Real(1000.0)]),
-            Row(vec![Value::Integer(2), Value::Text("Jane".to_string()), Value::Integer(30), Value::Real(2000.0)]),
-            Row(vec![Value::Integer(3), Value::Text("John".to_string()), Value::Null, Value::Null]),
-            Row(vec![Value::Integer(4), Value::Text("Jane".to_string()), Value::Null, Value::Null]),
+            Row(vec![
+                Value::Integer(1),
+                Value::Text("John".to_string()),
+                Value::Integer(25),
+                Value::Real(1000.0),
+            ]),
+            Row(vec![
+                Value::Integer(2),
+                Value::Text("Jane".to_string()),
+                Value::Integer(30),
+                Value::Real(2000.0),
+            ]),
+            Row(vec![
+                Value::Integer(3),
+                Value::Text("John".to_string()),
+                Value::Null,
+                Value::Null,
+            ]),
+            Row(vec![
+                Value::Integer(4),
+                Value::Text("Jane".to_string()),
+                Value::Null,
+                Value::Null,
+            ]),
         ];
         assert_eq!(expected, table.get_rows_clone());
     }

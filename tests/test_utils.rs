@@ -5,12 +5,14 @@ use mollydb::interpreter::ast::OrderByDirection;
 #[cfg(test)]
 use std::cmp::Ordering;
 
-
 #[cfg(test)]
 pub fn assert_table_rows_eq_unordered(mut expected: Vec<Row>, mut actual: Vec<Row>) {
     expected.sort_by(|a, b| {
         let mut i = 0;
-        while i < a.len() && i < b.len() && a[i].compare(&b[i], &OrderByDirection::Asc) == Ordering::Equal {
+        while i < a.len()
+            && i < b.len()
+            && a[i].compare(&b[i], &OrderByDirection::Asc) == Ordering::Equal
+        {
             i += 1;
         }
         if i >= a.len() && i >= b.len() {
@@ -25,7 +27,10 @@ pub fn assert_table_rows_eq_unordered(mut expected: Vec<Row>, mut actual: Vec<Ro
     });
     actual.sort_by(|a, b| {
         let mut i = 0;
-        while i < a.len() && i < b.len() && a[i].compare(&b[i], &OrderByDirection::Asc) == Ordering::Equal {
+        while i < a.len()
+            && i < b.len()
+            && a[i].compare(&b[i], &OrderByDirection::Asc) == Ordering::Equal
+        {
             i += 1;
         }
         if i >= a.len() && i >= b.len() {

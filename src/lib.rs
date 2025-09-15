@@ -1,3 +1,3 @@
-pub mod interpreter;
-pub mod db;
 pub mod cli;
+pub mod db;
+pub mod interpreter;

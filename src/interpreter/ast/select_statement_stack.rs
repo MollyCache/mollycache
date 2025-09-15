@@ -1,8 +1,11 @@
-use crate::interpreter::ast::helpers::order_by_clause::get_order_by;
-use crate::interpreter::ast::helpers::limit_clause::get_limit;
-use crate::interpreter::ast::{parser::Parser, SqlStatement, SelectStatementStack, SelectStatementStackElement, SetOperator, SelectStackOperators};
-use crate::interpreter::ast::helpers::select_statement;
 use crate::interpreter::ast::Parentheses;
+use crate::interpreter::ast::helpers::limit_clause::get_limit;
+use crate::interpreter::ast::helpers::order_by_clause::get_order_by;
+use crate::interpreter::ast::helpers::select_statement;
+use crate::interpreter::ast::{
+    SelectStackOperators, SelectStatementStack, SelectStatementStackElement, SetOperator,
+    SqlStatement, parser::Parser,
+};
 use crate::interpreter::tokenizer::token::TokenTypes;
 
 // Returns a SelectStatementStack which is an RPN representation of the SELECT statements and set operators.
@@ -24,22 +27,29 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
                     None => Some(statement.columns.clone()),
                     Some(columns) => {
                         if statement.columns != columns {
-                            return Err("Columns mismatch between SELECT statements in Union".to_string());
+                            return Err(
+                                "Columns mismatch between SELECT statements in Union".to_string()
+                            );
                         }
                         Some(columns)
-                    },
+                    }
                 };
                 if parser.current_token()?.token_type != TokenTypes::SemiColon {
                     if statement.order_by_clause.is_some() || statement.limit_clause.is_some() {
-                        return Err("ORDER BY, or LIMIT clause not allowed with UNION SELECT statements".to_string());
+                        return Err(
+                            "ORDER BY, or LIMIT clause not allowed with UNION SELECT statements"
+                                .to_string(),
+                        );
                     }
-                }
-                else if statement_stack.elements.len() > 0 && parser.current_token()?.token_type == TokenTypes::SemiColon {
+                } else if statement_stack.elements.len() > 0
+                    && parser.current_token()?.token_type == TokenTypes::SemiColon
+                {
                     statement_stack.order_by_clause = statement.order_by_clause.take();
                     statement_stack.limit_clause = statement.limit_clause.take();
                 }
-                statement_stack.elements.push(SelectStatementStackElement::SelectStatement(statement));
-
+                statement_stack
+                    .elements
+                    .push(SelectStatementStackElement::SelectStatement(statement));
             }
             TokenTypes::LeftParen => {
                 set_operator_stack.push(SelectStackOperators::Parentheses(Parentheses::Left));
@@ -49,11 +59,13 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
                 while let Some(current_set_operator) = set_operator_stack.pop() {
                     if let SelectStackOperators::Parentheses(_) = current_set_operator {
                         break;
-                    }
-                    else if let SelectStackOperators::SetOperator(set_operator) = current_set_operator {
-                        statement_stack.elements.push(SelectStatementStackElement::SetOperator(set_operator));
-                    }
-                    else {
+                    } else if let SelectStackOperators::SetOperator(set_operator) =
+                        current_set_operator
+                    {
+                        statement_stack
+                            .elements
+                            .push(SelectStatementStackElement::SetOperator(set_operator));
+                    } else {
                         return Err("Mismatched parentheses found.".to_string());
                     }
                 }
@@ -66,7 +78,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
                     TokenTypes::Limit => {
                         statement_stack.limit_clause = get_limit(parser)?;
                     }
-                    _ => {},
+                    _ => {}
                 }
             }
             TokenTypes::Union | TokenTypes::Except => {
@@ -75,9 +87,14 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
                     if let SelectStackOperators::Parentheses(parentheses) = current_set_operator {
                         set_operator_stack.push(SelectStackOperators::Parentheses(parentheses));
                         break;
-                    }
-                    else if let SelectStackOperators::SetOperator(current_set_operator) = current_set_operator {
-                        statement_stack.elements.push(SelectStatementStackElement::SetOperator(current_set_operator));
+                    } else if let SelectStackOperators::SetOperator(current_set_operator) =
+                        current_set_operator
+                    {
+                        statement_stack
+                            .elements
+                            .push(SelectStatementStackElement::SetOperator(
+                                current_set_operator,
+                            ));
                     }
                 }
                 set_operator_stack.push(SelectStackOperators::SetOperator(set_operator));
@@ -85,16 +102,19 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
             TokenTypes::Intersect => {
                 let set_operator = get_set_operator(parser)?;
                 while let Some(current_set_operator) = set_operator_stack.pop() {
-                    if let SelectStackOperators::SetOperator(current_set_operator) = current_set_operator {
+                    if let SelectStackOperators::SetOperator(current_set_operator) =
+                        current_set_operator
+                    {
                         if set_operator.is_greater_precedence(&current_set_operator) {
-                            set_operator_stack.push(SelectStackOperators::SetOperator(current_set_operator));
+                            set_operator_stack
+                                .push(SelectStackOperators::SetOperator(current_set_operator));
                             break;
+                        } else {
+                            statement_stack.elements.push(
+                                SelectStatementStackElement::SetOperator(current_set_operator),
+                            );
                         }
-                        else {
-                            statement_stack.elements.push(SelectStatementStackElement::SetOperator(current_set_operator));
-                        }
-                    }
-                    else {
+                    } else {
                         set_operator_stack.push(current_set_operator);
                         break;
                     }
@@ -108,9 +128,10 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 
     while let Some(current_set_operator) = set_operator_stack.pop() {
         if let SelectStackOperators::SetOperator(set_operator) = current_set_operator {
-            statement_stack.elements.push(SelectStatementStackElement::SetOperator(set_operator));
-        }
-        else {
+            statement_stack
+                .elements
+                .push(SelectStatementStackElement::SetOperator(set_operator));
+        } else {
             return Err("Mismatched parentheses found.".to_string());
         }
     }
@@ -127,13 +148,9 @@ fn get_set_operator(parser: &mut Parser) -> Result<SetOperator, String> {
             } else {
                 Ok(SetOperator::Union)
             }
-        },
-        TokenTypes::Except => {
-            Ok(SetOperator::Except)
-        },
-        TokenTypes::Intersect => {
-            Ok(SetOperator::Intersect)
-        },
+        }
+        TokenTypes::Except => Ok(SetOperator::Except),
+        TokenTypes::Intersect => Ok(SetOperator::Intersect),
         _ => Err("Expected token type: Union, Except, or Intersect was not found".to_string()),
     };
     parser.advance()?;
@@ -143,22 +160,22 @@ fn get_set_operator(parser: &mut Parser) -> Result<SetOperator, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpreter::ast::test_utils::token;
-    use crate::interpreter::ast::SelectStatement;
-    use crate::interpreter::ast::SetOperator;
-    use crate::interpreter::ast::SelectableStack;
-    use crate::interpreter::ast::SelectableStackElement;
-    use crate::interpreter::ast::WhereStackElement;
-    use crate::interpreter::ast::WhereCondition;
+    use crate::db::table::Value;
+    use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::Operator;
-    use crate::db::table::Value;
-    use crate::interpreter::tokenizer::token::TokenTypes;
-    use crate::interpreter::tokenizer::scanner::Token;
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
-    use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::SelectMode;
+    use crate::interpreter::ast::SelectStatement;
+    use crate::interpreter::ast::SelectableStack;
+    use crate::interpreter::ast::SelectableStackElement;
+    use crate::interpreter::ast::SetOperator;
+    use crate::interpreter::ast::WhereCondition;
+    use crate::interpreter::ast::WhereStackElement;
+    use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::tokenizer::scanner::Token;
+    use crate::interpreter::tokenizer::token::TokenTypes;
 
     fn simple_select_statement_tokens(id: &'static str) -> Vec<Token<'static>> {
         vec![
@@ -178,7 +195,7 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::All]
+                selectables: vec![SelectableStackElement::All],
             },
             column_names: vec!["*".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
@@ -190,7 +207,6 @@ mod tests {
             limit_clause: None,
         })
     }
-
 
     #[test]
     fn simple_select_statement_is_generated_correctly() {
@@ -213,7 +229,10 @@ mod tests {
     fn select_statement_with_set_operator_is_generated_correctly() {
         // SELECT * FROM users WHERE id = 1 UNION ALL SELECT * FROM users WHERE id = 2;
         let mut tokens = simple_select_statement_tokens("1");
-        tokens.append(&mut vec![token(TokenTypes::Union, "UNION"), token(TokenTypes::All, "ALL")]);
+        tokens.append(&mut vec![
+            token(TokenTypes::Union, "UNION"),
+            token(TokenTypes::All, "ALL"),
+        ]);
         tokens.append(&mut simple_select_statement_tokens("2"));
         tokens.append(&mut vec![token(TokenTypes::SemiColon, ";")]);
         let mut parser = Parser::new(tokens);
@@ -328,7 +347,7 @@ mod tests {
             token(TokenTypes::IntLiteral, "10"),
             token(TokenTypes::Offset, "OFFSET"),
             token(TokenTypes::IntLiteral, "15"),
-            token(TokenTypes::SemiColon, ";")
+            token(TokenTypes::SemiColon, ";"),
         ];
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
@@ -340,7 +359,7 @@ mod tests {
                     table_name: "employees".to_string(),
                     mode: SelectMode::All,
                     columns: SelectableStack {
-                        selectables: vec![SelectableStackElement::Column("name".to_string())]
+                        selectables: vec![SelectableStackElement::Column("name".to_string())],
                     },
                     column_names: vec!["name".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
@@ -355,7 +374,7 @@ mod tests {
                     table_name: "employees".to_string(),
                     mode: SelectMode::All,
                     columns: SelectableStack {
-                        selectables: vec![SelectableStackElement::Column("name".to_string())]
+                        selectables: vec![SelectableStackElement::Column("name".to_string())],
                     },
                     column_names: vec!["name".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
@@ -472,11 +491,14 @@ mod tests {
             token(TokenTypes::Identifier, "name"),
             token(TokenTypes::From, "FROM"),
             token(TokenTypes::Identifier, "users"),
-            token(TokenTypes::SemiColon, ";")
+            token(TokenTypes::SemiColon, ";"),
         ];
         let mut parser = Parser::new(tokens);
         let result = build(&mut parser);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Columns mismatch between SELECT statements in Union".to_string());
+        assert_eq!(
+            result.unwrap_err(),
+            "Columns mismatch between SELECT statements in Union".to_string()
+        );
     }
 }
