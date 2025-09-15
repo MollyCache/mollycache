@@ -26,11 +26,9 @@ fn perform_comparisons(row1: &Row, row2: &Row, order_by_clause: &OrderByClause) 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::db::table::{Table, Value, DataType, ColumnDefinition, Row, RowStack};
-    use crate::interpreter::ast::OrderByDirection;
 
-    fn default_table() -> Table {
+    fn _default_table() -> Table {
         Table {
             name: "users".to_string(),
             columns: vec![
