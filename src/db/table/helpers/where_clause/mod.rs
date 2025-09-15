@@ -1,7 +1,7 @@
 mod where_condition;
 mod where_stack;
 use crate::interpreter::ast::{WhereStackElement, WhereCondition};
-use crate::db::table::{Table, Value, Row};
+use crate::db::table::{Table, Row};
 
 
 // We create an interface here to allow us to create a spy for testing short circuiting.

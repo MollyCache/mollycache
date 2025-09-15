@@ -57,7 +57,7 @@ pub fn select_statement_stack(database: &Database, statement: SelectStatementSta
     }
     let mut result = evaluator.result()?;
     if let Some(order_by_clause) = statement.order_by_clause {
-        if let Some(table) = first_table {
+        if let Some(_) = first_table {
             // TODO: this is just plain false when working with 2+ tables
             // When using ORDER BY at the end of set operations on SELECTs, the ordering columns are guaranteed (?) to be present in the selected columns
             // TODO: this ^ is not quite accurate

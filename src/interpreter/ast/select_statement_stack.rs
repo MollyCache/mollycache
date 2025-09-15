@@ -1,6 +1,6 @@
 use crate::interpreter::ast::helpers::order_by_clause::get_order_by;
 use crate::interpreter::ast::helpers::limit_clause::get_limit;
-use crate::interpreter::ast::{parser::Parser, SqlStatement, SelectStatementStack, SelectStatementStackElement, SetOperator, SelectStackOperators, SelectableStack, SelectableStackElement};
+use crate::interpreter::ast::{parser::Parser, SqlStatement, SelectStatementStack, SelectStatementStackElement, SetOperator, SelectStackOperators};
 use crate::interpreter::ast::helpers::select_statement;
 use crate::interpreter::ast::Parentheses;
 use crate::interpreter::tokenizer::token::TokenTypes;

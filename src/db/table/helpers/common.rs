@@ -53,10 +53,10 @@ pub fn get_columns_from_row(table: &Table, row: &Row, selected_columns: &Selecta
             SelectableStackElement::Value(value) => {
                 row_values.push(value.clone());
             },
-            SelectableStackElement::ValueList(list) => {
+            SelectableStackElement::ValueList(_) => {
                 // TODO: handle ValueList
             },
-            SelectableStackElement::Function(func) => {
+            SelectableStackElement::Function(_) => {
                 // TODO: handle functions
             },
             SelectableStackElement::Operator(op) => {

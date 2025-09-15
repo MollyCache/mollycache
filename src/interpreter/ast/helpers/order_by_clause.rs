@@ -1,5 +1,5 @@
 use crate::interpreter::ast::helpers::common::get_selectables;
-use crate::interpreter::ast::{parser::Parser, OrderByClause, OrderByDirection, SelectableStack, SelectableStackElement};
+use crate::interpreter::ast::{parser::Parser, OrderByClause};
 use crate::interpreter::tokenizer::token::TokenTypes;
 
 use crate::interpreter::ast::helpers::token::expect_token_type;

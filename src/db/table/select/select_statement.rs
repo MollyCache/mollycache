@@ -22,9 +22,9 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
         SelectMode::Distinct => Some(HashSet::new()),
     };
 
-    for (i, row) in table.iter().skip(
+    for row in table.iter().skip(
         if statement.order_by_clause.is_none() {offset} else {0}
-    ).enumerate() {
+    ) {
         if limit != -1 && rows.len() as i64 >= limit && statement.order_by_clause.is_none() {
             break;
         } else if statement.where_clause.as_ref().map_or_else(|| Ok(true), |stmt| row_matches_where_stack(table, row, &stmt))? {

@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 
-use crate::db::table::{Table, helpers::common::get_columns_from_row};
 use crate::interpreter::ast::OrderByClause;
 use crate::db::table::{Row};
 
@@ -23,16 +22,6 @@ fn perform_comparisons(row1: &Row, row2: &Row, order_by_clause: &OrderByClause) 
     }
 
     Ordering::Equal
-}
-
-fn get_index_of_column(columns: &Vec<&String>, column_name: &String) -> Result<usize, String> {
-    let result = columns.iter().position(|column| column_name == *column);
-    if let Some(index) = result {
-        return Ok(index);
-    }
-    else {
-        return Err(format!("Column {} does not exist in table", column_name));
-    }
 }
 
 #[cfg(test)]
