@@ -27,7 +27,7 @@ pub fn get_where_stack_element(
         TokenTypes::Identifier
         | TokenTypes::IntLiteral
         | TokenTypes::RealLiteral
-        | TokenTypes::String
+        | TokenTypes::StringLiteral
         | TokenTypes::Blob
         | TokenTypes::Null => {
             return Ok(Some(WhereStackElement::Condition(get_condition(parser)?)));

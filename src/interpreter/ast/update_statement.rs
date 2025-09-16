@@ -85,7 +85,7 @@ mod tests {
             token(TokenTypes::Set, "SET"),
             token(TokenTypes::Identifier, "column"),
             token(TokenTypes::Equals, "="),
-            token(TokenTypes::String, "value"),
+            token(TokenTypes::StringLiteral, "value"),
             token(TokenTypes::SemiColon, ";"),
         ];
         let mut parser = Parser::new(tokens);
@@ -155,7 +155,7 @@ mod tests {
             token(TokenTypes::Comma, ","),
             token(TokenTypes::Identifier, "active"),
             token(TokenTypes::Equals, "="),
-            token(TokenTypes::String, "False"),
+            token(TokenTypes::StringLiteral, "False"),
             token(TokenTypes::Where, "WHERE"),
             token(TokenTypes::Identifier, "id"),
             token(TokenTypes::Equals, "="),

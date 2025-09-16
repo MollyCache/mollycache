@@ -59,8 +59,8 @@ pub fn get_operand(parser: &mut Parser) -> Result<Operand, String> {
         TokenTypes::Identifier => Ok(Operand::Identifier(token.value.to_string())),
         TokenTypes::IntLiteral => Ok(Operand::Value(token_to_value(parser)?)),
         TokenTypes::RealLiteral => Ok(Operand::Value(token_to_value(parser)?)),
-        TokenTypes::String => Ok(Operand::Value(token_to_value(parser)?)),
-        TokenTypes::Blob => Ok(Operand::Value(token_to_value(parser)?)),
+        TokenTypes::StringLiteral => Ok(Operand::Value(token_to_value(parser)?)),
+        TokenTypes::HexLiteral => Ok(Operand::Value(token_to_value(parser)?)),
         TokenTypes::Null => Ok(Operand::Value(token_to_value(parser)?)),
         TokenTypes::LeftParen => {
             parser.advance()?;
@@ -188,7 +188,7 @@ mod tests {
     fn where_stack_handles_reversed_condition() {
         // "fletcher" < id;...
         let tokens = vec![
-            token(TokenTypes::String, "fletcher"),
+            token(TokenTypes::StringLiteral, "fletcher"),
             token(TokenTypes::LessThan, "<"),
             token(TokenTypes::Identifier, "id"),
             token(TokenTypes::SemiColon, ";"),
@@ -226,7 +226,7 @@ mod tests {
     fn where_condition_handles_invalid_not_in_statement() {
         // X'00' NOT (1);...
         let tokens = vec![
-            token(TokenTypes::Blob, "00"),
+            token(TokenTypes::HexLiteral, "FF"),
             token(TokenTypes::Not, "NOT"),
             token(TokenTypes::LeftParen, "("),
             token(TokenTypes::IntLiteral, "1"),

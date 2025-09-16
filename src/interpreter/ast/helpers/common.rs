@@ -5,6 +5,7 @@ use crate::interpreter::{
     },
     tokenizer::token::TokenTypes,
 };
+use std::cmp::Ordering;
 
 // Returns an error if the current token does not match the given token type
 pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), String> {
@@ -191,7 +192,7 @@ pub fn get_selectables(
                 match operators.last() {
                     Some(last) => match last {
                         ExtendedSelectableStackElement::SelectableStackElement(inner) => {
-                            if compare_precedence(&value, inner)? > 0 {
+                            if compare_precedence(&value, inner)? == Ordering::Greater {
                                 output.push(inner.clone());
                                 operators.pop();
                             } else {
@@ -221,7 +222,7 @@ pub fn get_selectables(
             // Literals
             TokenTypes::IntLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::RealLiteral => SelectableStackElement::Value(token_to_value(parser)?),
-            TokenTypes::String => SelectableStackElement::Value(token_to_value(parser)?),
+            TokenTypes::StringLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::HexLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
             // TODO: handle ValueList (arrays)
@@ -277,15 +278,15 @@ pub fn exists_clause(
 pub fn compare_precedence(
     first: &SelectableStackElement,
     second: &SelectableStackElement,
-) -> Result<i32, String> {
+) -> Result<Ordering, String> {
     let first_precedence = get_precedence(first)?;
     let second_precedence = get_precedence(second)?;
     return if second_precedence == first_precedence {
-        Ok(0)
+        Ok(Ordering::Equal)
     } else if second_precedence > first_precedence {
-        Ok(-1)
+        Ok(Ordering::Less)
     } else {
-        Ok(1)
+        Ok(Ordering::Greater)
     };
 }
 
@@ -336,7 +337,6 @@ pub fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // TODO: add more tests
 
     #[test]
     fn decode_handles_valid_hex_string() {
@@ -358,4 +358,33 @@ mod tests {
         let expected = "Hex string must have even length";
         assert_eq!(expected, result.err().unwrap());
     }
+
+    #[test]
+    fn precedence_handles_correctly() {
+        let result = compare_precedence(
+            &SelectableStackElement::MathOperator(MathOperator::Multiply),
+            &SelectableStackElement::MathOperator(MathOperator::Add),
+        );
+        assert!(result.is_ok());
+        assert_eq!(Ordering::Greater, result.unwrap());
+        let result = compare_precedence(
+            &SelectableStackElement::MathOperator(MathOperator::Add),
+            &SelectableStackElement::MathOperator(MathOperator::Multiply),
+        );
+        assert!(result.is_ok());
+        assert_eq!(Ordering::Less, result.unwrap());
+        let result = compare_precedence(
+            &SelectableStackElement::LogicalOperator(LogicalOperator::And),
+            &SelectableStackElement::LogicalOperator(LogicalOperator::Or),
+        );
+        assert!(result.is_ok());
+        assert_eq!(Ordering::Greater, result.unwrap());
+        let result = compare_precedence(
+            &SelectableStackElement::LogicalOperator(LogicalOperator::Not),
+            &SelectableStackElement::LogicalOperator(LogicalOperator::And),
+        );
+        assert!(result.is_ok());
+        assert_eq!(Ordering::Greater, result.unwrap());
+    }
+    // TODO: add more tests
 }

@@ -31,8 +31,8 @@ pub fn token_to_value(parser: &Parser) -> Result<Value, String> {
                 .map_err(|_| parser.format_error())?;
             Ok(Value::Real(num))
         }
-        TokenTypes::String => Ok(Value::Text(token.value.to_string())),
-        TokenTypes::Blob => {
+        TokenTypes::StringLiteral => Ok(Value::Text(token.value.to_string())), // TODO: rename to StringLiteral
+        TokenTypes::HexLiteral => {
             let bytes = hex_decode(token.value).map_err(|_| parser.format_error())?;
             Ok(Value::Blob(bytes))
         }
@@ -70,7 +70,7 @@ pub fn token_to_data_type(parser: &mut Parser) -> Result<DataType, String> {
 
 pub fn token_to_string(token: &Token) -> String {
     match token.token_type {
-        TokenTypes::String => format!("'{}'", token.value),
+        TokenTypes::StringLiteral => format!("'{}'", token.value),
         TokenTypes::HexLiteral => format!("X'{}'", token.value),
         TokenTypes::EOF
         | TokenTypes::SemiColon
