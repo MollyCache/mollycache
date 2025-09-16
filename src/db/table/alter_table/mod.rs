@@ -4,7 +4,7 @@ use crate::interpreter::ast::{AlterTableAction, AlterTableStatement};
 
 pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> Result<(), String> {
     return match statement.action {
-        AlterTableAction::RenameTable { new_table_name } => {
+        AlterTableAction::RenameTable { new_table_name } => { // TODO: add transaction support to table name changes
             let table = database.tables.remove(&statement.table_name);
             match table {
                 Some(table) => database.tables.insert(new_table_name, table),
@@ -12,9 +12,9 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
             };
             Ok(())
         }
-        AlterTableAction::RenameColumn {
+        AlterTableAction::RenameColumn { // TODO: add transaction support to column name changes
             old_column_name,
-            new_column_name,
+            new_column_name, 
         } => {
             let table = database.get_table_mut(&statement.table_name)?;
             if !table.has_column(&old_column_name) {

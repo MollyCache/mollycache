@@ -203,8 +203,6 @@ impl IndexMut<usize> for Table {
     }
 }
 
-// TODO: add swap
-// TODO: add pop
 impl Table {
     pub fn new(name: String, columns: Vec<ColumnDefinition>) -> Self {
         Self {
@@ -263,9 +261,18 @@ impl Table {
     pub fn pop(&mut self) -> Option<Row> {
         self.rows.pop().and_then(|mut value| value.stack.pop())
     }
+    
 
-    pub fn commit_transaction(&mut self) {
-        todo!()
+    pub fn commit_transaction(&mut self, affected_row_indices: &Vec<usize>) -> Result<(), String> {
+        // Keep only the top of the each row stack.
+        for index in affected_row_indices {
+            if let Some(row_stack) = self.rows.get_mut(*index) {
+                row_stack.stack = vec![row_stack.stack.last().unwrap().clone()];
+            } else {
+                return Err("Error committing transaction. Row stack is empty".to_string());
+            }
+        }
+        Ok(())
     }
 
     pub fn rollback_transaction(&mut self) {
@@ -305,3 +312,4 @@ impl Table {
         self.columns.iter().map(|column| &column.name).collect()
     }
 }
+
