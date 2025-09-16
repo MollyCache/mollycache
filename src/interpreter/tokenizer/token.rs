@@ -103,10 +103,10 @@ pub enum TokenTypes {
     Modulo,
     // Literals
     // TODO: add Literal
-    String,
+    StringLiteral,
     IntLiteral,
-    True,
-    False,
+    TrueLiteral, // Make these work as aliases for 1 and 0
+    FalseLiteral,
     HexLiteral,
     RealLiteral,
     // Others

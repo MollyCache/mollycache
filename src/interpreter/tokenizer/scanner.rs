@@ -65,7 +65,7 @@ impl<'a> Scanner<'a> {
 
     fn build_string_token(&mut self, start: usize, token_type: TokenTypes) -> Token<'a> {
         return match token_type {
-            TokenTypes::String => {
+            TokenTypes::StringLiteral => {
                 self.advance();
                 Token {
                     token_type: token_type,
@@ -111,7 +111,7 @@ impl<'a> Scanner<'a> {
                 return TokenTypes::Error;
             }
         }
-        return TokenTypes::String;
+        return TokenTypes::StringLiteral;
     }
 
     fn read_identifier(&mut self, start: usize) -> TokenTypes {
@@ -195,8 +195,8 @@ impl<'a> Scanner<'a> {
             slice if slice.eq_ignore_ascii_case("AVG") => TokenTypes::Avg,
             slice if slice.eq_ignore_ascii_case("MIN") => TokenTypes::Min,
             slice if slice.eq_ignore_ascii_case("MAX") => TokenTypes::Max,
-            slice if slice.eq_ignore_ascii_case("TRUE") => TokenTypes::True,
-            slice if slice.eq_ignore_ascii_case("FALSE") => TokenTypes::False,
+            slice if slice.eq_ignore_ascii_case("TRUE") => TokenTypes::TrueLiteral,
+            slice if slice.eq_ignore_ascii_case("FALSE") => TokenTypes::FalseLiteral,
             _ => TokenTypes::Identifier,
         };
     }

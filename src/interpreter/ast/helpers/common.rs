@@ -221,7 +221,7 @@ pub fn get_selectables(
             // Literals
             TokenTypes::IntLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::RealLiteral => SelectableStackElement::Value(token_to_value(parser)?),
-            TokenTypes::String => SelectableStackElement::Value(token_to_value(parser)?),
+            TokenTypes::StringLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::HexLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
             // TODO: handle ValueList (arrays)

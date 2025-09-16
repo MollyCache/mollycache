@@ -47,7 +47,7 @@ mod tests {
             token(TokenTypes::Where, "WHERE", 20, 1),
             token(TokenTypes::Identifier, "name", 26, 1),
             token(TokenTypes::Equals, "=", 31, 1),
-            token(TokenTypes::String, "Fletcher", 33, 1),
+            token(TokenTypes::StringLiteral, "Fletcher", 33, 1),
             token(TokenTypes::SemiColon, ";", 43, 1),
             token(TokenTypes::EOF, "", 0, 0),
         ];
@@ -66,7 +66,7 @@ mod tests {
             token(TokenTypes::LeftParen, "(", 28, 1),
             token(TokenTypes::IntLiteral, "199", 29, 1),
             token(TokenTypes::RightParen, ")", 32, 1),
-            token(TokenTypes::String, "Fletcher", 0, 2),
+            token(TokenTypes::StringLiteral, "Fletcher", 0, 2),
             token(TokenTypes::Error, "\"", 10, 2),
             token(TokenTypes::EOF, "", 0, 0),
         ];
@@ -168,9 +168,9 @@ mod tests {
             token(TokenTypes::Minus, "-", 10, 14),
             token(TokenTypes::Divide, "/", 12, 14),
             token(TokenTypes::Modulo, "%", 14, 14),
-            token(TokenTypes::String, "string", 8, 15),
-            token(TokenTypes::True, "TRUE", 17, 15),
-            token(TokenTypes::False, "FALSE", 22, 15),
+            token(TokenTypes::StringLiteral, "string", 8, 15),
+            token(TokenTypes::TrueLiteral, "TRUE", 17, 15),
+            token(TokenTypes::FalseLiteral, "FALSE", 22, 15),
             token(TokenTypes::Identifier, "fletchers_table", 8, 16),
             token(TokenTypes::EOF, "", 0, 0),
         ];
@@ -210,7 +210,7 @@ mod tests {
     fn tokenizer_parses_string_identifiers() {
         let result = tokenize("'string' \"identifier\"");
         let expected = vec![
-            token(TokenTypes::String, "string", 0, 1),
+            token(TokenTypes::StringLiteral, "string", 0, 1),
             token(TokenTypes::Identifier, "identifier", 9, 1),
             token(TokenTypes::EOF, "", 0, 0),
         ];
@@ -243,7 +243,7 @@ mod tests {
             token(TokenTypes::Where, "WHERE", 20, 1),
             token(TokenTypes::Identifier, "name", 26, 1),
             token(TokenTypes::Equals, "=", 31, 1),
-            token(TokenTypes::String, "Fletcher", 33, 1),
+            token(TokenTypes::StringLiteral, "Fletcher", 33, 1),
             token(TokenTypes::SemiColon, ";", 43, 1),
             token(TokenTypes::EOF, "", 0, 0),
         ];
