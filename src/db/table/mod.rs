@@ -25,18 +25,6 @@ pub enum DataType {
     Null,
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct ColumnDefinition {
-    pub name: String,
-    pub data_type: DataType,
-    pub constraints: Vec<ColumnConstraint>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct ColumnConstraint {
-    pub constraint_type: String,
-}
-
 #[derive(Debug, PartialOrd, Clone)]
 pub enum Value {
     Integer(i64),
@@ -182,10 +170,35 @@ impl RowStack {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct ColumnDefinition {
+    pub name: String,
+    pub data_type: DataType,
+    pub constraints: Vec<ColumnConstraint>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ColumnConstraint {
+    pub constraint_type: String,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ColumnStack {
+    pub stack: Vec<ColumnDefinition>,
+}
+
+impl ColumnStack {
+    pub fn new(column: ColumnDefinition) -> Self {
+        Self {
+            stack: vec![column],
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Table {
     pub name: String,
-    pub columns: Vec<ColumnDefinition>,
+    columns: Vec<ColumnStack>,
     rows: Vec<RowStack>,
 }
 
@@ -203,13 +216,11 @@ impl IndexMut<usize> for Table {
     }
 }
 
-// TODO: add swap
-// TODO: add pop
 impl Table {
     pub fn new(name: String, columns: Vec<ColumnDefinition>) -> Self {
         Self {
             name,
-            columns,
+            columns: columns.into_iter().map(|c| ColumnStack::new(c)).collect(),
             rows: vec![],
         }
     }
@@ -264,8 +275,16 @@ impl Table {
         self.rows.pop().and_then(|mut value| value.stack.pop())
     }
 
-    pub fn commit_transaction(&mut self) {
-        todo!()
+    pub fn commit_transaction(&mut self, affected_row_indices: &Vec<usize>) -> Result<(), String> {
+        // Keep only the top of the each row stack.
+        for index in affected_row_indices {
+            if let Some(row_stack) = self.rows.get_mut(*index) {
+                row_stack.stack = vec![row_stack.stack.last().unwrap().clone()];
+            } else {
+                return Err("Error committing transaction. Row stack is empty".to_string());
+            }
+        }
+        Ok(())
     }
 
     pub fn rollback_transaction(&mut self) {
@@ -274,7 +293,7 @@ impl Table {
 
     pub fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> &'a Value {
         for (i, value) in row.iter().enumerate() {
-            if self.columns[i].name == *column {
+            if self.get_column_names()[i] == column {
                 return &value;
             }
         }
@@ -282,7 +301,7 @@ impl Table {
     }
 
     pub fn has_column(&self, column: &String) -> bool {
-        self.columns.iter().any(|c| c.name == *column)
+        self.get_columns().iter().any(|c| c.name == *column)
     }
 
     fn width(&self) -> usize {
@@ -290,7 +309,7 @@ impl Table {
     }
 
     pub fn get_index_of_column(&self, column: &String) -> Result<usize, String> {
-        for (i, c) in self.columns.iter().enumerate() {
+        for (i, c) in self.get_columns().iter().enumerate() {
             if c.name == *column {
                 return Ok(i);
             }
@@ -301,7 +320,33 @@ impl Table {
         ));
     }
 
-    pub fn get_columns(&self) -> Vec<&String> {
-        self.columns.iter().map(|column| &column.name).collect()
+    pub fn get_columns(&self) -> Vec<&ColumnDefinition> {
+        self.columns
+            .iter()
+            .map(|c| c.stack.last().unwrap())
+            .collect()
+    }
+
+    pub fn get_columns_mut(&mut self) -> Vec<&mut ColumnDefinition> {
+        self.columns
+            .iter_mut()
+            .map(|c| c.stack.last_mut().unwrap())
+            .collect()
+    }
+
+    pub fn get_column_names(&self) -> Vec<&String> {
+        self.get_columns()
+            .iter()
+            .map(|column| &column.name)
+            .collect()
+    }
+
+    pub fn push_column(&mut self, column: ColumnDefinition) {
+        self.columns.push(ColumnStack::new(column));
+    }
+
+    #[cfg(test)]
+    pub fn get_columns_clone(&self) -> Vec<ColumnDefinition> {
+        self.get_columns().iter().map(|c| (*c).clone()).collect()
     }
 }

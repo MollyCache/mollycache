@@ -84,10 +84,12 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::Commit => {
-                self.transaction = None;
-                self.tables.iter_mut().for_each(|(_, table)| {
-                    table.commit_transaction();
-                });
+                if let Some(transaction) = self.transaction.take() {
+                    for transaction_entry in transaction.entries.iter() {
+                        let table = self.get_table_mut(transaction_entry.table_name.as_str())?;
+                        table.commit_transaction(&transaction_entry.affected_rows)?;
+                    }
+                }
                 Ok(None)
             }
             SqlStatement::Rollback(_) => {

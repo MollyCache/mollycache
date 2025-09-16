@@ -119,7 +119,7 @@ fn expand_all_column_names(table: &Table, column_names: &Vec<String>) -> Vec<Str
     let mut new = vec![];
     for column in column_names {
         if *column == "*".to_string() {
-            for name in table.get_columns() {
+            for name in table.get_column_names() {
                 if !column_names.contains(name) {
                     new.push(name.clone());
                 }

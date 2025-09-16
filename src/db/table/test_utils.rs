@@ -1,7 +1,7 @@
 #[cfg(test)]
 use crate::db::database::Database;
 #[cfg(test)]
-use crate::db::table::{ColumnDefinition, DataType, Table, Value};
+use crate::db::table::{ColumnDefinition, ColumnStack, DataType, Table, Value};
 #[cfg(test)]
 use crate::db::table::{Row, RowStack};
 #[cfg(test)]
@@ -14,26 +14,28 @@ pub fn default_table() -> Table {
     Table {
         name: "users".to_string(),
         columns: vec![
-            ColumnDefinition {
-                name: "id".to_string(),
-                data_type: DataType::Integer,
-                constraints: vec![],
-            },
-            ColumnDefinition {
+            ColumnStack::new({
+                ColumnDefinition {
+                    name: "id".to_string(),
+                    data_type: DataType::Integer,
+                    constraints: vec![],
+                }
+            }),
+            ColumnStack::new(ColumnDefinition {
                 name: "name".to_string(),
                 data_type: DataType::Text,
                 constraints: vec![],
-            },
-            ColumnDefinition {
+            }),
+            ColumnStack::new(ColumnDefinition {
                 name: "age".to_string(),
                 data_type: DataType::Integer,
                 constraints: vec![],
-            },
-            ColumnDefinition {
+            }),
+            ColumnStack::new(ColumnDefinition {
                 name: "money".to_string(),
                 data_type: DataType::Real,
                 constraints: vec![],
-            },
+            }),
         ],
         rows: vec![
             RowStack::new(Row(vec![
@@ -72,26 +74,26 @@ pub fn default_database() -> Database {
         Table {
             name: "users".to_string(),
             columns: vec![
-                ColumnDefinition {
+                ColumnStack::new(ColumnDefinition {
                     name: "id".to_string(),
                     data_type: DataType::Integer,
                     constraints: vec![],
-                },
-                ColumnDefinition {
+                }),
+                ColumnStack::new(ColumnDefinition {
                     name: "name".to_string(),
                     data_type: DataType::Text,
                     constraints: vec![],
-                },
-                ColumnDefinition {
+                }),
+                ColumnStack::new(ColumnDefinition {
                     name: "age".to_string(),
                     data_type: DataType::Integer,
                     constraints: vec![],
-                },
-                ColumnDefinition {
+                }),
+                ColumnStack::new(ColumnDefinition {
                     name: "money".to_string(),
                     data_type: DataType::Real,
                     constraints: vec![],
-                },
+                }),
             ],
             rows: vec![
                 RowStack::new(Row(vec![

@@ -8,7 +8,12 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
     // Validate columns
     if let Some(columns) = &statement.columns {
         for column in columns {
-            if table.columns.iter().find(|c| c.name == *column).is_none() {
+            if table
+                .get_columns()
+                .iter()
+                .find(|c| c.name == *column)
+                .is_none()
+            {
                 return Err(format!("Column '{}' does not exist in table", column));
             }
         }
@@ -29,7 +34,7 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
         }
         for _ in 0..statement.values.len() {
             let mut row: Row = Row(vec![]);
-            for table_column in table.columns.iter() {
+            for table_column in table.get_columns().iter() {
                 if map.contains_key(&table_column.name) {
                     let queue = map.get_mut(&table_column.name).unwrap();
                     let value = queue.pop_front().unwrap();

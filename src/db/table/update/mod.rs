@@ -22,7 +22,7 @@ fn update_rows_from_indicies(
     for row_index in row_indicies {
         for update_value in &update_values {
             let column_index = table.get_index_of_column(&update_value.column)?;
-            if table.columns[column_index].data_type != update_value.value.get_type()
+            if table.get_columns()[column_index].data_type != update_value.value.get_type()
                 && update_value.value.get_type() != DataType::Null
             {
                 return Err(format!(
