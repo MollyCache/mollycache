@@ -1,4 +1,4 @@
-use mollydb::*;
+use mollycache::*;
 
 fn main() {
     let mut database = db::database::Database::new();

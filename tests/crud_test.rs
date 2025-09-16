@@ -1,8 +1,8 @@
 mod test_utils;
 
-use mollydb::db::database::Database;
-use mollydb::db::table::{Row, Value};
-use mollydb::interpreter::run_sql;
+use mollycache::db::database::Database;
+use mollycache::db::table::{Row, Value};
+use mollycache::interpreter::run_sql;
 
 #[test]
 fn test_basic_statements_crud() {
