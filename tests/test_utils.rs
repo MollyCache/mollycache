@@ -1,7 +1,7 @@
 #[cfg(test)]
-use mollydb::db::table::Row;
+use mollycache::db::table::Row;
 #[cfg(test)]
-use mollydb::interpreter::ast::OrderByDirection;
+use mollycache::interpreter::ast::OrderByDirection;
 #[cfg(test)]
 use std::cmp::Ordering;
 

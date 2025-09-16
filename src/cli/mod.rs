@@ -4,7 +4,7 @@ use std::io;
 
 pub fn cli(database: &mut db::database::Database) {
     clear_screen();
-    println!("Welcome to the MollyDB CLI");
+    println!("Welcome to the MollyCache CLI");
     let mut line_count = 1;
 
     loop {
@@ -22,7 +22,7 @@ pub fn cli(database: &mut db::database::Database) {
         }
         if input.eq_ignore_ascii_case("clear") {
             clear_screen();
-            println!("Welcome to the MollyDB CLI");
+            println!("Welcome to the MollyCache CLI");
             line_count = 1;
             continue;
         }

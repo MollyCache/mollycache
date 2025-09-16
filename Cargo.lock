@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "mollydb"
+name = "mollycache"
 version = "0.1.0"
