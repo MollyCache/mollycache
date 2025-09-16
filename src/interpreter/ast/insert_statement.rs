@@ -223,7 +223,7 @@ mod tests {
             token(TokenTypes::LeftParen, "("),
             token(TokenTypes::RealLiteral, "1.1"),
             token(TokenTypes::Comma, ","),
-            token(TokenTypes::Blob, "AAB000"),
+            token(TokenTypes::HexLiteral, "AAB000"),
             token(TokenTypes::Comma, ","),
             token(TokenTypes::Null, "NULL"),
             token(TokenTypes::RightParen, ")"),

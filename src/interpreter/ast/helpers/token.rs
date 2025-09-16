@@ -31,8 +31,8 @@ pub fn token_to_value(parser: &Parser) -> Result<Value, String> {
                 .map_err(|_| parser.format_error())?;
             Ok(Value::Real(num))
         }
-        TokenTypes::String => Ok(Value::Text(token.value.to_string())),
-        TokenTypes::Blob => {
+        TokenTypes::String => Ok(Value::Text(token.value.to_string())), // TODO: rename to StringLiteral
+        TokenTypes::HexLiteral => {
             let bytes = hex_decode(token.value).map_err(|_| parser.format_error())?;
             Ok(Value::Blob(bytes))
         }

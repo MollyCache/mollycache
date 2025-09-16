@@ -251,7 +251,7 @@ fn test_distinct_with_limit_and_offset() {
 }
 
 #[test]
-fn test_limit_clause() {
+fn test_select_clauses_with_literals() {
     let mut database = Database::new();
     let sql = "
     SELECT 1 FROM test_table; -- This should fail because table does not exist.
@@ -263,7 +263,7 @@ fn test_limit_clause() {
     INSERT INTO test_table (id, name) VALUES (1, 'John');
     SELECT name, 1.24 FROM test_table; -- This should succeed and return 1.24.
     INSERT INTO test_table (id, name) VALUES (2, 'Jane');
-    SELECT id, 'bob' FROM test_table; -- This should succeed and return two rows.
+    SELECT X'1234', id, NULL FROM test_table; -- This should succeed and return two rows.
     ";
     let result = run_sql(&mut database, sql);
     let expected = vec![
@@ -274,8 +274,8 @@ fn test_limit_clause() {
         Ok(Some(vec![Row(vec![Value::Text("John".to_string()), Value::Real(1.24)])])),
         Ok(None),
         Ok(Some(vec![
-            Row(vec![Value::Integer(1), Value::Text("bob".to_string())]),
-            Row(vec![Value::Integer(2), Value::Text("bob".to_string())]),
+            Row(vec![Value::Blob(vec![18, 52]), Value::Integer(1), Value::Null]),
+            Row(vec![Value::Blob(vec![18, 52]), Value::Integer(2), Value::Null]),
         ])),
     ];
     assert_eq!(expected, result);
