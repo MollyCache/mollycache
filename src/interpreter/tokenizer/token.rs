@@ -102,7 +102,6 @@ pub enum TokenTypes {
     Divide,
     Modulo,
     // Literals
-    // TODO: add Literal
     StringLiteral,
     IntLiteral,
     TrueLiteral, // Make these work as aliases for 1 and 0
