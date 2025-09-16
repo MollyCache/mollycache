@@ -4,7 +4,8 @@ use crate::interpreter::ast::{AlterTableAction, AlterTableStatement};
 
 pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> Result<(), String> {
     return match statement.action {
-        AlterTableAction::RenameTable { new_table_name } => { // TODO: add transaction support to table name changes
+        AlterTableAction::RenameTable { new_table_name } => {
+            // TODO: add transaction support to table name changes
             let table = database.tables.remove(&statement.table_name);
             match table {
                 Some(table) => database.tables.insert(new_table_name, table),
@@ -12,9 +13,10 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
             };
             Ok(())
         }
-        AlterTableAction::RenameColumn { // TODO: add transaction support to column name changes
+        AlterTableAction::RenameColumn {
+            // TODO: add transaction support to column name changes
             old_column_name,
-            new_column_name, 
+            new_column_name,
         } => {
             let table = database.get_table_mut(&statement.table_name)?;
             if !table.has_column(&old_column_name) {
@@ -23,7 +25,7 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
                     old_column_name, statement.table_name
                 ));
             }
-            table.columns.iter_mut().for_each(|column| {
+            table.get_columns_mut().iter_mut().for_each(|column| {
                 if column.name == old_column_name {
                     column.name = new_column_name.clone();
                 }
@@ -38,7 +40,7 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
                     column_def.name, statement.table_name
                 ));
             }
-            table.columns.push(column_def);
+            table.push_column(column_def);
             table.get_rows_mut().iter_mut().for_each(|row| {
                 row.push(Value::Null);
             });
@@ -102,7 +104,7 @@ mod tests {
         assert!(
             table
                 .unwrap()
-                .columns
+                .get_columns()
                 .iter()
                 .any(|column| column.name == "new_name")
         );
@@ -126,7 +128,7 @@ mod tests {
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table = table.unwrap();
-        assert!(table.columns.last().unwrap().name == "new_column");
+        assert!(table.get_columns().last().unwrap().name == "new_column");
         assert!(table.columns.len() == table[0].len());
         assert!(
             table
@@ -150,7 +152,12 @@ mod tests {
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table = table.unwrap();
-        assert!(!table.columns.iter().any(|column| column.name == "age"));
+        assert!(
+            !table
+                .get_columns()
+                .iter()
+                .any(|column| column.name == "age")
+        );
         assert!(table.columns.len() == table[0].len());
         let expected_columns_in_order = vec![
             ColumnDefinition {
@@ -169,7 +176,7 @@ mod tests {
                 constraints: vec![],
             },
         ];
-        assert_eq!(expected_columns_in_order, table.columns);
+        assert_eq!(expected_columns_in_order, table.get_columns_clone());
         let expected_rows = vec![
             Row(vec![
                 Value::Integer(1),

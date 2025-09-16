@@ -73,6 +73,7 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
 mod tests {
     use super::*;
     use crate::db::table::ColumnDefinition;
+    use crate::db::table::ColumnStack;
     use crate::db::table::DataType;
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
     use crate::db::table::{Row, Value};
@@ -327,16 +328,16 @@ mod tests {
         let mut table = Table {
             name: "users".to_string(),
             columns: vec![
-                ColumnDefinition {
+                ColumnStack::new(ColumnDefinition {
                     name: "id".to_string(),
                     data_type: DataType::Integer,
                     constraints: vec![],
-                },
-                ColumnDefinition {
+                }),
+                ColumnStack::new(ColumnDefinition {
                     name: "name".to_string(),
                     data_type: DataType::Text,
                     constraints: vec![],
-                },
+                }),
             ],
             rows: vec![],
         };
