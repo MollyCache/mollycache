@@ -249,3 +249,34 @@ fn test_distinct_with_limit_and_offset() {
     let row = result[5].as_ref().unwrap().as_ref().unwrap();
     assert_eq!(expected, *row);
 }
+
+#[test]
+fn test_limit_clause() {
+    let mut database = Database::new();
+    let sql = "
+    SELECT 1 FROM test_table; -- This should fail because table does not exist.
+    CREATE TABLE test_table (
+        id INTEGER,
+        name TEXT
+    );
+    SELECT 'alice' FROM test_table; -- This should succeed and return nothing.
+    INSERT INTO test_table (id, name) VALUES (1, 'John');
+    SELECT name, 1.24 FROM test_table; -- This should succeed and return 1.24.
+    INSERT INTO test_table (id, name) VALUES (2, 'Jane');
+    SELECT id, 'bob' FROM test_table; -- This should succeed and return two rows.
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Err("Execution Error with statement starting on line 2 \n Error: Table `test_table` does not exist".to_string()),
+        Ok(None),
+        Ok(Some(vec![])),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Text("John".to_string()), Value::Real(1.24)])])),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(1), Value::Text("bob".to_string())]),
+            Row(vec![Value::Integer(2), Value::Text("bob".to_string())]),
+        ])),
+    ];
+    assert_eq!(expected, result);
+}
