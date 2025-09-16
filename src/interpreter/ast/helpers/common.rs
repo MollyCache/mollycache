@@ -361,16 +361,28 @@ mod tests {
 
     #[test]
     fn precedence_handles_correctly() {
-        let result = compare_precedence(&SelectableStackElement::MathOperator(MathOperator::Multiply), &SelectableStackElement::MathOperator(MathOperator::Add));
+        let result = compare_precedence(
+            &SelectableStackElement::MathOperator(MathOperator::Multiply),
+            &SelectableStackElement::MathOperator(MathOperator::Add),
+        );
         assert!(result.is_ok());
         assert_eq!(Ordering::Greater, result.unwrap());
-        let result = compare_precedence(&SelectableStackElement::MathOperator(MathOperator::Add), &SelectableStackElement::MathOperator(MathOperator::Multiply));
+        let result = compare_precedence(
+            &SelectableStackElement::MathOperator(MathOperator::Add),
+            &SelectableStackElement::MathOperator(MathOperator::Multiply),
+        );
         assert!(result.is_ok());
         assert_eq!(Ordering::Less, result.unwrap());
-        let result = compare_precedence(&SelectableStackElement::LogicalOperator(LogicalOperator::And), &SelectableStackElement::LogicalOperator(LogicalOperator::Or));
+        let result = compare_precedence(
+            &SelectableStackElement::LogicalOperator(LogicalOperator::And),
+            &SelectableStackElement::LogicalOperator(LogicalOperator::Or),
+        );
         assert!(result.is_ok());
         assert_eq!(Ordering::Greater, result.unwrap());
-        let result = compare_precedence(&SelectableStackElement::LogicalOperator(LogicalOperator::Not), &SelectableStackElement::LogicalOperator(LogicalOperator::And));
+        let result = compare_precedence(
+            &SelectableStackElement::LogicalOperator(LogicalOperator::Not),
+            &SelectableStackElement::LogicalOperator(LogicalOperator::And),
+        );
         assert!(result.is_ok());
         assert_eq!(Ordering::Greater, result.unwrap());
     }

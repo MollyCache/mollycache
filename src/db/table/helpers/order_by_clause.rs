@@ -39,14 +39,14 @@ mod tests {
     use super::*;
     use crate::db::table::{Row, Value};
     use crate::interpreter::ast::OrderByClause;
+    use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectableStack;
     use crate::interpreter::ast::SelectableStackElement;
-    use crate::interpreter::ast::OrderByDirection;
 
     #[test]
     fn apply_order_by_from_precomputed_single_column_asc() {
         let mut to_order = vec!["second", "fourth", "third", "first"];
-        
+
         let precomputed = vec![
             Row(vec![Value::Integer(25)]),
             Row(vec![Value::Integer(55)]),
