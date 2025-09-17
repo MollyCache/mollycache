@@ -43,7 +43,7 @@ pub fn get_columns_from_row(
         } else {
             return Err(format!(
                 "Row does not have the expected number of columns (expected: {}, got: {}",
-                table.columns.len(),
+                table.get_columns().len(),
                 row.len()
             ));
         }

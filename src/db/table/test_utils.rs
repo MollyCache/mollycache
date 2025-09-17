@@ -13,30 +13,28 @@ use std::cmp::Ordering;
 pub fn default_table() -> Table {
     Table {
         name: "users".to_string(),
-        columns: vec![
-            ColumnStack::new({
-                ColumnDefinition {
-                    name: "id".to_string(),
-                    data_type: DataType::Integer,
-                    constraints: vec![],
-                }
-            }),
-            ColumnStack::new(ColumnDefinition {
+        columns: ColumnStack::new(vec![
+            ColumnDefinition {
+                name: "id".to_string(),
+                data_type: DataType::Integer,
+                constraints: vec![],
+            },
+            ColumnDefinition {
                 name: "name".to_string(),
                 data_type: DataType::Text,
                 constraints: vec![],
-            }),
-            ColumnStack::new(ColumnDefinition {
+            },
+            ColumnDefinition {
                 name: "age".to_string(),
                 data_type: DataType::Integer,
                 constraints: vec![],
-            }),
-            ColumnStack::new(ColumnDefinition {
+            },
+            ColumnDefinition {
                 name: "money".to_string(),
                 data_type: DataType::Real,
                 constraints: vec![],
-            }),
-        ],
+            },
+        ]),
         rows: vec![
             RowStack::new(Row(vec![
                 Value::Integer(1),
@@ -73,28 +71,28 @@ pub fn default_database() -> Database {
         "users".to_string(),
         Table {
             name: "users".to_string(),
-            columns: vec![
-                ColumnStack::new(ColumnDefinition {
+            columns: ColumnStack::new(vec![
+                ColumnDefinition {
                     name: "id".to_string(),
                     data_type: DataType::Integer,
                     constraints: vec![],
-                }),
-                ColumnStack::new(ColumnDefinition {
+                },
+                ColumnDefinition {
                     name: "name".to_string(),
                     data_type: DataType::Text,
                     constraints: vec![],
-                }),
-                ColumnStack::new(ColumnDefinition {
+                },
+                ColumnDefinition {
                     name: "age".to_string(),
                     data_type: DataType::Integer,
                     constraints: vec![],
-                }),
-                ColumnStack::new(ColumnDefinition {
+                },
+                ColumnDefinition {
                     name: "money".to_string(),
                     data_type: DataType::Real,
                     constraints: vec![],
-                }),
-            ],
+                },
+            ]),
             rows: vec![
                 RowStack::new(Row(vec![
                     Value::Integer(1),

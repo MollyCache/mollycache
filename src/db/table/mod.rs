@@ -184,21 +184,107 @@ pub struct ColumnConstraint {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ColumnStack {
-    pub stack: Vec<ColumnDefinition>,
+    pub stack: Vec<Vec<ColumnDefinition>>,
 }
 
 impl ColumnStack {
-    pub fn new(column: ColumnDefinition) -> Self {
+    pub fn new(columns: Vec<ColumnDefinition>) -> Self {
         Self {
-            stack: vec![column],
+            stack: vec![columns],
         }
+    }
+
+    fn append_clone(&mut self) -> Result<(), String> {
+        self.stack.push(self.peek()?.clone());
+        Ok(())
+    }
+
+    pub fn push_column(&mut self, column: ColumnDefinition, is_transaction: bool) {
+        if is_transaction {
+            self.stack.push(self.stack.last().unwrap().clone());
+        }
+        self.stack.last_mut().unwrap().push(column);
+    }
+
+    pub fn rename_column(
+        &mut self,
+        old_column_name: &String,
+        new_column_name: &String,
+        table_name: &String,
+        is_transaction: bool,
+    ) -> Result<(), String> {
+        if is_transaction {
+            self.append_clone()?;
+        }
+        let columns = self
+            .peek_mut()?
+            .iter_mut()
+            .find(|column| column.name == *old_column_name);
+        match columns {
+            Some(column) => column.name = new_column_name.clone(),
+            None => {
+                return Err(format!(
+                    "Column `{}` does not exist in table `{}`",
+                    old_column_name, table_name
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn drop_column(
+        &mut self,
+        column_name: &String,
+        table_name: &String,
+        is_transaction: bool,
+    ) -> Result<(), String> {
+        if is_transaction {
+            self.append_clone()?;
+        }
+        match self.get_index_of_column(column_name) {
+            Ok(index) => self.peek_mut()?.remove(index),
+            Err(_) => {
+                return Err(format!(
+                    "Column `{}` does not exist in table `{}`",
+                    column_name, table_name
+                ));
+            }
+        };
+        Ok(())
+    }
+
+    pub fn get_index_of_column(&self, column_name: &String) -> Result<usize, String> {
+        let columns = self.peek();
+        match columns {
+            Ok(columns) => {
+                if let Some(index) = columns
+                    .iter()
+                    .position(|column| column.name == *column_name)
+                {
+                    Ok(index)
+                } else {
+                    Err(format!("Column `{}` does not exist", column_name))
+                }
+            }
+            Err(_) => Err("Column stack is empty".to_string()),
+        }
+    }
+
+    fn peek(&self) -> Result<&Vec<ColumnDefinition>, String> {
+        self.stack.last().ok_or("Column stack is empty".to_string())
+    }
+
+    fn peek_mut(&mut self) -> Result<&mut Vec<ColumnDefinition>, String> {
+        self.stack
+            .last_mut()
+            .ok_or("Column stack is empty".to_string())
     }
 }
 
 #[derive(Debug)]
 pub struct Table {
     pub name: String,
-    columns: Vec<ColumnStack>,
+    columns: ColumnStack,
     rows: Vec<RowStack>,
 }
 
@@ -220,7 +306,7 @@ impl Table {
     pub fn new(name: String, columns: Vec<ColumnDefinition>) -> Self {
         Self {
             name,
-            columns: columns.into_iter().map(|c| ColumnStack::new(c)).collect(),
+            columns: ColumnStack::new(columns),
             rows: vec![],
         }
     }
@@ -305,7 +391,7 @@ impl Table {
     }
 
     fn width(&self) -> usize {
-        self.columns.len()
+        self.get_columns().len()
     }
 
     pub fn get_index_of_column(&self, column: &String) -> Result<usize, String> {
@@ -321,17 +407,11 @@ impl Table {
     }
 
     pub fn get_columns(&self) -> Vec<&ColumnDefinition> {
-        self.columns
-            .iter()
-            .map(|c| c.stack.last().unwrap())
-            .collect()
+        self.columns.stack.last().unwrap().iter().collect()
     }
 
     pub fn get_columns_mut(&mut self) -> Vec<&mut ColumnDefinition> {
-        self.columns
-            .iter_mut()
-            .map(|c| c.stack.last_mut().unwrap())
-            .collect()
+        self.columns.stack.last_mut().unwrap().iter_mut().collect()
     }
 
     pub fn get_column_names(&self) -> Vec<&String> {
@@ -342,7 +422,7 @@ impl Table {
     }
 
     pub fn push_column(&mut self, column: ColumnDefinition) {
-        self.columns.push(ColumnStack::new(column));
+        self.columns.push_column(column, false);
     }
 
     #[cfg(test)]

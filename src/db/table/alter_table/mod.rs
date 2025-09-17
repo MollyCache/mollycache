@@ -2,35 +2,34 @@ use crate::db::database::Database;
 use crate::db::table::Value;
 use crate::interpreter::ast::{AlterTableAction, AlterTableStatement};
 
-pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> Result<(), String> {
+pub fn alter_table(
+    database: &mut Database,
+    statement: AlterTableStatement,
+    is_transaction: bool,
+) -> Result<(), String> {
     return match statement.action {
         AlterTableAction::RenameTable { new_table_name } => {
-            // TODO: add transaction support to table name changes
             let table = database.tables.remove(&statement.table_name);
             match table {
-                Some(table) => database.tables.insert(new_table_name, table),
+                Some(mut table) => {
+                    table.name = new_table_name;
+                    database.tables.insert(table.name.clone(), table);
+                }
                 None => return Err(format!("Table `{}` does not exist", statement.table_name)),
             };
             Ok(())
         }
         AlterTableAction::RenameColumn {
-            // TODO: add transaction support to column name changes
             old_column_name,
             new_column_name,
         } => {
             let table = database.get_table_mut(&statement.table_name)?;
-            if !table.has_column(&old_column_name) {
-                return Err(format!(
-                    "Column `{}` does not exist in table `{}`",
-                    old_column_name, statement.table_name
-                ));
-            }
-            table.get_columns_mut().iter_mut().for_each(|column| {
-                if column.name == old_column_name {
-                    column.name = new_column_name.clone();
-                }
-            });
-            Ok(())
+            table.columns.rename_column(
+                &old_column_name,
+                &new_column_name,
+                &table.name,
+                is_transaction,
+            )
         }
         AlterTableAction::AddColumn { column_def } => {
             let table = database.get_table_mut(&statement.table_name)?;
@@ -54,10 +53,13 @@ pub fn alter_table(database: &mut Database, statement: AlterTableStatement) -> R
                     column_name, statement.table_name
                 ));
             }
-            let index = table.get_index_of_column(&column_name)?;
+            let index = table.columns.get_index_of_column(&column_name)?;
+            table
+                .columns
+                .drop_column(&column_name, &table.name, is_transaction)?;
             // This is kind of bad because it's an O(n^2) operation however SQLite
             // preserves the order of the columns after drop column statements.
-            table.columns.remove(index);
+
             table.get_rows_mut().iter_mut().for_each(|row| {
                 row.remove(index);
             });
@@ -81,10 +83,11 @@ mod tests {
                 new_table_name: "new_users".to_string(),
             },
         };
-        let result = alter_table(&mut database, statement);
+        let result = alter_table(&mut database, statement, false);
         assert!(result.is_ok());
         assert!(!database.tables.contains_key("users"));
         assert!(database.tables.contains_key("new_users"));
+        assert!(database.tables.get("new_users").unwrap().name == "new_users");
     }
 
     #[test]
@@ -97,7 +100,7 @@ mod tests {
                 new_column_name: "new_name".to_string(),
             },
         };
-        let result = alter_table(&mut database, statement);
+        let result = alter_table(&mut database, statement, false);
         assert!(result.is_ok());
         let table = database.get_table("users");
         assert!(table.is_ok());
@@ -123,13 +126,13 @@ mod tests {
                 },
             },
         };
-        let result = alter_table(&mut database, statement);
+        let result = alter_table(&mut database, statement, false);
         assert!(result.is_ok());
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table = table.unwrap();
         assert!(table.get_columns().last().unwrap().name == "new_column");
-        assert!(table.columns.len() == table[0].len());
+        assert!(table.get_columns().len() == table[0].len());
         assert!(
             table
                 .get_rows()
@@ -147,7 +150,7 @@ mod tests {
                 column_name: "age".to_string(),
             },
         };
-        let result = alter_table(&mut database, statement);
+        let result = alter_table(&mut database, statement, false);
         assert!(result.is_ok());
         let table = database.get_table("users");
         assert!(table.is_ok());
@@ -158,7 +161,7 @@ mod tests {
                 .iter()
                 .any(|column| column.name == "age")
         );
-        assert!(table.columns.len() == table[0].len());
+        assert!(table.get_columns().len() == table[0].len());
         let expected_columns_in_order = vec![
             ColumnDefinition {
                 name: "id".to_string(),
@@ -196,5 +199,76 @@ mod tests {
             Row(vec![Value::Integer(4), Value::Null, Value::Real(4000.0)]),
         ];
         assert_eq!(expected_rows, table.get_rows_clone());
+    }
+
+    #[test]
+    fn alter_table_rename_column_works_correctly_with_transaction() {
+        let mut database = default_database();
+        let statement = AlterTableStatement {
+            table_name: "users".to_string(),
+            action: AlterTableAction::RenameColumn {
+                old_column_name: "name".to_string(),
+                new_column_name: "new_name".to_string(),
+            },
+        };
+        let result = alter_table(&mut database, statement, true);
+        assert!(result.is_ok());
+        let table = database.get_table("users");
+        assert!(table.is_ok());
+        let table = table.unwrap();
+        assert!(
+            table
+                .get_columns()
+                .iter()
+                .any(|column| column.name == "new_name")
+        );
+        let index_of_column = table.get_index_of_column(&"new_name".to_string()).unwrap();
+        assert!(table.columns.stack.len() == 2);
+        assert!(table.columns.stack[0][index_of_column].name == "name");
+        assert!(table.columns.stack[1][index_of_column].name == "new_name");
+    }
+
+    #[test]
+    fn alter_table_drop_column_works_correctly_with_transaction() {
+        let mut database = default_database();
+        let statement = AlterTableStatement {
+            table_name: "users".to_string(),
+            action: AlterTableAction::DropColumn {
+                column_name: "age".to_string(),
+            },
+        };
+        let result = alter_table(&mut database, statement, true);
+        assert!(result.is_ok());
+        let table = database.get_table("users");
+        assert!(table.is_ok());
+        let table = table.unwrap();
+        assert!(
+            !table
+                .get_columns()
+                .iter()
+                .any(|column| column.name == "age")
+        );
+        assert!(table.columns.stack.len() == 2);
+        let expected_column_names = vec![
+            vec![
+                "id".to_string(),
+                "name".to_string(),
+                "age".to_string(),
+                "money".to_string(),
+            ],
+            vec!["id".to_string(), "name".to_string(), "money".to_string()],
+        ];
+        assert_eq!(
+            expected_column_names,
+            table
+                .columns
+                .stack
+                .iter()
+                .map(|column| column
+                    .iter()
+                    .map(|column| column.name.clone())
+                    .collect::<Vec<String>>())
+                .collect::<Vec<Vec<String>>>()
+        );
     }
 }
