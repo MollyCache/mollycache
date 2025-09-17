@@ -1,7 +1,10 @@
-mod select_statement;
-mod set_operator_evaluator;
-use crate::db::table::helpers::order_by_clause::apply_order_by_from_precomputed;
-use crate::db::{database::Database, table::Row, table::Table};
+pub mod select_statement;
+pub mod set_operator_evaluator;
+use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
+use crate::db::{
+    database::Database,
+    table::core::{row::Row, table::Table},
+};
 use crate::interpreter::ast::{SelectStatementStack, SelectStatementStackElement, SetOperator};
 
 pub fn select_statement_stack(
@@ -133,7 +136,7 @@ fn expand_all_column_names(table: &Table, column_names: &Vec<String>) -> Vec<Str
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::Value;
+    use crate::db::table::core::value::Value;
     use crate::db::table::test_utils::default_database;
     use crate::interpreter::ast::{
         LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectableStack,

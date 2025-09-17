@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
-use crate::db::table::{Row, helpers::common::remove_duplicate_rows};
+use crate::db::table::core::row::Row;
+use crate::db::table::operations::helpers::common::remove_duplicate_rows;
 
 pub struct SetOperatorEvaluator {
     pub stack: Vec<Vec<Row>>,
@@ -79,7 +80,7 @@ impl SetOperatorEvaluator {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::db::table::Value;
+    use crate::db::table::core::value::Value;
     use crate::db::table::test_utils::assert_table_rows_eq_unordered;
 
     fn rows_1() -> Vec<Row> {

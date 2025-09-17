@@ -1,5 +1,5 @@
 #[cfg(test)]
-use mollycache::db::table::Row;
+use mollycache::db::table::core::row::Row;
 #[cfg(test)]
 use mollycache::interpreter::ast::OrderByDirection;
 #[cfg(test)]

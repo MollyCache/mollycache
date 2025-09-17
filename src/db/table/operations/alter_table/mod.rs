@@ -1,5 +1,5 @@
 use crate::db::database::Database;
-use crate::db::table::Value;
+use crate::db::table::core::value::Value;
 use crate::interpreter::ast::{AlterTableAction, AlterTableStatement};
 
 pub fn alter_table(
@@ -71,8 +71,8 @@ pub fn alter_table(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::table::core::{column::ColumnDefinition, row::Row, value::DataType};
     use crate::db::table::test_utils::default_database;
-    use crate::db::table::{ColumnDefinition, DataType, Row};
 
     #[test]
     fn alter_table_rename_table_works_correctly() {

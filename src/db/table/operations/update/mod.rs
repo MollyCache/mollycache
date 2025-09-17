@@ -1,6 +1,5 @@
-use crate::db::table::DataType;
-use crate::db::table::Table;
-use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
+use crate::db::table::core::{table::Table, value::DataType};
+use crate::db::table::operations::helpers::common::get_row_indicies_matching_clauses;
 use crate::interpreter::ast::{ColumnValue, UpdateStatement};
 
 pub fn update(table: &mut Table, statement: UpdateStatement) -> Result<Vec<usize>, String> {
@@ -40,9 +39,10 @@ fn update_rows_from_indicies(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::Row;
+    use crate::db::table::core::{
+        column::ColumnDefinition, row::Row, value::DataType, value::Value,
+    };
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
-    use crate::db::table::{ColumnDefinition, DataType, Value};
     use crate::interpreter::ast::ColumnValue;
     use crate::interpreter::ast::{
         LimitClause, Operand, Operator, OrderByClause, OrderByDirection, SelectableStack,
@@ -278,7 +278,7 @@ mod tests {
                 constraints: vec![],
             }],
         );
-        table.rows = vec![];
+        table.set_rows(vec![]);
         let statement = UpdateStatement {
             table_name: "users".to_string(),
             update_values: vec![ColumnValue {

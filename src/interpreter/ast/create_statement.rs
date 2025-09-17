@@ -1,4 +1,4 @@
-use crate::db::table::ColumnDefinition;
+use crate::db::table::core::column::ColumnDefinition;
 use crate::interpreter::{
     ast::{
         CreateTableStatement, ExistenceCheck,
@@ -88,7 +88,7 @@ fn column_definitions(parser: &mut Parser) -> Result<Vec<ColumnDefinition>, Stri
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::DataType;
+    use crate::db::table::core::value::DataType;
     use crate::interpreter::ast::ExistenceCheck;
     use crate::interpreter::ast::test_utils::token;
 

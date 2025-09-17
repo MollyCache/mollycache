@@ -28,9 +28,13 @@ impl TransactionLog {
         self.entries.is_some()
     }
 
-    pub fn append_entry(&mut self, sql_statement: SqlStatement, affected_rows: Vec<usize>) -> Result<(), String> {
+    pub fn append_entry(
+        &mut self,
+        sql_statement: SqlStatement,
+        affected_rows: Vec<usize>,
+    ) -> Result<(), String> {
         if !self.in_transaction() {
-            return Ok(())
+            return Ok(());
         }
         let table_name = match &sql_statement {
             SqlStatement::CreateTable(statement) => statement.table_name.clone(),
@@ -47,16 +51,18 @@ impl TransactionLog {
             }
             _ => return Err("Invalid transaction entry".to_string()),
         };
-        self.get_entries_mut()?.push(TransactionEntry::Statement(StatementEntry {
-            statement: sql_statement,
-            table_name: table_name,
-            affected_rows: affected_rows,
-        }));
+        self.get_entries_mut()?
+            .push(TransactionEntry::Statement(StatementEntry {
+                statement: sql_statement,
+                table_name: table_name,
+                affected_rows: affected_rows,
+            }));
         Ok(())
     }
 
     pub fn append_savepoint(&mut self, savepoint: Savepoint) -> Result<(), String> {
-        self.get_entries_mut()?.push(TransactionEntry::Savepoint(savepoint));
+        self.get_entries_mut()?
+            .push(TransactionEntry::Savepoint(savepoint));
         Ok(())
     }
 
@@ -81,10 +87,14 @@ impl TransactionLog {
     }
 
     pub fn get_entries(&self) -> Result<&Vec<TransactionEntry>, String> {
-        self.entries.as_ref().ok_or_else(|| "No transaction is currently active".to_string())
+        self.entries
+            .as_ref()
+            .ok_or_else(|| "No transaction is currently active".to_string())
     }
 
     fn get_entries_mut(&mut self) -> Result<&mut Vec<TransactionEntry>, String> {
-        self.entries.as_mut().ok_or_else(|| "No transaction is currently active".to_string())
+        self.entries
+            .as_mut()
+            .ok_or_else(|| "No transaction is currently active".to_string())
     }
 }

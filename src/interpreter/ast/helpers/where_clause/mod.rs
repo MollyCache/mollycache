@@ -100,7 +100,7 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<Vec<WhereStackElem
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::Value;
+    use crate::db::table::core::value::Value;
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::ast::{LogicalOperator, Operand, Operator, WhereCondition};
 

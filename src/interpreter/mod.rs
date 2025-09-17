@@ -1,5 +1,5 @@
 use crate::db;
-use crate::db::table::Row;
+use crate::db::table::core::row::Row;
 pub mod ast;
 mod tokenizer;
 

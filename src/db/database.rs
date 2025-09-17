@@ -1,11 +1,8 @@
-use crate::db::table::alter_table;
-use crate::db::table::create_table;
-use crate::db::table::delete;
-use crate::db::table::insert;
-use crate::db::table::select;
-use crate::db::table::update;
-use crate::db::table::{Row, Table, drop_table}; 
-use crate::db::transactions::{TransactionLog, TransactionEntry};
+use crate::db::table::core::{row::Row, table::Table};
+use crate::db::table::operations::{
+    alter_table, create_table, delete, drop_table, insert, select, update,
+};
+use crate::db::transactions::{TransactionEntry, TransactionLog};
 use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
 
@@ -18,9 +15,7 @@ impl Database {
     pub fn new() -> Self {
         Self {
             tables: HashMap::new(),
-            transaction: TransactionLog {
-                entries: None,
-            },
+            transaction: TransactionLog { entries: None },
         }
     }
 
@@ -35,7 +30,8 @@ impl Database {
             SqlStatement::InsertInto(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
                 let rows_inserted = insert::insert(table, statement)?;
-                self.transaction.append_entry(sql_statement_clone, rows_inserted)?;
+                self.transaction
+                    .append_entry(sql_statement_clone, rows_inserted)?;
                 Ok(None)
             }
             SqlStatement::Select(statement) => {
@@ -45,13 +41,15 @@ impl Database {
             SqlStatement::UpdateStatement(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
                 let rows_updated = update::update(table, statement)?;
-                self.transaction.append_entry(sql_statement_clone, rows_updated)?;
+                self.transaction
+                    .append_entry(sql_statement_clone, rows_updated)?;
                 Ok(None)
             }
             SqlStatement::DeleteStatement(statement) => {
                 let table = self.get_table_mut(&statement.table_name)?;
                 let rows_deleted = delete::delete(table, statement)?;
-                self.transaction.append_entry(sql_statement_clone, rows_deleted)?;
+                self.transaction
+                    .append_entry(sql_statement_clone, rows_deleted)?;
                 Ok(None)
             }
             SqlStatement::DropTable(statement) => {
@@ -79,7 +77,7 @@ impl Database {
                         TransactionEntry::Savepoint(_) => {}
                     }
                 }
-                
+
                 Ok(None)
             }
             SqlStatement::Rollback(_) => {
@@ -94,7 +92,8 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::Release(statement) => {
-                self.transaction.release_savepoint(&statement.savepoint_name)?;
+                self.transaction
+                    .release_savepoint(&statement.savepoint_name)?;
                 Ok(None)
             }
         };
@@ -122,7 +121,7 @@ impl Database {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{ColumnDefinition, DataType};
+    use crate::db::table::core::{column::ColumnDefinition, value::DataType};
 
     fn default_database() -> Database {
         Database {
@@ -144,9 +143,7 @@ mod tests {
                     ],
                 ),
             )]),
-            transaction: TransactionLog {
-                entries: None,
-            },
+            transaction: TransactionLog { entries: None },
         }
     }
 

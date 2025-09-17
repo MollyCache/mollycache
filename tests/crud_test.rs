@@ -1,7 +1,7 @@
 mod test_utils;
 
 use mollycache::db::database::Database;
-use mollycache::db::table::{Row, Value};
+use mollycache::db::table::core::{row::Row, value::Value};
 use mollycache::interpreter::run_sql;
 
 #[test]

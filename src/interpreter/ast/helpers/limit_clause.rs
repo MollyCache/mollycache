@@ -1,4 +1,4 @@
-use crate::db::table::Value;
+use crate::db::table::core::value::Value;
 use crate::interpreter::ast::helpers::token::{expect_token_type, token_to_value};
 use crate::interpreter::ast::{LimitClause, parser::Parser};
 use crate::interpreter::tokenizer::token::TokenTypes;

@@ -1,7 +1,7 @@
-use crate::db::table::helpers::common::get_columns_from_row;
-use crate::db::table::helpers::order_by_clause::apply_order_by_from_precomputed;
-use crate::db::table::helpers::where_clause::row_matches_where_stack;
-use crate::db::table::{Row, Table};
+use crate::db::table::core::{row::Row, table::Table};
+use crate::db::table::operations::helpers::common::get_columns_from_row;
+use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
+use crate::db::table::operations::helpers::where_clause::row_matches_where_stack;
 use crate::interpreter::ast::{SelectMode, SelectStatement};
 use std::collections::HashSet;
 
@@ -72,11 +72,10 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::ColumnDefinition;
-    use crate::db::table::ColumnStack;
-    use crate::db::table::DataType;
+    use crate::db::table::core::column::ColumnDefinition;
+    use crate::db::table::core::value::DataType;
+    use crate::db::table::core::{row::Row, value::Value};
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
-    use crate::db::table::{Row, Value};
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::SelectMode;
     use crate::interpreter::ast::WhereCondition;
@@ -325,9 +324,9 @@ mod tests {
 
     #[test]
     fn select_with_distinct_mode_is_generated_correctly() {
-        let mut table = Table {
-            name: "users".to_string(),
-            columns: ColumnStack::new(vec![
+        let mut table = Table::new(
+            "users".to_string(),
+            vec![
                 ColumnDefinition {
                     name: "id".to_string(),
                     data_type: DataType::Integer,
@@ -338,9 +337,8 @@ mod tests {
                     data_type: DataType::Text,
                     constraints: vec![],
                 },
-            ]),
-            rows: vec![],
-        };
+            ],
+        );
         table.set_rows(vec![
             Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
             Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),

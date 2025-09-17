@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use crate::db::table::Table;
-use crate::db::table::helpers::common::get_row_indicies_matching_clauses;
+use crate::db::table::core::table::Table;
+use crate::db::table::operations::helpers::common::get_row_indicies_matching_clauses;
 use crate::interpreter::ast::DeleteStatement;
 
 pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<Vec<usize>, String> {
@@ -46,8 +46,8 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::table::core::{row::Row, value::Value};
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
-    use crate::db::table::{Row, Value};
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::{
         Operand, Operator, OrderByClause, OrderByDirection, SelectableStack,
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn delete_from_empty_table_works_correctly() {
         let mut table = default_table();
-        table.rows = vec![];
+        table.set_rows(vec![]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
             where_clause: None,

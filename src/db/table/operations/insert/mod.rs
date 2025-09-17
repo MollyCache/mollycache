@@ -1,7 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
-use crate::db::table::helpers::common::validate_and_clone_row;
-use crate::db::table::{Row, Table, Value};
+use crate::db::table::core::{row::Row, table::Table, value::Value};
+use crate::db::table::operations::helpers::common::validate_and_clone_row;
 use crate::interpreter::ast::InsertIntoStatement;
 
 pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<usize>, String> {
@@ -65,7 +65,9 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{ColumnDefinition, DataType, Table, Value};
+    use crate::db::table::core::{
+        column::ColumnDefinition, table::Table, value::DataType, value::Value,
+    };
 
     fn default_table() -> Table {
         Table::new(
