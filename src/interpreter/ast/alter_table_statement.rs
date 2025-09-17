@@ -1,4 +1,4 @@
-use crate::db::table::ColumnDefinition;
+use crate::db::table::core::column::ColumnDefinition;
 use crate::interpreter::{
     ast::helpers::common::get_table_name,
     ast::helpers::token::{expect_token_type, token_to_data_type},
@@ -80,7 +80,7 @@ fn get_action(parser: &mut Parser) -> Result<AlterTableAction, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::DataType;
+    use crate::db::table::core::value::DataType;
     use crate::interpreter::ast::test_utils::token;
 
     #[test]

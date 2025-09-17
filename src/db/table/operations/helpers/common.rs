@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use crate::db::table::helpers::order_by_clause::apply_order_by_from_precomputed;
-use crate::db::table::helpers::where_clause::row_matches_where_stack;
-use crate::db::table::{DataType, Row, Table, Value};
+use crate::db::table::core::{row::Row, table::Table, value::DataType, value::Value};
+use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
+use crate::db::table::operations::helpers::where_clause::row_matches_where_stack;
 use crate::interpreter::ast::{
     LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause, SelectableStack,
     SelectableStackElement, WhereStackElement,

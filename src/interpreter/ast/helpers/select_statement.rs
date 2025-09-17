@@ -52,7 +52,7 @@ fn get_columns_and_names(parser: &mut Parser) -> Result<(SelectableStack, Vec<St
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::Value;
+    use crate::db::table::core::value::Value;
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::Operator;

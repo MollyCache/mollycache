@@ -1,5 +1,4 @@
-use crate::db::table::DataType;
-use crate::db::table::{Row, Table, Value};
+use crate::db::table::core::{row::Row, table::Table, value::DataType, value::Value};
 use crate::interpreter::ast::{Operand, Operator, WhereCondition};
 
 // This file holds the logic for whether a row matches a where condition.
@@ -133,7 +132,9 @@ fn expect_same_type(l_side: &Value, r_side: &Value) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{ColumnDefinition, DataType, Table, Value};
+    use crate::db::table::core::{
+        column::ColumnDefinition, table::Table, value::DataType, value::Value,
+    };
     use crate::interpreter::ast::{Operand, Operator, WhereCondition};
 
     #[test]

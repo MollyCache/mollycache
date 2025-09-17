@@ -160,7 +160,7 @@ fn get_set_operator(parser: &mut Parser) -> Result<SetOperator, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::Value;
+    use crate::db::table::core::value::Value;
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::Operator;

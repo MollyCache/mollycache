@@ -1,9 +1,11 @@
 #[cfg(test)]
 use crate::db::database::Database;
 #[cfg(test)]
-use crate::db::table::{ColumnDefinition, ColumnStack, DataType, Table, Value};
+use crate::db::table::core::row::Row;
 #[cfg(test)]
-use crate::db::table::{Row, RowStack};
+use crate::db::table::core::{
+    column::ColumnDefinition, table::Table, value::DataType, value::Value,
+};
 #[cfg(test)]
 use crate::interpreter::ast::OrderByDirection;
 #[cfg(test)]
@@ -11,9 +13,9 @@ use std::cmp::Ordering;
 
 #[cfg(test)]
 pub fn default_table() -> Table {
-    Table {
-        name: "users".to_string(),
-        columns: ColumnStack::new(vec![
+    let mut table = Table::new(
+        "users".to_string(),
+        vec![
             ColumnDefinition {
                 name: "id".to_string(),
                 data_type: DataType::Integer,
@@ -34,93 +36,41 @@ pub fn default_table() -> Table {
                 data_type: DataType::Real,
                 constraints: vec![],
             },
-        ]),
-        rows: vec![
-            RowStack::new(Row(vec![
-                Value::Integer(1),
-                Value::Text("John".to_string()),
-                Value::Integer(25),
-                Value::Real(1000.0),
-            ])),
-            RowStack::new(Row(vec![
-                Value::Integer(2),
-                Value::Text("Jane".to_string()),
-                Value::Integer(30),
-                Value::Real(2000.0),
-            ])),
-            RowStack::new(Row(vec![
-                Value::Integer(3),
-                Value::Text("Jim".to_string()),
-                Value::Integer(35),
-                Value::Real(3000.0),
-            ])),
-            RowStack::new(Row(vec![
-                Value::Integer(4),
-                Value::Null,
-                Value::Integer(40),
-                Value::Real(4000.0),
-            ])),
         ],
-    }
+    );
+    table.set_rows(vec![
+        Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+            Value::Integer(25),
+            Value::Real(1000.0),
+        ]),
+        Row(vec![
+            Value::Integer(2),
+            Value::Text("Jane".to_string()),
+            Value::Integer(30),
+            Value::Real(2000.0),
+        ]),
+        Row(vec![
+            Value::Integer(3),
+            Value::Text("Jim".to_string()),
+            Value::Integer(35),
+            Value::Real(3000.0),
+        ]),
+        Row(vec![
+            Value::Integer(4),
+            Value::Null,
+            Value::Integer(40),
+            Value::Real(4000.0),
+        ]),
+    ]);
+    table
 }
 
 #[cfg(test)]
 pub fn default_database() -> Database {
     let mut database = Database::new();
-    database.tables.insert(
-        "users".to_string(),
-        Table {
-            name: "users".to_string(),
-            columns: ColumnStack::new(vec![
-                ColumnDefinition {
-                    name: "id".to_string(),
-                    data_type: DataType::Integer,
-                    constraints: vec![],
-                },
-                ColumnDefinition {
-                    name: "name".to_string(),
-                    data_type: DataType::Text,
-                    constraints: vec![],
-                },
-                ColumnDefinition {
-                    name: "age".to_string(),
-                    data_type: DataType::Integer,
-                    constraints: vec![],
-                },
-                ColumnDefinition {
-                    name: "money".to_string(),
-                    data_type: DataType::Real,
-                    constraints: vec![],
-                },
-            ]),
-            rows: vec![
-                RowStack::new(Row(vec![
-                    Value::Integer(1),
-                    Value::Text("John".to_string()),
-                    Value::Integer(25),
-                    Value::Real(1000.0),
-                ])),
-                RowStack::new(Row(vec![
-                    Value::Integer(2),
-                    Value::Text("Jane".to_string()),
-                    Value::Integer(30),
-                    Value::Real(2000.0),
-                ])),
-                RowStack::new(Row(vec![
-                    Value::Integer(3),
-                    Value::Text("Jim".to_string()),
-                    Value::Integer(35),
-                    Value::Real(3000.0),
-                ])),
-                RowStack::new(Row(vec![
-                    Value::Integer(4),
-                    Value::Null,
-                    Value::Integer(40),
-                    Value::Real(4000.0),
-                ])),
-            ],
-        },
-    );
+    database.tables.insert("users".to_string(), default_table());
     database
 }
 

@@ -1,5 +1,5 @@
-use crate::db::table::helpers::where_clause::MatchesWhereClause;
-use crate::db::table::{Row, Table};
+use crate::db::table::core::{row::Row, table::Table};
+use crate::db::table::operations::helpers::where_clause::MatchesWhereClause;
 use crate::interpreter::ast::{LogicalOperator, WhereCondition, WhereStackElement};
 
 // This file holds the logic for whether a row matches a where stack which is a vec of WhereConditions
@@ -105,8 +105,10 @@ pub fn matches_where_stack(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::helpers::where_clause::WhereConditionEvaluator;
-    use crate::db::table::{ColumnDefinition, DataType, Row, Table, Value};
+    use crate::db::table::core::{
+        column::ColumnDefinition, row::Row, table::Table, value::DataType, value::Value,
+    };
+    use crate::db::table::operations::helpers::where_clause::WhereConditionEvaluator;
     use crate::interpreter::ast::{LogicalOperator, WhereStackElement};
     use crate::interpreter::ast::{Operand, Operator, WhereCondition};
 

@@ -77,7 +77,7 @@ pub fn get_operand(parser: &mut Parser) -> Result<Operand, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::Value;
+    use crate::db::table::core::value::Value;
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::ast::{Operand, Operator, WhereCondition};
 

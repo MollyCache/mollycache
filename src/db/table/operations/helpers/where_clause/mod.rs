@@ -1,6 +1,6 @@
 mod where_condition;
 mod where_stack;
-use crate::db::table::{Row, Table};
+use crate::db::table::core::{row::Row, table::Table};
 use crate::interpreter::ast::{WhereCondition, WhereStackElement};
 
 // We create an interface here to allow us to create a spy for testing short circuiting.
@@ -38,7 +38,9 @@ pub fn row_matches_where_stack(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{ColumnDefinition, DataType, Table, Value};
+    use crate::db::table::core::{
+        column::ColumnDefinition, table::Table, value::DataType, value::Value,
+    };
     use crate::interpreter::ast::{LogicalOperator, Operand, Operator, WhereStackElement};
 
     struct SpyWhereConditionEvaluator {

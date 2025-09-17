@@ -1,4 +1,4 @@
-use crate::db::table::Value;
+use crate::db::table::core::value::Value;
 use crate::interpreter::{
     ast::{
         InsertIntoStatement,

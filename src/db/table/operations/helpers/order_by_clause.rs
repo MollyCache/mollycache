@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::db::table::Row;
+use crate::db::table::core::row::Row;
 use crate::interpreter::ast::OrderByClause;
 
 pub fn apply_order_by_from_precomputed<T: Clone>(
@@ -37,7 +37,7 @@ fn perform_comparisons(row1: &Row, row2: &Row, order_by_clause: &OrderByClause) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{Row, Value};
+    use crate::db::table::core::{row::Row, value::Value};
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectableStack;

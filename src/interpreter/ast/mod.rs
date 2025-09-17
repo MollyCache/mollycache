@@ -1,4 +1,4 @@
-use crate::db::table::{ColumnDefinition, Value};
+use crate::db::table::core::{column::ColumnDefinition, value::Value};
 use crate::interpreter::tokenizer::{scanner::Token, token::TokenTypes};
 
 mod alter_table_statement;

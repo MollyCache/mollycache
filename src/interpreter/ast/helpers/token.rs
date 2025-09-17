@@ -1,4 +1,4 @@
-use crate::db::table::{DataType, Value};
+use crate::db::table::core::{value::DataType, value::Value};
 use crate::interpreter::ast::helpers::common::hex_decode;
 use crate::interpreter::ast::parser::Parser;
 use crate::interpreter::tokenizer::scanner::Token;

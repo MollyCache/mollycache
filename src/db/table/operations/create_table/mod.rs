@@ -1,5 +1,5 @@
 use crate::db::database::Database;
-use crate::db::table::Table;
+use crate::db::table::core::table::Table;
 use crate::interpreter::ast::{CreateTableStatement, ExistenceCheck};
 
 pub fn create_table(
@@ -24,8 +24,8 @@ pub fn create_table(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::table::core::{column::ColumnDefinition, value::DataType};
     use crate::db::table::test_utils::default_database;
-    use crate::db::table::{ColumnDefinition, DataType};
     use crate::interpreter::ast::CreateTableStatement;
 
     #[test]
