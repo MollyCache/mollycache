@@ -73,6 +73,15 @@ impl Table {
             .collect()
     }
 
+    pub fn get_row_stacks_mut(&mut self) -> Vec<&mut RowStack> {
+        self.rows.iter_mut().collect()
+    }
+
+    #[cfg(test)]
+    pub fn get_row_stacks_clone(&self) -> Vec<RowStack> {
+        self.rows.clone()
+    }
+
     pub fn set_rows(&mut self, rows: Vec<Row>) {
         self.rows = rows.into_iter().map(|r| RowStack::new(r)).collect();
     }

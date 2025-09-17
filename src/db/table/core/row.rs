@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 #[repr(transparent)]
 pub struct Row(pub Vec<Value>);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct RowStack {
     pub stack: Vec<Row>,
 }
@@ -26,5 +26,13 @@ impl DerefMut for Row {
 impl RowStack {
     pub fn new(stack: Row) -> Self {
         Self { stack: vec![stack] }
+    }
+
+    pub fn new_with_stack(stack: Vec<Row>) -> Self {
+        Self { stack }
+    }
+
+    pub fn append_clone(&mut self) {
+        self.stack.push(self.stack.last().unwrap().clone());
     }
 }

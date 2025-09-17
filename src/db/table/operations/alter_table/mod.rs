@@ -40,6 +40,11 @@ pub fn alter_table(
                 ));
             }
             table.push_column(column_def);
+            if is_transaction {
+                table.get_row_stacks_mut().iter_mut().for_each(|row_stack| {
+                    row_stack.append_clone();
+                });
+            }
             table.get_rows_mut().iter_mut().for_each(|row| {
                 row.push(Value::Null);
             });
@@ -59,7 +64,11 @@ pub fn alter_table(
                 .drop_column(&column_name, &table.name, is_transaction)?;
             // This is kind of bad because it's an O(n^2) operation however SQLite
             // preserves the order of the columns after drop column statements.
-
+            if is_transaction {
+                table.get_row_stacks_mut().iter_mut().for_each(|row_stack| {
+                    row_stack.append_clone();
+                });
+            }
             table.get_rows_mut().iter_mut().for_each(|row| {
                 row.remove(index);
             });
@@ -71,7 +80,11 @@ pub fn alter_table(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::core::{column::ColumnDefinition, row::Row, value::DataType};
+    use crate::db::table::core::{
+        column::ColumnDefinition,
+        row::{Row, RowStack},
+        value::DataType,
+    };
     use crate::db::table::test_utils::default_database;
 
     #[test]
@@ -270,5 +283,57 @@ mod tests {
                     .collect::<Vec<String>>())
                 .collect::<Vec<Vec<String>>>()
         );
+
+        let expected_row_stacks = vec![
+            RowStack::new_with_stack(vec![
+                Row(vec![
+                    Value::Integer(1),
+                    Value::Text("John".to_string()),
+                    Value::Integer(25),
+                    Value::Real(1000.0),
+                ]),
+                Row(vec![
+                    Value::Integer(1),
+                    Value::Text("John".to_string()),
+                    Value::Real(1000.0),
+                ]),
+            ]),
+            RowStack::new_with_stack(vec![
+                Row(vec![
+                    Value::Integer(2),
+                    Value::Text("Jane".to_string()),
+                    Value::Integer(30),
+                    Value::Real(2000.0),
+                ]),
+                Row(vec![
+                    Value::Integer(2),
+                    Value::Text("Jane".to_string()),
+                    Value::Real(2000.0),
+                ]),
+            ]),
+            RowStack::new_with_stack(vec![
+                Row(vec![
+                    Value::Integer(3),
+                    Value::Text("Jim".to_string()),
+                    Value::Integer(35),
+                    Value::Real(3000.0),
+                ]),
+                Row(vec![
+                    Value::Integer(3),
+                    Value::Text("Jim".to_string()),
+                    Value::Real(3000.0),
+                ]),
+            ]),
+            RowStack::new_with_stack(vec![
+                Row(vec![
+                    Value::Integer(4),
+                    Value::Null,
+                    Value::Integer(40),
+                    Value::Real(4000.0),
+                ]),
+                Row(vec![Value::Integer(4), Value::Null, Value::Real(4000.0)]),
+            ]),
+        ];
+        assert_eq!(expected_row_stacks, table.get_row_stacks_clone());
     }
 }
