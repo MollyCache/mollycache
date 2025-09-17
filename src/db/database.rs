@@ -72,7 +72,7 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::AlterTable(statement) => {
-                alter_table::alter_table(self, statement)?;
+                alter_table::alter_table(self, statement, self.transaction.is_some())?;
                 self.append_to_transaction(sql_statement_clone, vec![])?;
                 Ok(None)
             }
