@@ -327,18 +327,18 @@ mod tests {
     fn select_with_distinct_mode_is_generated_correctly() {
         let mut table = Table {
             name: "users".to_string(),
-            columns: vec![
-                ColumnStack::new(ColumnDefinition {
+            columns: ColumnStack::new(vec![
+                ColumnDefinition {
                     name: "id".to_string(),
                     data_type: DataType::Integer,
                     constraints: vec![],
-                }),
-                ColumnStack::new(ColumnDefinition {
+                },
+                ColumnDefinition {
                     name: "name".to_string(),
                     data_type: DataType::Text,
                     constraints: vec![],
-                }),
-            ],
+                },
+            ]),
             rows: vec![],
         };
         table.set_rows(vec![
