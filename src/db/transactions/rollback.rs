@@ -24,15 +24,22 @@ pub fn rollback_transaction_entry(
             }
             AlterTableAction::RenameTable { ref new_table_name } => {
                 // It is now under the new name
-                let mut table = database
-                    .tables
-                    .remove(new_table_name.as_str())
-                    .ok_or(format!("Table `{}` does not exist", new_table_name))?;
+                let mut table = database.pop_table_change(new_table_name.as_str())?;
                 table.rollback_name();
-                database.tables.insert(table.name()?.clone(), table);
+                database.push_table_change(statement.table_name.as_str(), table);
             }
         },
         SqlStatement::Select(_) => {} // These should be kept in the log but obv do nothing.
+        SqlStatement::CreateTable(_) => {
+            database.tables.remove(statement.table_name.as_str());
+        }
+        SqlStatement::DropTable(statement) => {
+            database
+                .tables
+                .get_mut(statement.table_name.as_str())
+                .unwrap()
+                .pop();
+        }
         _ => return Err("UNSUPPORTED".to_string()),
     }
     return Ok(());

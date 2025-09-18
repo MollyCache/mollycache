@@ -70,7 +70,9 @@ pub fn default_table() -> Table {
 #[cfg(test)]
 pub fn default_database() -> Database {
     let mut database = Database::new();
-    database.tables.insert("users".to_string(), default_table());
+    database
+        .tables
+        .insert("users".to_string(), vec![Some(default_table())]);
     database
 }
 

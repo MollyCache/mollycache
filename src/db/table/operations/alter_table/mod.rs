@@ -9,14 +9,9 @@ pub fn alter_table(
 ) -> Result<(), String> {
     return match statement.action {
         AlterTableAction::RenameTable { new_table_name } => {
-            let table = database.tables.remove(&statement.table_name);
-            match table {
-                Some(mut table) => {
-                    table.change_name(new_table_name, is_transaction);
-                    database.tables.insert(table.name()?.clone(), table);
-                }
-                None => return Err(format!("Table `{}` does not exist", statement.table_name)),
-            };
+            let mut table = database.pop_table_change(statement.table_name.as_str())?;
+            table.change_name(new_table_name.clone(), is_transaction);
+            database.push_table_change(new_table_name.as_str(), table);
             Ok(())
         }
         AlterTableAction::RenameColumn {
@@ -113,9 +108,9 @@ mod tests {
         };
         let result = alter_table(&mut database, statement, false);
         assert!(result.is_ok());
-        assert!(!database.tables.contains_key("users"));
-        assert!(database.tables.contains_key("new_users"));
-        assert!(database.tables.get("new_users").unwrap().name().unwrap() == "new_users");
+        assert!(!database.has_table("users"));
+        assert!(database.has_table("new_users"));
+        assert!(database.get_table("new_users").unwrap().name().unwrap() == "new_users");
     }
 
     #[test]
