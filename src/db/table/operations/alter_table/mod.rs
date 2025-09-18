@@ -336,4 +336,89 @@ mod tests {
         ];
         assert_eq!(expected_row_stacks, table.get_row_stacks_clone());
     }
+
+    #[test]
+    fn alter_table_add_column_works_correctly_with_transaction() {
+        let mut database = default_database();
+        let statement = AlterTableStatement {
+            table_name: "users".to_string(),
+            action: AlterTableAction::AddColumn {
+                column_def: ColumnDefinition {
+                    name: "new_column".to_string(),
+                    data_type: DataType::Integer,
+                    constraints: vec![],
+                },
+            },
+        };
+        let result = alter_table(&mut database, statement, true);
+        assert!(result.is_ok());
+        let table = database.get_table("users");
+        assert!(table.is_ok());
+        let table = table.unwrap();
+        assert!(table.get_columns().last().unwrap().name == "new_column");
+        assert!(table.get_columns().len() == table[0].len());
+        let expected_row_stacks = vec![
+            RowStack::new_with_stack(vec![
+                Row(vec![
+                    Value::Integer(1),
+                    Value::Text("John".to_string()),
+                    Value::Integer(25),
+                    Value::Real(1000.0),
+                ]),
+                Row(vec![
+                    Value::Integer(1),
+                    Value::Text("John".to_string()),
+                    Value::Integer(25),
+                    Value::Real(1000.0),
+                    Value::Null,
+                ]),
+            ]),
+            RowStack::new_with_stack(vec![
+                Row(vec![
+                    Value::Integer(2),
+                    Value::Text("Jane".to_string()),
+                    Value::Integer(30),
+                    Value::Real(2000.0),
+                ]),
+                Row(vec![
+                    Value::Integer(2),
+                    Value::Text("Jane".to_string()),
+                    Value::Integer(30),
+                    Value::Real(2000.0),
+                    Value::Null,
+                ]),
+            ]),
+            RowStack::new_with_stack(vec![
+                Row(vec![
+                    Value::Integer(3),
+                    Value::Text("Jim".to_string()),
+                    Value::Integer(35),
+                    Value::Real(3000.0),
+                ]),
+                Row(vec![
+                    Value::Integer(3),
+                    Value::Text("Jim".to_string()),
+                    Value::Integer(35),
+                    Value::Real(3000.0),
+                    Value::Null,
+                ]),
+            ]),
+            RowStack::new_with_stack(vec![
+                Row(vec![
+                    Value::Integer(4),
+                    Value::Null,
+                    Value::Integer(40),
+                    Value::Real(4000.0),
+                ]),
+                Row(vec![
+                    Value::Integer(4),
+                    Value::Null,
+                    Value::Integer(40),
+                    Value::Real(4000.0),
+                    Value::Null,
+                ]),
+            ]),
+        ];
+        assert_eq!(expected_row_stacks, table.get_row_stacks_clone());
+    }
 }
