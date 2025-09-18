@@ -12,8 +12,8 @@ pub fn alter_table(
             let table = database.tables.remove(&statement.table_name);
             match table {
                 Some(mut table) => {
-                    table.name = new_table_name;
-                    database.tables.insert(table.name.clone(), table);
+                    table.change_name(new_table_name, is_transaction);
+                    database.tables.insert(table.name()?.clone(), table);
                 }
                 None => return Err(format!("Table `{}` does not exist", statement.table_name)),
             };
@@ -24,12 +24,21 @@ pub fn alter_table(
             new_column_name,
         } => {
             let table = database.get_table_mut(&statement.table_name)?;
-            table.columns.rename_column(
+            if !table.has_column(&old_column_name)? {
+                return Err(format!(
+                    "Column `{}` does not exist in table `{}`",
+                    old_column_name, statement.table_name
+                ));
+            }
+            let res = table.columns.rename_column(
                 &old_column_name,
                 &new_column_name,
-                &table.name,
                 is_transaction,
-            )
+            );
+            if res.is_err() {
+                return Err(format!("Error renaming column: `{}` to `{}` in Table: `{}`", old_column_name, new_column_name, statement.table_name));
+            }
+            Ok(())
         }
         AlterTableAction::AddColumn { column_def } => {
             let table = database.get_table_mut(&statement.table_name)?;
@@ -59,9 +68,12 @@ pub fn alter_table(
                 ));
             }
             let index = table.columns.get_index_of_column(&column_name)?;
-            table
+            let res = table
                 .columns
-                .drop_column(&column_name, &table.name, is_transaction)?;
+                .drop_column(&column_name, is_transaction);
+            if res.is_err() {
+                return Err(format!("Error dropping column: `{}` from Table: `{}`", column_name, statement.table_name));
+            }
             // This is kind of bad because it's an O(n^2) operation however SQLite
             // preserves the order of the columns after drop column statements.
             if is_transaction {
@@ -100,7 +112,7 @@ mod tests {
         assert!(result.is_ok());
         assert!(!database.tables.contains_key("users"));
         assert!(database.tables.contains_key("new_users"));
-        assert!(database.tables.get("new_users").unwrap().name == "new_users");
+        assert!(database.tables.get("new_users").unwrap().name().unwrap() == "new_users");
     }
 
     #[test]

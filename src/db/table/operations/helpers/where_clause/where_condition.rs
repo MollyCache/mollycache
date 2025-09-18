@@ -106,7 +106,7 @@ fn operand_to_value<'a>(
             if !table.has_column(column)? {
                 return Err(format!(
                     "Column {} does not exist in table {}",
-                    column, table.name
+                    column, table.name()?
                 ));
             }
             Ok(table.get_column_from_row(row, column)?)

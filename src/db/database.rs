@@ -171,13 +171,13 @@ mod tests {
         let mut database = default_database();
         let table = database.get_table("users");
         assert!(table.is_ok());
-        assert_eq!("users", table.unwrap().name);
+        assert_eq!("users", table.unwrap().name().unwrap());
         let table = database.get_table("not_users");
         assert!(table.is_err());
         assert_eq!("Table `not_users` does not exist", table.unwrap_err());
         let table = database.get_table_mut("users");
         assert!(table.is_ok());
-        assert_eq!("users", table.unwrap().name);
+        assert_eq!("users", table.unwrap().name().unwrap());
         let table = database.get_table_mut("not_users");
         assert!(table.is_err());
         assert_eq!("Table `not_users` does not exist", table.unwrap_err());

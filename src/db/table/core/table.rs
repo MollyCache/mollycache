@@ -9,9 +9,14 @@ use std::ops::{Index, IndexMut};
 
 #[derive(Debug)]
 pub struct Table {
-    pub name: String,
+    pub name: NameStack,
     pub columns: ColumnStack,
     rows: Vec<RowStack>,
+}
+
+#[derive(Debug)]
+pub struct NameStack {
+    pub stack: Vec<String>,
 }
 
 impl Index<usize> for Table {
@@ -31,9 +36,21 @@ impl IndexMut<usize> for Table {
 impl Table {
     pub fn new(name: String, columns: Vec<ColumnDefinition>) -> Self {
         Self {
-            name,
+            name: NameStack { stack: vec![name] },
             columns: ColumnStack::new(columns),
             rows: vec![],
+        }
+    }
+
+    pub fn name(&self) -> Result<&String, String> {
+        self.name.stack.last().ok_or("Error fetching table name.".to_string())
+    }
+
+    pub fn change_name(&mut self, new_name: String, is_transaction: bool) {
+        if is_transaction {
+            self.name.stack.push(new_name);
+        } else {
+            self.name.stack = vec![new_name];
         }
     }
 
@@ -151,7 +168,7 @@ impl Table {
         }
         return Err(format!(
             "Column {} does not exist in table {}",
-            column, self.name
+            column, self.name()?
         ));
     }
 
