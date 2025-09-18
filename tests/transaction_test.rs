@@ -17,6 +17,10 @@ fn test_transaction() {
     BEGIN;
         ALTER TABLE users ADD COLUMN age INTEGER;
         SELECT * FROM users;
+        ALTER TABLE users RENAME COLUMN age TO new_age;
+        SELECT new_age FROM users;
+        ALTER TABLE users DROP COLUMN name;
+        SELECT * FROM users;
     ROLLBACK;
     SELECT * FROM users;
     ";
@@ -32,6 +36,14 @@ fn test_transaction() {
         Ok(None),
         Ok(Some(vec![
             Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null]),
+        ])),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Null]),
+        ])),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(1), Value::Null]),
         ])),
         Ok(None),
         Ok(Some(vec![
