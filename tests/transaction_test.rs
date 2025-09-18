@@ -29,26 +29,26 @@ fn test_transaction() {
     let expected = vec![
         Ok(None),
         Ok(None),
-        Ok(Some(vec![
-            Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
-        ])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
         Ok(None),
         Ok(None),
-        Ok(Some(vec![
-            Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null]),
-        ])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+            Value::Null,
+        ])])),
         Ok(None),
-        Ok(Some(vec![
-            Row(vec![Value::Null]),
-        ])),
+        Ok(Some(vec![Row(vec![Value::Null])])),
         Ok(None),
-        Ok(Some(vec![
-            Row(vec![Value::Integer(1), Value::Null]),
-        ])),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Null])])),
         Ok(None),
-        Ok(Some(vec![
-            Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
-        ])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
     ];
     for (i, result) in result.iter().enumerate() {
         assert!(result.is_ok());

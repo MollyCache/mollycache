@@ -122,7 +122,11 @@ impl Table {
         }
     }
 
-    pub fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> Result<&'a Value, String> {
+    pub fn get_column_from_row<'a>(
+        &self,
+        row: &'a Vec<Value>,
+        column: &String,
+    ) -> Result<&'a Value, String> {
         for (i, value) in row.iter().enumerate() {
             if self.get_column_names()?[i] == column {
                 return Ok(&value);
@@ -152,15 +156,28 @@ impl Table {
     }
 
     pub fn get_columns(&self) -> Result<Vec<&ColumnDefinition>, String> {
-        Ok(self.columns.stack.last().ok_or("Column stack is empty".to_string())?.iter().collect())
+        Ok(self
+            .columns
+            .stack
+            .last()
+            .ok_or("Column stack is empty".to_string())?
+            .iter()
+            .collect())
     }
 
     pub fn get_columns_mut(&mut self) -> Result<Vec<&mut ColumnDefinition>, String> {
-        Ok(self.columns.stack.last_mut().ok_or("Column stack is empty".to_string())?.iter_mut().collect())
+        Ok(self
+            .columns
+            .stack
+            .last_mut()
+            .ok_or("Column stack is empty".to_string())?
+            .iter_mut()
+            .collect())
     }
 
     pub fn get_column_names(&self) -> Result<Vec<&String>, String> {
-        Ok(self.get_columns()?
+        Ok(self
+            .get_columns()?
             .iter()
             .map(|column| &column.name)
             .collect())

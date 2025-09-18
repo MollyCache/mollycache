@@ -118,7 +118,10 @@ pub fn select_statement_stack(
 }
 
 // TODO: add this logic in evaluation too
-fn expand_all_column_names(table: &Table, column_names: &Vec<String>) -> Result<Vec<String>, String> {
+fn expand_all_column_names(
+    table: &Table,
+    column_names: &Vec<String>,
+) -> Result<Vec<String>, String> {
     let mut new = vec![];
     for column in column_names {
         if *column == "*".to_string() {

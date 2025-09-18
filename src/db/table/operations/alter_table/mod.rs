@@ -118,16 +118,8 @@ mod tests {
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table_columns = table.unwrap().get_columns().unwrap();
-        assert!(
-            table_columns
-                .iter()
-                .any(|column| column.name == "new_name")
-        );
-        assert!(
-            table_columns
-                .iter()
-                .any(|column| column.name == "new_name")
-        );
+        assert!(table_columns.iter().any(|column| column.name == "new_name"));
+        assert!(table_columns.iter().any(|column| column.name == "new_name"));
     }
 
     #[test]
@@ -174,11 +166,7 @@ mod tests {
         assert!(table.is_ok());
         let table = table.unwrap();
         let table_columns = table.get_columns().unwrap();
-        assert!(
-            !table_columns
-                .iter()
-                .any(|column| column.name == "age")
-        );
+        assert!(!table_columns.iter().any(|column| column.name == "age"));
         let table_columns_len = table_columns.len();
         assert!(table_columns_len == table[0].len());
         let expected_columns_in_order = vec![
@@ -198,7 +186,10 @@ mod tests {
                 constraints: vec![],
             },
         ];
-        assert_eq!(expected_columns_in_order, table.get_columns_clone().unwrap());
+        assert_eq!(
+            expected_columns_in_order,
+            table.get_columns_clone().unwrap()
+        );
         let expected_rows = vec![
             Row(vec![
                 Value::Integer(1),
@@ -236,11 +227,7 @@ mod tests {
         assert!(table.is_ok());
         let table = table.unwrap();
         let table_columns = table.get_columns().unwrap();
-        assert!(
-            table_columns
-                .iter()
-                .any(|column| column.name == "new_name")
-        );
+        assert!(table_columns.iter().any(|column| column.name == "new_name"));
         let index_of_column = table.get_index_of_column(&"new_name".to_string()).unwrap();
         assert!(table.columns.stack.len() == 2);
         assert!(table.columns.stack[0][index_of_column].name == "name");
@@ -262,11 +249,7 @@ mod tests {
         assert!(table.is_ok());
         let table = table.unwrap();
         let table_columns = table.get_columns().unwrap();
-        assert!(
-            !table_columns
-                .iter()
-                .any(|column| column.name == "age")
-        );
+        assert!(!table_columns.iter().any(|column| column.name == "age"));
         assert!(table.columns.stack.len() == 2);
         let expected_column_names = vec![
             vec![
@@ -372,9 +355,26 @@ mod tests {
                 "age".to_string(),
                 "money".to_string(),
             ],
-            vec!["id".to_string(), "name".to_string(), "age".to_string(), "money".to_string(), "new_column".to_string()],
+            vec![
+                "id".to_string(),
+                "name".to_string(),
+                "age".to_string(),
+                "money".to_string(),
+                "new_column".to_string(),
+            ],
         ];
-        assert_eq!(expected_column_names, table.columns.stack.iter().map(|column| column.iter().map(|column| column.name.clone()).collect::<Vec<String>>()).collect::<Vec<Vec<String>>>());
+        assert_eq!(
+            expected_column_names,
+            table
+                .columns
+                .stack
+                .iter()
+                .map(|column| column
+                    .iter()
+                    .map(|column| column.name.clone())
+                    .collect::<Vec<String>>())
+                .collect::<Vec<Vec<String>>>()
+        );
         let expected_row_stacks = vec![
             RowStack::new_with_stack(vec![
                 Row(vec![

@@ -94,8 +94,7 @@ impl Database {
                             TransactionEntry::Savepoint(_) => {}
                         }
                     }
-                }
-                else {
+                } else {
                     return Err("No transaction is currently active".to_string());
                 }
                 Ok(None)
