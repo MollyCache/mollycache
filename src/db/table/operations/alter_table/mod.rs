@@ -30,13 +30,15 @@ pub fn alter_table(
                     old_column_name, statement.table_name
                 ));
             }
-            let res = table.columns.rename_column(
-                &old_column_name,
-                &new_column_name,
-                is_transaction,
-            );
+            let res =
+                table
+                    .columns
+                    .rename_column(&old_column_name, &new_column_name, is_transaction);
             if res.is_err() {
-                return Err(format!("Error renaming column: `{}` to `{}` in Table: `{}`", old_column_name, new_column_name, statement.table_name));
+                return Err(format!(
+                    "Error renaming column: `{}` to `{}` in Table: `{}`",
+                    old_column_name, new_column_name, statement.table_name
+                ));
             }
             Ok(())
         }
@@ -68,11 +70,12 @@ pub fn alter_table(
                 ));
             }
             let index = table.columns.get_index_of_column(&column_name)?;
-            let res = table
-                .columns
-                .drop_column(&column_name, is_transaction);
+            let res = table.columns.drop_column(&column_name, is_transaction);
             if res.is_err() {
-                return Err(format!("Error dropping column: `{}` from Table: `{}`", column_name, statement.table_name));
+                return Err(format!(
+                    "Error dropping column: `{}` from Table: `{}`",
+                    column_name, statement.table_name
+                ));
             }
             // This is kind of bad because it's an O(n^2) operation however SQLite
             // preserves the order of the columns after drop column statements.
@@ -465,10 +468,7 @@ mod tests {
         assert!(result.is_ok());
         let table = database.get_table("new_users");
         assert!(table.is_ok());
-        let expected_table_name_stack = vec![
-            "users".to_string(),
-            "new_users".to_string(),
-        ];
+        let expected_table_name_stack = vec!["users".to_string(), "new_users".to_string()];
         let table = table.unwrap();
         for (i, name) in expected_table_name_stack.iter().enumerate() {
             assert_eq!(*name, table.name.stack[i].clone());

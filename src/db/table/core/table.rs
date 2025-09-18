@@ -41,7 +41,10 @@ impl Table {
     }
 
     pub fn name(&self) -> Result<&String, String> {
-        self.name.stack.last().ok_or("Error fetching table name.".to_string())
+        self.name
+            .stack
+            .last()
+            .ok_or("Error fetching table name.".to_string())
     }
 
     pub fn change_name(&mut self, new_name: String, is_transaction: bool) {
@@ -166,7 +169,8 @@ impl Table {
         }
         return Err(format!(
             "Column {} does not exist in table {}",
-            column, self.name()?
+            column,
+            self.name()?
         ));
     }
 

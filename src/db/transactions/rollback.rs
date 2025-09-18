@@ -24,7 +24,10 @@ pub fn rollback_transaction_entry(
             }
             AlterTableAction::RenameTable { ref new_table_name } => {
                 // It is now under the new name
-                let mut table = database.tables.remove(new_table_name.as_str()).ok_or(format!("Table `{}` does not exist", new_table_name))?;
+                let mut table = database
+                    .tables
+                    .remove(new_table_name.as_str())
+                    .ok_or(format!("Table `{}` does not exist", new_table_name))?;
                 table.rollback_name();
                 database.tables.insert(table.name()?.clone(), table);
             }
