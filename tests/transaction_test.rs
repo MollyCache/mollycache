@@ -29,7 +29,6 @@ fn test_transaction() {
     SELECT * FROM new_users;
     ";
     let result = run_sql(&mut database, sql);
-    println!("{:?}", result);
     let expected = vec![
         Ok(None),
         Ok(None),
@@ -57,6 +56,32 @@ fn test_transaction() {
             Value::Text("John".to_string()),
         ])])),
         Err("Execution Error with statement starting on line 20 \n Error: Table `new_users` does not exist".to_string()),
+    ];
+    for (i, result) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result);
+    }
+}
+
+#[test]
+fn test_transaction_create_table() {
+    let mut database = Database::new();
+    let sql = "
+    BEGIN;
+        CREATE TABLE users (
+            id INTEGER,
+            name TEXT
+        );
+        SELECT * FROM users;
+    ROLLBACK;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![])),
+        Ok(None),
+        Err("Execution Error with statement starting on line 9 \n Error: Table `users` does not exist".to_string()),
     ];
     for (i, result) in result.iter().enumerate() {
         assert_eq!(expected[i], *result);
