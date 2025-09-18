@@ -11,9 +11,10 @@ pub fn alter_table(
         AlterTableAction::RenameTable { new_table_name } => {
             let table = database.tables.remove(&statement.table_name);
             match table {
-                Some(mut table) => {
+                Some(mut table_stack) => {
+                    let table = table_stack.last_mut().unwrap();
                     table.change_name(new_table_name, is_transaction);
-                    database.tables.insert(table.name()?.clone(), table);
+                    database.tables.insert(table.name()?.clone(), table_stack);
                 }
                 None => return Err(format!("Table `{}` does not exist", statement.table_name)),
             };
@@ -115,7 +116,7 @@ mod tests {
         assert!(result.is_ok());
         assert!(!database.tables.contains_key("users"));
         assert!(database.tables.contains_key("new_users"));
-        assert!(database.tables.get("new_users").unwrap().name().unwrap() == "new_users");
+        assert!(database.tables.get("new_users").unwrap().last().unwrap().name().unwrap() == "new_users");
     }
 
     #[test]

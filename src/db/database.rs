@@ -8,7 +8,7 @@ use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
 
 pub struct Database {
-    pub tables: HashMap<String, Table>,
+    pub tables: HashMap<String, Vec<Table>>,
     pub transaction: TransactionLog,
 }
 
@@ -120,14 +120,14 @@ impl Database {
         if !self.has_table(table_name) {
             return Err(format!("Table `{}` does not exist", table_name));
         }
-        Ok(self.tables.get(table_name).unwrap())
+        Ok(self.tables.get(table_name).unwrap().last().unwrap())
     }
 
     pub fn get_table_mut(&mut self, table_name: &str) -> Result<&mut Table, String> {
         if !self.has_table(table_name) {
             return Err(format!("Table `{}` does not exist", table_name));
         }
-        Ok(self.tables.get_mut(table_name).unwrap())
+        Ok(self.tables.get_mut(table_name).unwrap().last_mut().unwrap())
     }
 }
 
@@ -140,7 +140,7 @@ mod tests {
         Database {
             tables: HashMap::from([(
                 "users".to_string(),
-                Table::new(
+                vec![Table::new(
                     "users".to_string(),
                     vec![
                         ColumnDefinition {
@@ -154,7 +154,7 @@ mod tests {
                             constraints: vec![],
                         },
                     ],
-                ),
+                )],
             )]),
             transaction: TransactionLog { entries: None },
         }

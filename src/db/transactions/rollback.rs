@@ -28,8 +28,8 @@ pub fn rollback_transaction_entry(
                     .tables
                     .remove(new_table_name.as_str())
                     .ok_or(format!("Table `{}` does not exist", new_table_name))?;
-                table.rollback_name();
-                database.tables.insert(table.name()?.clone(), table);
+                table.last_mut().unwrap().rollback_name();
+                database.tables.insert(table.last().unwrap().name()?.clone(), table);
             }
         },
         SqlStatement::Select(_) => {} // These should be kept in the log but obv do nothing.
