@@ -22,7 +22,7 @@ fn test_set_operators() {
         Row(vec![Value::Text("Jack".to_string())]),
     ];
     let row = result.pop().unwrap().unwrap().unwrap();
-    test_utils::assert_table_rows_eq_unordered(expected, row);
+    test_utils::assert_eq_table_rows_unordered(expected, row);
     assert!(
         result
             .into_iter()
@@ -97,7 +97,7 @@ fn test_set_operators_with_different_tables_and_clause() {
         Row(vec![Value::Text("Jim".to_string())]),
         Row(vec![Value::Text("Jack".to_string())]),
     ];
-    test_utils::assert_table_rows_eq_unordered(
+    test_utils::assert_eq_table_rows_unordered(
         expected_first,
         result.pop().unwrap().unwrap().unwrap(),
     );

@@ -33,18 +33,18 @@ pub fn alter_table(
         }
         AlterTableAction::AddColumn { column_def } => {
             let table = database.get_table_mut(&statement.table_name)?;
-            if table.has_column(&column_def.name) {
+            if table.has_column(&column_def.name)? {
                 return Err(format!(
                     "Column `{}` already exists in table `{}`",
                     column_def.name, statement.table_name
                 ));
             }
-            table.push_column(column_def);
             if is_transaction {
                 table.get_row_stacks_mut().iter_mut().for_each(|row_stack| {
                     row_stack.append_clone();
                 });
             }
+            table.push_column(column_def, is_transaction);
             table.get_rows_mut().iter_mut().for_each(|row| {
                 row.push(Value::Null);
             });
@@ -52,7 +52,7 @@ pub fn alter_table(
         }
         AlterTableAction::DropColumn { column_name } => {
             let table = database.get_table_mut(&statement.table_name)?;
-            if !table.has_column(&column_name) {
+            if !table.has_column(&column_name)? {
                 return Err(format!(
                     "Column `{}` does not exist in table `{}`",
                     column_name, statement.table_name
@@ -117,10 +117,14 @@ mod tests {
         assert!(result.is_ok());
         let table = database.get_table("users");
         assert!(table.is_ok());
+        let table_columns = table.unwrap().get_columns().unwrap();
         assert!(
-            table
-                .unwrap()
-                .get_columns()
+            table_columns
+                .iter()
+                .any(|column| column.name == "new_name")
+        );
+        assert!(
+            table_columns
                 .iter()
                 .any(|column| column.name == "new_name")
         );
@@ -144,8 +148,9 @@ mod tests {
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table = table.unwrap();
-        assert!(table.get_columns().last().unwrap().name == "new_column");
-        assert!(table.get_columns().len() == table[0].len());
+        let table_columns = table.get_columns().unwrap();
+        assert!(table_columns.last().unwrap().name == "new_column");
+        assert!(table_columns.len() == table[0].len());
         assert!(
             table
                 .get_rows()
@@ -168,13 +173,14 @@ mod tests {
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table = table.unwrap();
+        let table_columns = table.get_columns().unwrap();
         assert!(
-            !table
-                .get_columns()
+            !table_columns
                 .iter()
                 .any(|column| column.name == "age")
         );
-        assert!(table.get_columns().len() == table[0].len());
+        let table_columns_len = table_columns.len();
+        assert!(table_columns_len == table[0].len());
         let expected_columns_in_order = vec![
             ColumnDefinition {
                 name: "id".to_string(),
@@ -192,7 +198,7 @@ mod tests {
                 constraints: vec![],
             },
         ];
-        assert_eq!(expected_columns_in_order, table.get_columns_clone());
+        assert_eq!(expected_columns_in_order, table.get_columns_clone().unwrap());
         let expected_rows = vec![
             Row(vec![
                 Value::Integer(1),
@@ -229,9 +235,9 @@ mod tests {
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table = table.unwrap();
+        let table_columns = table.get_columns().unwrap();
         assert!(
-            table
-                .get_columns()
+            table_columns
                 .iter()
                 .any(|column| column.name == "new_name")
         );
@@ -255,9 +261,9 @@ mod tests {
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table = table.unwrap();
+        let table_columns = table.get_columns().unwrap();
         assert!(
-            !table
-                .get_columns()
+            !table_columns
                 .iter()
                 .any(|column| column.name == "age")
         );
@@ -355,8 +361,20 @@ mod tests {
         let table = database.get_table("users");
         assert!(table.is_ok());
         let table = table.unwrap();
-        assert!(table.get_columns().last().unwrap().name == "new_column");
-        assert!(table.get_columns().len() == table[0].len());
+        let table_columns = table.get_columns().unwrap();
+        assert!(table_columns.last().unwrap().name == "new_column");
+        assert!(table_columns.len() == table[0].len());
+        assert!(table.columns.stack.len() == 2);
+        let expected_column_names = vec![
+            vec![
+                "id".to_string(),
+                "name".to_string(),
+                "age".to_string(),
+                "money".to_string(),
+            ],
+            vec!["id".to_string(), "name".to_string(), "age".to_string(), "money".to_string(), "new_column".to_string()],
+        ];
+        assert_eq!(expected_column_names, table.columns.stack.iter().map(|column| column.iter().map(|column| column.name.clone()).collect::<Vec<String>>()).collect::<Vec<Vec<String>>>());
         let expected_row_stacks = vec![
             RowStack::new_with_stack(vec![
                 Row(vec![

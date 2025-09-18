@@ -10,18 +10,18 @@ use crate::interpreter::ast::{
 };
 
 pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
-    if row.len() != table.width() {
+    if row.len() != table.width()? {
         return Err(format!("Rows have incorrect width"));
     }
 
     let mut row_values: Row = Row(vec![]);
     for (i, value) in row.iter().enumerate() {
-        if value.get_type() != table.get_columns()[i].data_type
+        if value.get_type() != table.get_columns()?[i].data_type
             && value.get_type() != DataType::Null
         {
             return Err(format!(
                 "Data type mismatch for column {}",
-                table.get_columns()[i].name
+                table.get_columns()?[i].name
             ));
         }
         row_values.push(row[i].clone());
@@ -37,13 +37,13 @@ pub fn get_columns_from_row(
     let mut row_values: Row = Row(vec![]);
 
     let mut column_values = HashMap::new();
-    for (i, column) in table.get_column_names().into_iter().enumerate() {
+    for (i, column) in table.get_column_names()?.into_iter().enumerate() {
         if let Some(value) = row.get(i) {
             column_values.insert(column, value);
         } else {
             return Err(format!(
                 "Row does not have the expected number of columns (expected: {}, got: {}",
-                table.get_columns().len(),
+                table.get_columns()?.len(),
                 row.len()
             ));
         }

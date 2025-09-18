@@ -22,7 +22,7 @@ pub fn select_statement_stack(
             SelectStatementStackElement::SelectStatement(select_statement) => {
                 let table = database.get_table(&select_statement.table_name)?;
                 let expanded_column_names =
-                    expand_all_column_names(table, &select_statement.column_names);
+                    expand_all_column_names(table, &select_statement.column_names)?;
                 match &column_names {
                     Some(column_names) => {
                         if expanded_column_names.len() != column_names.len() {
@@ -118,11 +118,11 @@ pub fn select_statement_stack(
 }
 
 // TODO: add this logic in evaluation too
-fn expand_all_column_names(table: &Table, column_names: &Vec<String>) -> Vec<String> {
+fn expand_all_column_names(table: &Table, column_names: &Vec<String>) -> Result<Vec<String>, String> {
     let mut new = vec![];
     for column in column_names {
         if *column == "*".to_string() {
-            for name in table.get_column_names() {
+            for name in table.get_column_names()? {
                 if !column_names.contains(name) {
                     new.push(name.clone());
                 }
@@ -131,7 +131,7 @@ fn expand_all_column_names(table: &Table, column_names: &Vec<String>) -> Vec<Str
             new.push(column.clone());
         }
     }
-    new
+    Ok(new)
 }
 #[cfg(test)]
 mod tests {

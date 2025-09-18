@@ -3,6 +3,8 @@ use crate::db::table::core::column::ColumnStack;
 use crate::db::table::core::row::Row;
 use crate::db::table::core::row::RowStack;
 use crate::db::table::core::value::Value;
+use crate::db::transactions::StatementEntry;
+use crate::db::transactions::rollback::rollback_transaction_on_table;
 use std::ops::{Index, IndexMut};
 
 #[derive(Debug)]
@@ -106,29 +108,39 @@ impl Table {
         Ok(())
     }
 
-    pub fn rollback_transaction(&mut self) {
-        todo!()
+    pub fn rollback_transaction_entry(&mut self, statement: &StatementEntry) -> Result<(), String> {
+        rollback_transaction_on_table(self, statement)
     }
 
-    pub fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> &'a Value {
+    pub fn rollback_columns(&mut self) {
+        self.columns.stack.pop();
+    }
+
+    pub fn rollback_all_rows(&mut self) {
+        for row_stack in self.rows.iter_mut() {
+            row_stack.stack.pop();
+        }
+    }
+
+    pub fn get_column_from_row<'a>(&self, row: &'a Vec<Value>, column: &String) -> Result<&'a Value, String> {
         for (i, value) in row.iter().enumerate() {
-            if self.get_column_names()[i] == column {
-                return &value;
+            if self.get_column_names()?[i] == column {
+                return Ok(&value);
             }
         }
-        return &Value::Null;
+        return Ok(&Value::Null);
     }
 
-    pub fn has_column(&self, column: &String) -> bool {
-        self.get_columns().iter().any(|c| c.name == *column)
+    pub fn has_column(&self, column: &String) -> Result<bool, String> {
+        Ok(self.get_columns()?.iter().any(|c| c.name == *column))
     }
 
-    pub fn width(&self) -> usize {
-        self.get_columns().len()
+    pub fn width(&self) -> Result<usize, String> {
+        Ok(self.get_columns()?.len())
     }
 
     pub fn get_index_of_column(&self, column: &String) -> Result<usize, String> {
-        for (i, c) in self.get_columns().iter().enumerate() {
+        for (i, c) in self.get_columns()?.iter().enumerate() {
             if c.name == *column {
                 return Ok(i);
             }
@@ -139,27 +151,27 @@ impl Table {
         ));
     }
 
-    pub fn get_columns(&self) -> Vec<&ColumnDefinition> {
-        self.columns.stack.last().unwrap().iter().collect()
+    pub fn get_columns(&self) -> Result<Vec<&ColumnDefinition>, String> {
+        Ok(self.columns.stack.last().ok_or("Column stack is empty".to_string())?.iter().collect())
     }
 
-    pub fn get_columns_mut(&mut self) -> Vec<&mut ColumnDefinition> {
-        self.columns.stack.last_mut().unwrap().iter_mut().collect()
+    pub fn get_columns_mut(&mut self) -> Result<Vec<&mut ColumnDefinition>, String> {
+        Ok(self.columns.stack.last_mut().ok_or("Column stack is empty".to_string())?.iter_mut().collect())
     }
 
-    pub fn get_column_names(&self) -> Vec<&String> {
-        self.get_columns()
+    pub fn get_column_names(&self) -> Result<Vec<&String>, String> {
+        Ok(self.get_columns()?
             .iter()
             .map(|column| &column.name)
-            .collect()
+            .collect())
     }
 
-    pub fn push_column(&mut self, column: ColumnDefinition) {
-        self.columns.push_column(column, false);
+    pub fn push_column(&mut self, column: ColumnDefinition, is_transaction: bool) {
+        self.columns.push_column(column, is_transaction);
     }
 
     #[cfg(test)]
-    pub fn get_columns_clone(&self) -> Vec<ColumnDefinition> {
-        self.get_columns().iter().map(|c| (*c).clone()).collect()
+    pub fn get_columns_clone(&self) -> Result<Vec<ColumnDefinition>, String> {
+        Ok(self.get_columns()?.iter().map(|c| (*c).clone()).collect())
     }
 }

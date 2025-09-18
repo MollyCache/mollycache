@@ -81,10 +81,23 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::Rollback(_) => {
-                self.transaction.commit_transaction()?;
-                self.tables.iter_mut().for_each(|(_, table)| {
-                    table.rollback_transaction();
-                });
+                if let Some(transaction_log) = self.transaction.commit_transaction()?.entries {
+                    for transaction_entry in transaction_log.iter() {
+                        match transaction_entry {
+                            TransactionEntry::Statement(statement) => {
+                                // TODO: Some matching needs to be here for table based operations.
+                                let table = self.get_table_mut(statement.table_name.as_str())?;
+                                // CURRENTLY SUPPORTED STATEMENTS ARE:
+                                // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN
+                                table.rollback_transaction_entry(&statement)?;
+                            }
+                            TransactionEntry::Savepoint(_) => {}
+                        }
+                    }
+                }
+                else {
+                    return Err("No transaction is currently active".to_string());
+                }
                 Ok(None)
             }
             SqlStatement::Savepoint(_) => {
