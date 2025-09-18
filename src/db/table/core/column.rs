@@ -40,7 +40,6 @@ impl ColumnStack {
         &mut self,
         old_column_name: &String,
         new_column_name: &String,
-        table_name: &String,
         is_transaction: bool,
     ) -> Result<(), String> {
         if is_transaction {
@@ -53,10 +52,7 @@ impl ColumnStack {
         match columns {
             Some(column) => column.name = new_column_name.clone(),
             None => {
-                return Err(format!(
-                    "Column `{}` does not exist in table `{}`",
-                    old_column_name, table_name
-                ));
+                return Err("Column does not exist".to_string());
             }
         }
         Ok(())
@@ -65,7 +61,6 @@ impl ColumnStack {
     pub fn drop_column(
         &mut self,
         column_name: &String,
-        table_name: &String,
         is_transaction: bool,
     ) -> Result<(), String> {
         if is_transaction {
@@ -74,10 +69,7 @@ impl ColumnStack {
         match self.get_index_of_column(column_name) {
             Ok(index) => self.peek_mut()?.remove(index),
             Err(_) => {
-                return Err(format!(
-                    "Column `{}` does not exist in table `{}`",
-                    column_name, table_name
-                ));
+                return Err("Column does not exist".to_string());
             }
         };
         Ok(())

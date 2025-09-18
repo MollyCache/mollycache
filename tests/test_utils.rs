@@ -1,12 +1,9 @@
-#[cfg(test)]
 use mollycache::db::table::core::row::Row;
-#[cfg(test)]
 use mollycache::interpreter::ast::OrderByDirection;
-#[cfg(test)]
 use std::cmp::Ordering;
 
-#[cfg(test)]
-pub fn assert_table_rows_eq_unordered(mut expected: Vec<Row>, mut actual: Vec<Row>) {
+#[allow(dead_code)] // For some reason it can't pick up that this is used in integration tests. I'm prolly doing smth wrong.
+pub fn assert_eq_table_rows_unordered(mut expected: Vec<Row>, mut actual: Vec<Row>) {
     expected.sort_by(|a, b| {
         let mut i = 0;
         while i < a.len()

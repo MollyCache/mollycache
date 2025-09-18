@@ -103,13 +103,14 @@ fn operand_to_value<'a>(
     match operand {
         Operand::Value(value) => Ok(value),
         Operand::Identifier(column) => {
-            if !table.has_column(column) {
+            if !table.has_column(column)? {
                 return Err(format!(
                     "Column {} does not exist in table {}",
-                    column, table.name
+                    column,
+                    table.name()?
                 ));
             }
-            Ok(table.get_column_from_row(row, column))
+            Ok(table.get_column_from_row(row, column)?)
         }
         _ => Err(format!("Found invalid operand: {:?}", operand)),
     }

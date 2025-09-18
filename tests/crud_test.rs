@@ -74,7 +74,7 @@ fn test_complex_statements_crud() {
         Row(vec![Value::Text("John".to_string()), Value::Integer(25)]),
     ];
     let expected_second = vec![Row(vec![Value::Integer(80)])];
-    test_utils::assert_table_rows_eq_unordered(
+    test_utils::assert_eq_table_rows_unordered(
         expected_second,
         result.pop().unwrap().unwrap().unwrap(),
     );

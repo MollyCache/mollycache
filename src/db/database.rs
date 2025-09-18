@@ -2,6 +2,7 @@ use crate::db::table::core::{row::Row, table::Table};
 use crate::db::table::operations::{
     alter_table, create_table, delete, drop_table, insert, select, update,
 };
+use crate::db::transactions::rollback::rollback_transaction_entry;
 use crate::db::transactions::{TransactionEntry, TransactionLog};
 use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
@@ -81,10 +82,22 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::Rollback(_) => {
-                self.transaction.commit_transaction()?;
-                self.tables.iter_mut().for_each(|(_, table)| {
-                    table.rollback_transaction();
-                });
+                if let Some(transaction_log) = self.transaction.commit_transaction()?.entries {
+                    // We roll back in reverse order because of dependencies.
+                    for transaction_entry in transaction_log.iter().rev() {
+                        match transaction_entry {
+                            TransactionEntry::Statement(statement) => {
+                                // TODO: Some matching needs to be here for table based operations.
+                                // CURRENTLY SUPPORTED STATEMENTS ARE:
+                                // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN
+                                rollback_transaction_entry(self, &statement)?;
+                            }
+                            TransactionEntry::Savepoint(_) => {}
+                        }
+                    }
+                } else {
+                    return Err("No transaction is currently active".to_string());
+                }
                 Ok(None)
             }
             SqlStatement::Savepoint(_) => {
@@ -159,13 +172,13 @@ mod tests {
         let mut database = default_database();
         let table = database.get_table("users");
         assert!(table.is_ok());
-        assert_eq!("users", table.unwrap().name);
+        assert_eq!("users", table.unwrap().name().unwrap());
         let table = database.get_table("not_users");
         assert!(table.is_err());
         assert_eq!("Table `not_users` does not exist", table.unwrap_err());
         let table = database.get_table_mut("users");
         assert!(table.is_ok());
-        assert_eq!("users", table.unwrap().name);
+        assert_eq!("users", table.unwrap().name().unwrap());
         let table = database.get_table_mut("not_users");
         assert!(table.is_err());
         assert_eq!("Table `not_users` does not exist", table.unwrap_err());
