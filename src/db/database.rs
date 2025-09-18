@@ -54,7 +54,7 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::DropTable(statement) => {
-                drop_table::drop_table(self, statement)?;
+                drop_table::drop_table(self, statement, self.transaction.in_transaction())?;
                 self.transaction.append_entry(sql_statement_clone, vec![])?;
                 Ok(None)
             }
@@ -113,10 +113,16 @@ impl Database {
     }
 
     pub fn has_table(&self, table_name: &str) -> bool {
-        self.tables.contains_key(table_name) 
+        self.tables.contains_key(table_name)
             && !self.tables.get(table_name).is_none()
             && !self.tables.get(table_name).unwrap().is_empty()
-            && self.tables.get(table_name).unwrap().last().unwrap().is_some()
+            && self
+                .tables
+                .get(table_name)
+                .unwrap()
+                .last()
+                .unwrap()
+                .is_some()
     }
 
     pub fn get_table(&self, table_name: &str) -> Result<&Table, String> {
@@ -143,9 +149,9 @@ impl Database {
 
     pub fn push_table_change(&mut self, table_name: &str, table: Table) {
         if !self.has_table(table_name) {
-            self.tables.insert(table_name.to_string(), vec![Some(table)]);
-        }
-        else {
+            self.tables
+                .insert(table_name.to_string(), vec![Some(table)]);
+        } else {
             self.tables.get_mut(table_name).unwrap().push(Some(table));
         }
     }
@@ -154,15 +160,15 @@ impl Database {
         if !self.has_table(table_name) {
             return Err(format!("Table `{}` does not exist", table_name));
         }
-        
+
         let table = self.tables.get_mut(table_name).unwrap().pop().unwrap();
-        
+
         // Check if vector is empty before removing key
         let is_empty = self.tables.get(table_name).unwrap().is_empty();
         if is_empty {
             self.tables.remove(table_name);
         }
-        
+
         match table {
             Some(table) => Ok(table),
             _ => Err(format!("Table `{}` does not exist", table_name)),

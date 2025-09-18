@@ -32,7 +32,14 @@ pub fn rollback_transaction_entry(
         SqlStatement::Select(_) => {} // These should be kept in the log but obv do nothing.
         SqlStatement::CreateTable(_) => {
             database.tables.remove(statement.table_name.as_str());
-        },
+        }
+        SqlStatement::DropTable(statement) => {
+            database
+                .tables
+                .get_mut(statement.table_name.as_str())
+                .unwrap()
+                .pop();
+        }
         _ => return Err("UNSUPPORTED".to_string()),
     }
     return Ok(());

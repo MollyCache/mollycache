@@ -1,7 +1,11 @@
 use crate::db::database::Database;
 use crate::interpreter::ast::{DropTableStatement, ExistenceCheck};
 
-pub fn drop_table(database: &mut Database, statement: DropTableStatement) -> Result<(), String> {
+pub fn drop_table(
+    database: &mut Database,
+    statement: DropTableStatement,
+    is_transaction: bool,
+) -> Result<(), String> {
     if !database.has_table(&statement.table_name) {
         match statement.existence_check {
             Some(ExistenceCheck::IfExists) => {
@@ -12,7 +16,15 @@ pub fn drop_table(database: &mut Database, statement: DropTableStatement) -> Res
             }
         }
     }
-    database.tables.remove(&statement.table_name);
+    if is_transaction {
+        database
+            .tables
+            .get_mut(&statement.table_name)
+            .unwrap()
+            .push(None);
+    } else {
+        database.tables.remove(&statement.table_name);
+    }
     Ok(())
 }
 
@@ -28,7 +40,7 @@ mod tests {
             existence_check: None,
         };
         let mut database = default_database();
-        let result = drop_table(&mut database, statement);
+        let result = drop_table(&mut database, statement, false);
         assert!(result.is_ok());
         assert!(!database.has_table("users"));
     }
@@ -40,7 +52,7 @@ mod tests {
             existence_check: None,
         };
         let mut database = Database::new();
-        let result = drop_table(&mut database, statement);
+        let result = drop_table(&mut database, statement, false);
         assert!(result.is_err());
         assert_eq!("Table `users` does not exist", result.err().unwrap());
     }
@@ -52,7 +64,7 @@ mod tests {
             existence_check: Some(ExistenceCheck::IfExists),
         };
         let mut database = Database::new();
-        let result = drop_table(&mut database, statement);
+        let result = drop_table(&mut database, statement, false);
         assert!(result.is_ok());
     }
 }

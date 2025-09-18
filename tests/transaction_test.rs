@@ -87,3 +87,35 @@ fn test_transaction_create_table() {
         assert_eq!(expected[i], *result);
     }
 }
+
+#[test]
+fn test_transaction_drop_table() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'John');
+    BEGIN;
+        SELECT * FROM users;
+        DROP TABLE users;
+        SELECT * FROM users;
+    ROLLBACK;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+        Ok(None),
+        Err("Execution Error with statement starting on line 10 \n Error: Table `users` does not exist".to_string()),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+    ];
+    for (i, result) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result);
+    }
+}

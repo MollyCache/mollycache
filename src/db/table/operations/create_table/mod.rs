@@ -17,7 +17,9 @@ pub fn create_table(
         }
     }
     let table = Table::new(statement.table_name, statement.columns);
-    database.tables.insert(table.name()?.clone(), vec![Some(table)]);
+    database
+        .tables
+        .insert(table.name()?.clone(), vec![Some(table)]);
     Ok(())
 }
 
