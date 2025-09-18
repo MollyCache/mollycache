@@ -2,6 +2,7 @@ use crate::db::table::core::{row::Row, table::Table};
 use crate::db::table::operations::{
     alter_table, create_table, delete, drop_table, insert, select, update,
 };
+use crate::db::transactions::rollback::rollback_transaction_entry;
 use crate::db::transactions::{TransactionEntry, TransactionLog};
 use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
@@ -82,14 +83,14 @@ impl Database {
             }
             SqlStatement::Rollback(_) => {
                 if let Some(transaction_log) = self.transaction.commit_transaction()?.entries {
-                    for transaction_entry in transaction_log.iter() {
+                    // We roll back in reverse order because of dependencies.
+                    for transaction_entry in transaction_log.iter().rev() {
                         match transaction_entry {
                             TransactionEntry::Statement(statement) => {
                                 // TODO: Some matching needs to be here for table based operations.
-                                let table = self.get_table_mut(statement.table_name.as_str())?;
                                 // CURRENTLY SUPPORTED STATEMENTS ARE:
                                 // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN
-                                table.rollback_transaction_entry(&statement)?;
+                                rollback_transaction_entry(self, &statement)?;
                             }
                             TransactionEntry::Savepoint(_) => {}
                         }

@@ -21,8 +21,12 @@ fn test_transaction() {
         SELECT new_age FROM users;
         ALTER TABLE users DROP COLUMN name;
         SELECT * FROM users;
+        ALTER TABLE users RENAME TO new_users;
+        SELECT * FROM new_users;
+        SELECT * FROM users;
     ROLLBACK;
     SELECT * FROM users;
+    SELECT * FROM new_users;
     ";
     let result = run_sql(&mut database, sql);
     println!("{:?}", result);
@@ -45,13 +49,16 @@ fn test_transaction() {
         Ok(None),
         Ok(Some(vec![Row(vec![Value::Integer(1), Value::Null])])),
         Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Null])])),
+        Err("Execution Error with statement starting on line 17 \n Error: Table `users` does not exist".to_string()),
+        Ok(None),
         Ok(Some(vec![Row(vec![
             Value::Integer(1),
             Value::Text("John".to_string()),
         ])])),
+        Err("Execution Error with statement starting on line 20 \n Error: Table `new_users` does not exist".to_string()),
     ];
     for (i, result) in result.iter().enumerate() {
-        assert!(result.is_ok());
         assert_eq!(expected[i], *result);
     }
 }

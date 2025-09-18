@@ -3,8 +3,6 @@ use crate::db::table::core::column::ColumnStack;
 use crate::db::table::core::row::Row;
 use crate::db::table::core::row::RowStack;
 use crate::db::table::core::value::Value;
-use crate::db::transactions::StatementEntry;
-use crate::db::transactions::rollback::rollback_transaction_on_table;
 use std::ops::{Index, IndexMut};
 
 #[derive(Debug)]
@@ -125,10 +123,6 @@ impl Table {
         Ok(())
     }
 
-    pub fn rollback_transaction_entry(&mut self, statement: &StatementEntry) -> Result<(), String> {
-        rollback_transaction_on_table(self, statement)
-    }
-
     pub fn rollback_columns(&mut self) {
         self.columns.stack.pop();
     }
@@ -137,6 +131,10 @@ impl Table {
         for row_stack in self.rows.iter_mut() {
             row_stack.stack.pop();
         }
+    }
+
+    pub fn rollback_name(&mut self) {
+        self.name.stack.pop();
     }
 
     pub fn get_column_from_row<'a>(

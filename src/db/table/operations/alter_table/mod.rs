@@ -451,4 +451,27 @@ mod tests {
         ];
         assert_eq!(expected_row_stacks, table.get_row_stacks_clone());
     }
+
+    #[test]
+    fn alter_table_rename_table_works_correctly_with_transaction() {
+        let mut database = default_database();
+        let statement = AlterTableStatement {
+            table_name: "users".to_string(),
+            action: AlterTableAction::RenameTable {
+                new_table_name: "new_users".to_string(),
+            },
+        };
+        let result = alter_table(&mut database, statement, true);
+        assert!(result.is_ok());
+        let table = database.get_table("new_users");
+        assert!(table.is_ok());
+        let expected_table_name_stack = vec![
+            "users".to_string(),
+            "new_users".to_string(),
+        ];
+        let table = table.unwrap();
+        for (i, name) in expected_table_name_stack.iter().enumerate() {
+            assert_eq!(*name, table.name.stack[i].clone());
+        }
+    }
 }
