@@ -24,12 +24,9 @@ pub fn rollback_transaction_entry(
             }
             AlterTableAction::RenameTable { ref new_table_name } => {
                 // It is now under the new name
-                let mut table = database
-                    .tables
-                    .remove(new_table_name.as_str())
-                    .ok_or(format!("Table `{}` does not exist", new_table_name))?;
-                table.last_mut().unwrap().rollback_name();
-                database.tables.insert(table.last().unwrap().name()?.clone(), table);
+                let mut table = database.pop_table_change(new_table_name.as_str())?;
+                table.rollback_name();
+                database.push_table_change(statement.table_name.as_str(), table);
             }
         },
         SqlStatement::Select(_) => {} // These should be kept in the log but obv do nothing.

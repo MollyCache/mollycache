@@ -8,7 +8,7 @@ use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
 
 pub struct Database {
-    pub tables: HashMap<String, Vec<Table>>,
+    pub tables: HashMap<String, Vec<Option<Table>>>,
     pub transaction: TransactionLog,
 }
 
@@ -113,21 +113,60 @@ impl Database {
     }
 
     pub fn has_table(&self, table_name: &str) -> bool {
-        self.tables.contains_key(table_name)
+        self.tables.contains_key(table_name) 
+            && !self.tables.get(table_name).is_none()
+            && !self.tables.get(table_name).unwrap().is_empty()
+            && self.tables.get(table_name).unwrap().last().unwrap().is_some()
     }
 
     pub fn get_table(&self, table_name: &str) -> Result<&Table, String> {
         if !self.has_table(table_name) {
             return Err(format!("Table `{}` does not exist", table_name));
         }
-        Ok(self.tables.get(table_name).unwrap().last().unwrap())
+        let table = self.tables.get(table_name).unwrap().last().unwrap();
+        match table {
+            Some(table) => Ok(table),
+            _ => Err(format!("Table `{}` does not exist", table_name)),
+        }
     }
 
     pub fn get_table_mut(&mut self, table_name: &str) -> Result<&mut Table, String> {
         if !self.has_table(table_name) {
             return Err(format!("Table `{}` does not exist", table_name));
         }
-        Ok(self.tables.get_mut(table_name).unwrap().last_mut().unwrap())
+        let table = self.tables.get_mut(table_name).unwrap().last_mut().unwrap();
+        match table {
+            Some(table) => Ok(table),
+            _ => Err(format!("Table `{}` does not exist", table_name)),
+        }
+    }
+
+    pub fn push_table_change(&mut self, table_name: &str, table: Table) {
+        if !self.has_table(table_name) {
+            self.tables.insert(table_name.to_string(), vec![Some(table)]);
+        }
+        else {
+            self.tables.get_mut(table_name).unwrap().push(Some(table));
+        }
+    }
+
+    pub fn pop_table_change(&mut self, table_name: &str) -> Result<Table, String> {
+        if !self.has_table(table_name) {
+            return Err(format!("Table `{}` does not exist", table_name));
+        }
+        
+        let table = self.tables.get_mut(table_name).unwrap().pop().unwrap();
+        
+        // Check if vector is empty before removing key
+        let is_empty = self.tables.get(table_name).unwrap().is_empty();
+        if is_empty {
+            self.tables.remove(table_name);
+        }
+        
+        match table {
+            Some(table) => Ok(table),
+            _ => Err(format!("Table `{}` does not exist", table_name)),
+        }
     }
 }
 
@@ -140,7 +179,7 @@ mod tests {
         Database {
             tables: HashMap::from([(
                 "users".to_string(),
-                vec![Table::new(
+                vec![Some(Table::new(
                     "users".to_string(),
                     vec![
                         ColumnDefinition {
@@ -154,7 +193,7 @@ mod tests {
                             constraints: vec![],
                         },
                     ],
-                )],
+                ))],
             )]),
             transaction: TransactionLog { entries: None },
         }
