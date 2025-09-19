@@ -26,7 +26,7 @@ impl SetOperatorEvaluator {
     fn pop(&mut self) -> Result<Vec<Row>, String> {
         self.stack
             .pop()
-            .ok_or("Error processing SELECT statement. Stack is empty".to_string())
+            .ok_or_else(|| "Error processing SELECT statement. Stack is empty".to_string())
     }
 
     pub fn union(&mut self) -> Result<(), String> {

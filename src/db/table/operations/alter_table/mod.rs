@@ -9,9 +9,9 @@ pub fn alter_table(
 ) -> Result<(), String> {
     return match statement.action {
         AlterTableAction::RenameTable { new_table_name } => {
-            let mut table = database.pop_table_change(statement.table_name.as_str())?;
+            let mut table = database.pop_table_change(&statement.table_name)?;
             table.change_name(new_table_name.clone(), is_transaction);
-            database.push_table_change(new_table_name.as_str(), table);
+            database.push_table_change(&new_table_name, table);
             Ok(())
         }
         AlterTableAction::RenameColumn {
