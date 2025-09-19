@@ -72,7 +72,7 @@ impl Database {
                 for transaction_entry in transaction_log.get_entries()?.iter() {
                     match transaction_entry {
                         TransactionEntry::Statement(statement) => {
-                            let table = self.get_table_mut(statement.table_name.as_str())?;
+                            let table = self.get_table_mut(&statement.table_name)?;
                             table.commit_transaction(&statement.affected_rows)?;
                         }
                         TransactionEntry::Savepoint(_) => {}
@@ -89,7 +89,8 @@ impl Database {
                             TransactionEntry::Statement(statement) => {
                                 // TODO: Some matching needs to be here for table based operations.
                                 // CURRENTLY SUPPORTED STATEMENTS ARE:
-                                // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN
+                                // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN, ALTER TABLE RENAME TABLE
+                                // - CREATE TABLE, DROP TABLE
                                 rollback_transaction_entry(self, &statement)?;
                             }
                             TransactionEntry::Savepoint(_) => {}

@@ -44,7 +44,7 @@ impl Table {
         self.name
             .stack
             .last()
-            .ok_or("Error fetching table name.".to_string())
+            .ok_or_else(|| "Error fetching table name.".to_string())
     }
 
     pub fn change_name(&mut self, new_name: String, is_transaction: bool) {
@@ -71,10 +71,11 @@ impl Table {
         self.rows.len()
     }
 
-    pub fn swap(&mut self, a: usize, b: usize) -> () {
+    pub fn swap(&mut self, a: usize, b: usize) {
         self.rows.swap(a, b);
     }
 
+    #[cfg(test)]
     pub fn get_rows_clone(&self) -> Vec<Row> {
         self.rows
             .iter()
@@ -93,8 +94,8 @@ impl Table {
             .collect()
     }
 
-    pub fn get_row_stacks_mut(&mut self) -> Vec<&mut RowStack> {
-        self.rows.iter_mut().collect()
+    pub fn get_row_stacks_mut(&mut self) -> &mut Vec<RowStack> {
+        &mut self.rows
     }
 
     #[cfg(test)]
@@ -122,6 +123,7 @@ impl Table {
             } else {
                 return Err("Error committing transaction. Row stack is empty".to_string());
             }
+            // TODO: Add commit for column stack and name stack.
         }
         Ok(())
     }
@@ -179,7 +181,7 @@ impl Table {
             .columns
             .stack
             .last()
-            .ok_or("Column stack is empty".to_string())?
+            .ok_or_else(|| "Column stack is empty".to_string())?
             .iter()
             .collect())
     }
@@ -189,7 +191,7 @@ impl Table {
             .columns
             .stack
             .last_mut()
-            .ok_or("Column stack is empty".to_string())?
+            .ok_or_else(|| "Column stack is empty".to_string())?
             .iter_mut()
             .collect())
     }

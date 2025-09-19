@@ -93,12 +93,14 @@ impl ColumnStack {
     }
 
     fn peek(&self) -> Result<&Vec<ColumnDefinition>, String> {
-        self.stack.last().ok_or("Column stack is empty".to_string())
+        self.stack
+            .last()
+            .ok_or_else(|| "Column stack is empty".to_string())
     }
 
     fn peek_mut(&mut self) -> Result<&mut Vec<ColumnDefinition>, String> {
         self.stack
             .last_mut()
-            .ok_or("Column stack is empty".to_string())
+            .ok_or_else(|| "Column stack is empty".to_string())
     }
 }

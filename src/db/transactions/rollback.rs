@@ -9,34 +9,34 @@ pub fn rollback_transaction_entry(
     match &statement.statement {
         SqlStatement::AlterTable(alter_table) => match alter_table.action {
             AlterTableAction::RenameColumn { .. } => {
-                let table = database.get_table_mut(statement.table_name.as_str())?;
+                let table = database.get_table_mut(&statement.table_name)?;
                 table.rollback_columns();
             }
             AlterTableAction::AddColumn { .. } => {
-                let table = database.get_table_mut(statement.table_name.as_str())?;
+                let table = database.get_table_mut(&statement.table_name)?;
                 table.rollback_columns();
                 table.rollback_all_rows();
             }
             AlterTableAction::DropColumn { .. } => {
-                let table = database.get_table_mut(statement.table_name.as_str())?;
+                let table = database.get_table_mut(&statement.table_name)?;
                 table.rollback_columns();
                 table.rollback_all_rows();
             }
             AlterTableAction::RenameTable { ref new_table_name } => {
                 // It is now under the new name
-                let mut table = database.pop_table_change(new_table_name.as_str())?;
+                let mut table = database.pop_table_change(&new_table_name)?;
                 table.rollback_name();
-                database.push_table_change(statement.table_name.as_str(), table);
+                database.push_table_change(&statement.table_name, table);
             }
         },
         SqlStatement::Select(_) => {} // These should be kept in the log but obv do nothing.
         SqlStatement::CreateTable(_) => {
-            database.tables.remove(statement.table_name.as_str());
+            database.tables.remove(&statement.table_name);
         }
         SqlStatement::DropTable(statement) => {
             database
                 .tables
-                .get_mut(statement.table_name.as_str())
+                .get_mut(&statement.table_name)
                 .unwrap()
                 .pop();
         }

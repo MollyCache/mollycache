@@ -80,10 +80,12 @@ pub fn select_statement_stack(
                 result_indices.push(
                     column_names
                         .as_ref()
-                        .ok_or("No column names found".to_string())?
+                        .ok_or_else(|| "No column names found".to_string())?
                         .iter()
                         .position(|column_name| column_name == order_by_column_name)
-                        .ok_or("Ordering column name not found in selected columns".to_string())?,
+                        .ok_or_else(|| {
+                            "Ordering column name not found in selected columns".to_string()
+                        })?,
                 );
             }
 
