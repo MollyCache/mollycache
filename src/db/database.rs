@@ -24,7 +24,7 @@ impl Database {
         let sql_statement_clone = sql_statement.clone();
         return match sql_statement {
             SqlStatement::CreateTable(statement) => {
-                create_table::create_table(self, statement)?;
+                create_table::create_table(self, statement, self.transaction.in_transaction())?;
                 self.transaction.append_entry(sql_statement_clone, vec![])?;
                 Ok(None)
             }

@@ -31,14 +31,17 @@ pub fn rollback_transaction_entry(
         },
         SqlStatement::Select(_) => {} // These should be kept in the log but obv do nothing.
         SqlStatement::CreateTable(_) => {
-            database.tables.remove(&statement.table_name);
-        }
-        SqlStatement::DropTable(statement) => {
             database
                 .tables
                 .get_mut(&statement.table_name)
                 .unwrap()
                 .pop();
+        }
+        SqlStatement::DropTable(statement) => {
+            // For drop table rollback, we need to pop the None that was pushed during the drop
+            if let Some(table_versions) = database.tables.get_mut(&statement.table_name) {
+                table_versions.pop();
+            }
         }
         _ => return Err("UNSUPPORTED".to_string()),
     }

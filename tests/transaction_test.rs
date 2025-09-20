@@ -101,6 +101,13 @@ fn test_transaction_drop_table() {
         SELECT * FROM users;
         DROP TABLE users;
         SELECT * FROM users;
+        CREATE TABLE users (
+            id INTEGER,
+            name TEXT
+        );
+        SELECT * FROM users;
+        DROP TABLE users;
+        SELECT * FROM users;
     ROLLBACK;
     SELECT * FROM users;
     ";
@@ -112,6 +119,10 @@ fn test_transaction_drop_table() {
         Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
         Ok(None),
         Err("Execution Error with statement starting on line 10 \n Error: Table `users` does not exist".to_string()),
+        Ok(None),
+        Ok(Some(vec![])),
+        Ok(None),
+        Err("Execution Error with statement starting on line 17 \n Error: Table `users` does not exist".to_string()),
         Ok(None),
         Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
     ];

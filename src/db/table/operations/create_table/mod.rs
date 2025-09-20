@@ -5,6 +5,7 @@ use crate::interpreter::ast::{CreateTableStatement, ExistenceCheck};
 pub fn create_table(
     database: &mut Database,
     statement: CreateTableStatement,
+    is_transaction: bool,
 ) -> Result<(), String> {
     if database.has_table(&statement.table_name) {
         match statement.existence_check {
@@ -16,10 +17,18 @@ pub fn create_table(
             }
         }
     }
-    let table = Table::new(statement.table_name, statement.columns);
-    database
-        .tables
-        .insert(table.name()?.clone(), vec![Some(table)]);
+    let table = Table::new(statement.table_name.clone(), statement.columns);
+    if is_transaction && database.tables.contains_key(&statement.table_name) {
+        database
+            .tables
+            .get_mut(&statement.table_name)
+            .unwrap()
+            .push(Some(table));
+    } else {
+        database
+            .tables
+            .insert(table.name()?.clone(), vec![Some(table)]);
+    }
     Ok(())
 }
 
@@ -42,7 +51,7 @@ mod tests {
             }],
         };
         let mut database = Database::new();
-        assert!(create_table(&mut database, statement).is_ok());
+        assert!(create_table(&mut database, statement, false).is_ok());
         assert!(database.has_table("users"));
     }
 
@@ -58,7 +67,7 @@ mod tests {
             }],
         };
         let mut database = default_database();
-        let result = create_table(&mut database, statement);
+        let result = create_table(&mut database, statement, false);
         assert!(result.is_err());
         assert_eq!("Table users already exists", result.err().unwrap());
     }
@@ -75,7 +84,27 @@ mod tests {
             }],
         };
         let mut database = default_database();
-        let result = create_table(&mut database, statement);
+        let result = create_table(&mut database, statement, false);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn create_table_with_transaction_clause_works_correctly() {
+        let statement = CreateTableStatement {
+            table_name: "users".to_string(),
+            existence_check: None,
+            columns: vec![ColumnDefinition {
+                name: "id".to_string(),
+                data_type: DataType::Integer,
+                constraints: vec![],
+            }],
+        };
+        let mut database = Database::new();
+        let result = create_table(&mut database, statement, true);
+        assert!(result.is_ok());
+        assert!(database.has_table("users"));
+        let table = database.tables.get("users").unwrap();
+        assert!(table.len() == 1);
+        assert!(table.first().unwrap().is_some());
     }
 }
