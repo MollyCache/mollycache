@@ -386,4 +386,50 @@ mod tests {
         ];
         assert_table_rows_eq_unordered(expected, table.get_rows_clone());
     }
+
+    #[test]
+    fn update_with_transaction_works_correctly() {
+        let mut table = default_table();
+        let statement = UpdateStatement {
+            table_name: "users".to_string(),
+            update_values: vec![ColumnValue {
+                column: "name".to_string(),
+                value: Value::Text("Fletcher".to_string()),
+            }],
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        let result = update(&mut table, statement, true);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec![0, 1, 2, 3]);
+        let expected = vec![
+            Row(vec![
+                Value::Integer(1),
+                Value::Text("Fletcher".to_string()),
+                Value::Integer(25),
+                Value::Real(1000.0),
+            ]),
+            Row(vec![
+                Value::Integer(2),
+                Value::Text("Fletcher".to_string()),
+                Value::Integer(30),
+                Value::Real(2000.0),
+            ]),
+            Row(vec![
+                Value::Integer(3),
+                Value::Text("Fletcher".to_string()),
+                Value::Integer(35),
+                Value::Real(3000.0),
+            ]),
+            Row(vec![
+                Value::Integer(4),
+                Value::Text("Fletcher".to_string()),
+                Value::Integer(40),
+                Value::Real(4000.0),
+            ]),
+        ];
+        assert_table_rows_eq_unordered(expected, table.get_rows_clone());
+        assert!(table.get_row_stacks_mut().iter().all(|row_stack| row_stack.stack.len() == 2));
+    }
 }
