@@ -83,23 +83,48 @@ impl Database {
 
                 Ok(None)
             }
-            SqlStatement::Rollback(_) => {
-                if let Some(transaction_log) = self.transaction.commit_transaction()?.entries {
-                    // We roll back in reverse order because of dependencies.
-                    for transaction_entry in transaction_log.iter().rev() {
-                        match transaction_entry {
-                            TransactionEntry::Statement(statement) => {
-                                // TODO: Some matching needs to be here for table based operations.
-                                // CURRENTLY SUPPORTED STATEMENTS ARE:
-                                // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN, ALTER TABLE RENAME TABLE
-                                // - CREATE TABLE, DROP TABLE
-                                rollback_transaction_entry(self, &statement)?;
+            SqlStatement::Rollback(statement) => {
+                if !self.transaction.in_transaction() {
+                    return Err("No transaction is currently active".to_string());
+                }
+                
+                if let Some(savepoint_name) = statement.savepoint_name {
+                    // First make sure the savepoint exists
+                    if !self.transaction.savepoint_exists(&savepoint_name)? {
+                        return Err(format!("Savepoint `{}` does not exist", savepoint_name));
+                    }
+                    // Rollback to savepoint - keep transaction active
+                    let mut current_entry = self.transaction.pop_entry()?;
+                    while current_entry.is_some() {
+                        match current_entry.unwrap() {
+                            TransactionEntry::Statement(transaction_statement) => {
+                                rollback_transaction_entry(self, &transaction_statement)?;
                             }
-                            TransactionEntry::Savepoint(_) => {}
+                            TransactionEntry::Savepoint(savepoint_statement) => {
+                                if savepoint_statement.name == savepoint_name {
+                                    break;
+                                }
+                            }
                         }
+                        current_entry = self.transaction.pop_entry()?;
                     }
                 } else {
-                    return Err("No transaction is currently active".to_string());
+                    // Full rollback - commit transaction to get entries and clear state
+                    if let Some(transaction_log) = self.transaction.commit_transaction()?.entries { // COMMIT TRANSACTIONS CLEARS THIS WITH TAKE
+                        for transaction_entry in transaction_log.iter().rev() {
+                            match transaction_entry {
+                                TransactionEntry::Statement(statement) => {
+                                    // TODO: Some matching needs to be here for table based operations.
+                                    // CURRENTLY SUPPORTED STATEMENTS ARE:
+                                    // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN, ALTER TABLE RENAME TABLE
+                                    // - CREATE TABLE, DROP TABLE
+                                    // - INSERT INTO, UPDATE, DELETE
+                                    rollback_transaction_entry(self, &statement)?;
+                                }
+                                TransactionEntry::Savepoint(_) => {}
+                            }
+                        }
+                    }
                 }
                 Ok(None)
             }
