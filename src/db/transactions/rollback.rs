@@ -55,6 +55,10 @@ pub fn rollback_transaction_entry(
                 table.get_row_stacks_mut()[*index].stack.pop();
             }
         }
+        SqlStatement::DeleteStatement(_) => {
+            let table = database.get_table_mut(&statement_entry.table_name)?;
+            table.set_length(table.len() + statement_entry.affected_rows.len());
+        }
         _ => return Err("UNSUPPORTED".to_string()),
     }
     return Ok(());

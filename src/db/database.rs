@@ -48,8 +48,9 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::DeleteStatement(statement) => {
+                let is_transaction = self.transaction.in_transaction();
                 let table = self.get_table_mut(&statement.table_name)?;
-                let rows_deleted = delete::delete(table, statement)?;
+                let rows_deleted = delete::delete(table, statement, is_transaction)?;
                 self.transaction
                     .append_entry(sql_statement_clone, rows_deleted)?;
                 Ok(None)

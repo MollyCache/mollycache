@@ -10,6 +10,7 @@ pub struct Table {
     pub name: NameStack,
     pub columns: ColumnStack,
     rows: Vec<RowStack>,
+    length: usize,
 }
 
 #[derive(Debug)]
@@ -37,6 +38,7 @@ impl Table {
             name: NameStack { stack: vec![name] },
             columns: ColumnStack::new(columns),
             rows: vec![],
+            length: 0,
         }
     }
 
@@ -56,19 +58,27 @@ impl Table {
     }
 
     pub fn get(&self, i: usize) -> Option<&Row> {
-        self.rows.get(i)?.stack.last()
+        if i < self.length {
+            self.rows.get(i)?.stack.last()
+        } else {
+            None
+        }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Row> {
-        self.rows.iter().map(|s| s.stack.last().unwrap())
+        self.rows.iter().take(self.length).map(|s| s.stack.last().unwrap())
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Row> {
-        self.rows.iter_mut().map(|s| s.stack.last_mut().unwrap())
+        self.rows.iter_mut().take(self.length).map(|s| s.stack.last_mut().unwrap() )
     }
 
     pub fn len(&self) -> usize {
-        self.rows.len()
+        self.length
+    }
+
+    pub fn set_length(&mut self, length: usize) {
+        self.length = length;
     }
 
     pub fn swap(&mut self, a: usize, b: usize) {
@@ -79,17 +89,19 @@ impl Table {
     pub fn get_rows_clone(&self) -> Vec<Row> {
         self.rows
             .iter()
+            .take(self.length)
             .map(|s| s.stack.last().unwrap().clone())
             .collect()
     }
 
     pub fn get_rows(&self) -> Vec<&Row> {
-        self.rows.iter().map(|s| s.stack.last().unwrap()).collect()
+        self.rows.iter().take(self.length).map(|s| s.stack.last().unwrap()).collect()
     }
 
     pub fn get_rows_mut(&mut self) -> Vec<&mut Row> {
         self.rows
             .iter_mut()
+            .take(self.length)
             .map(|s| s.stack.last_mut().unwrap())
             .collect()
     }
@@ -104,14 +116,17 @@ impl Table {
     }
 
     pub fn set_rows(&mut self, rows: Vec<Row>) {
+        self.length = rows.len();
         self.rows = rows.into_iter().map(|r| RowStack::new(r)).collect();
     }
 
     pub fn push(&mut self, row: Row) {
+        self.length += 1;
         self.rows.push(RowStack::new(row));
     }
 
     pub fn pop(&mut self) -> Option<Row> {
+        self.length -= 1;
         self.rows.pop().and_then(|mut value| value.stack.pop())
     }
 
