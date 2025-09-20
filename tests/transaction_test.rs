@@ -262,3 +262,96 @@ fn test_transaction_delete() {
         }
     }
 }
+
+#[test]
+fn test_transaction_savepoint() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    BEGIN;
+        SAVEPOINT savepoint_name;
+        INSERT INTO users (id, name) VALUES (1, 'John');
+        SELECT * FROM users;
+        ROLLBACK TO SAVEPOINT savepoint_name;
+        SELECT * FROM users;
+    ROLLBACK;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),                                         
+        Ok(None),                                                              
+        Ok(None),                                                                 
+        Ok(None),                                                                 
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])), 
+        Ok(None),                                                                   
+        Ok(Some(vec![])),                                                     
+        Ok(None),                                                                 
+        Ok(Some(vec![])),                                                           
+    ];
+    for (i, result) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result);
+    }
+}
+
+#[test]
+fn test_transaction_rollback_to_savepoint_that_does_not_exist() {
+    let mut database = Database::new();
+    let sql = "
+    BEGIN;
+        SAVEPOINT savepoint_name;
+        RELEASE SAVEPOINT savepoint_name;
+        ROLLBACK TO SAVEPOINT savepoint_name;
+    ROLLBACK;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Err("Execution Error with statement starting on line 5 \n Error: Savepoint `savepoint_name` does not exist".to_string()),
+        Ok(None),
+    ];
+    for (i, result) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result);
+    }
+}
+
+#[test]
+fn test_transaction_commit_with_savepoint() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    BEGIN;
+        SAVEPOINT savepoint_name;
+        INSERT INTO users (id, name) VALUES (1, 'John');
+        SELECT * FROM users;
+        ROLLBACK TO SAVEPOINT savepoint_name;
+        INSERT INTO users (id, name) VALUES (2, 'Jane');
+        SELECT * FROM users;
+    COMMIT;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(2), Value::Text("Jane".to_string())])])),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(2), Value::Text("Jane".to_string())])])),
+    ];
+    for (i, result) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result);
+    }
+}

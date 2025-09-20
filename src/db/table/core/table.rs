@@ -138,7 +138,14 @@ impl Table {
             } else {
                 return Err("Error committing transaction. Row stack is empty".to_string());
             }
-            // TODO: Add commit for column stack and name stack.
+        }
+        if self.columns.stack.len() > 1 {
+            let last_column_stack = self.columns.stack.pop().unwrap();
+            self.columns = ColumnStack::new(last_column_stack);
+        }
+        if self.name.stack.len() > 1 {
+            let last_name = self.name.stack.pop().unwrap();
+            self.name = NameStack { stack: vec![last_name] };
         }
         Ok(())
     }
