@@ -2,8 +2,8 @@ use crate::db::table::core::{row::Row, table::Table};
 use crate::db::table::operations::{
     alter_table, create_table, delete, drop_table, insert, select, update,
 };
-use crate::db::transactions::rollback::rollback_transaction_entry;
-use crate::db::transactions::{TransactionEntry, TransactionLog};
+use crate::db::transactions::{commit::commit_transaction, rollback::rollback_statement};
+use crate::db::transactions::{TransactionLog};
 use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
 
@@ -70,62 +70,11 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::Commit => {
-                let transaction_log = self.transaction.commit_transaction()?;
-                for transaction_entry in transaction_log.get_entries()?.iter() {
-                    match transaction_entry {
-                        TransactionEntry::Statement(statement) => {
-                            let table = self.get_table_mut(&statement.table_name)?;
-                            table.commit_transaction(&statement.affected_rows)?;
-                        }
-                        TransactionEntry::Savepoint(_) => {}
-                    }
-                }
-
+                commit_transaction(self)?;
                 Ok(None)
             }
             SqlStatement::Rollback(statement) => {
-                if !self.transaction.in_transaction() {
-                    return Err("No transaction is currently active".to_string());
-                }
-                
-                if let Some(savepoint_name) = statement.savepoint_name {
-                    // First make sure the savepoint exists
-                    if !self.transaction.savepoint_exists(&savepoint_name)? {
-                        return Err(format!("Savepoint `{}` does not exist", savepoint_name));
-                    }
-                    // Rollback to savepoint - keep transaction active
-                    let mut current_entry = self.transaction.pop_entry()?;
-                    while current_entry.is_some() {
-                        match current_entry.unwrap() {
-                            TransactionEntry::Statement(transaction_statement) => {
-                                rollback_transaction_entry(self, &transaction_statement)?;
-                            }
-                            TransactionEntry::Savepoint(savepoint_statement) => {
-                                if savepoint_statement.name == savepoint_name {
-                                    break;
-                                }
-                            }
-                        }
-                        current_entry = self.transaction.pop_entry()?;
-                    }
-                } else {
-                    // Full rollback - commit transaction to get entries and clear state
-                    if let Some(transaction_log) = self.transaction.commit_transaction()?.entries { // COMMIT TRANSACTIONS CLEARS THIS WITH TAKE
-                        for transaction_entry in transaction_log.iter().rev() {
-                            match transaction_entry {
-                                TransactionEntry::Statement(statement) => {
-                                    // TODO: Some matching needs to be here for table based operations.
-                                    // CURRENTLY SUPPORTED STATEMENTS ARE:
-                                    // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN, ALTER TABLE RENAME TABLE
-                                    // - CREATE TABLE, DROP TABLE
-                                    // - INSERT INTO, UPDATE, DELETE
-                                    rollback_transaction_entry(self, &statement)?;
-                                }
-                                TransactionEntry::Savepoint(_) => {}
-                            }
-                        }
-                    }
-                }
+                rollback_statement(self, &statement)?;
                 Ok(None)
             }
             SqlStatement::Savepoint(_) => {

@@ -1,4 +1,5 @@
 use crate::interpreter::ast::SqlStatement;
+pub mod commit;
 pub mod rollback;
 
 #[derive(Debug, PartialEq, Clone)]

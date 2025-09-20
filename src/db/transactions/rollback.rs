@@ -1,6 +1,54 @@
 use crate::db::database::Database;
-use crate::db::transactions::StatementEntry;
-use crate::interpreter::ast::{AlterTableAction, SqlStatement};
+use crate::db::transactions::{StatementEntry, TransactionEntry};
+use crate::interpreter::ast::{AlterTableAction, RollbackStatement, SqlStatement};
+
+
+pub fn rollback_statement(database: &mut Database, statement: &RollbackStatement) -> Result<(), String> {
+    if !database.transaction.in_transaction() {
+        return Err("No transaction is currently active".to_string());
+    }
+    
+    if let Some(savepoint_name) = &statement.savepoint_name {
+        // First make sure the savepoint exists
+        if !database.transaction.savepoint_exists(savepoint_name)? {
+            return Err(format!("Savepoint `{}` does not exist", savepoint_name));
+        }
+        // Rollback to savepoint - keep transaction active
+        let mut current_entry = database.transaction.pop_entry()?;
+        while current_entry.is_some() {
+            match current_entry.unwrap() {
+                TransactionEntry::Statement(transaction_statement) => {
+                    rollback_transaction_entry(database, &transaction_statement)?;
+                }
+                TransactionEntry::Savepoint(savepoint_statement) => {
+                    if savepoint_statement.name == *savepoint_name {
+                        break;
+                    }
+                }
+            }
+            current_entry = database.transaction.pop_entry()?;
+        }
+    } else {
+        // Full rollback - commit transaction to get entries and clear state
+        if let Some(transaction_log) = database.transaction.commit_transaction()?.entries { // COMMIT TRANSACTIONS CLEARS THIS WITH TAKE
+            for transaction_entry in transaction_log.iter().rev() {
+                match transaction_entry {
+                    TransactionEntry::Statement(statement) => {
+                        // TODO: Some matching needs to be here for table based operations.
+                        // CURRENTLY SUPPORTED STATEMENTS ARE:
+                        // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN, ALTER TABLE RENAME TABLE
+                        // - CREATE TABLE, DROP TABLE
+                        // - INSERT INTO, UPDATE, DELETE
+                        rollback_transaction_entry(database, &statement)?;
+                    }
+                    TransactionEntry::Savepoint(_) => {}
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 
 pub fn rollback_transaction_entry(
     database: &mut Database,
