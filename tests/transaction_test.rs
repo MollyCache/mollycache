@@ -200,3 +200,65 @@ fn test_transaction_update() {
         assert_eq!(expected[i], *result);
     }
 }
+
+#[test]
+fn test_transaction_delete() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'John'), (2, 'Jane'), (3, 'Jim'), (4, 'Jill');
+    SELECT * FROM users;
+    BEGIN;
+        DELETE FROM users WHERE id = 1;
+        SELECT * FROM users;
+        DELETE FROM users WHERE id >= 3;
+        SELECT * FROM users;
+    ROLLBACK;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string())]),
+            Row(vec![Value::Integer(4), Value::Text("Jill".to_string())]),
+        ])),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string())]),
+            Row(vec![Value::Integer(4), Value::Text("Jill".to_string())]),
+        ])),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
+        ])),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
+            Row(vec![Value::Integer(3), Value::Text("Jim".to_string())]),
+            Row(vec![Value::Integer(4), Value::Text("Jill".to_string())]),
+        ])),
+    ];
+    for (i, result) in result.iter().enumerate() {
+        match (&expected[i], result) {
+            (Ok(None), Ok(None)) => {
+                assert_eq!(expected[i], *result);
+            }
+            (Ok(Some(expected_rows)), Ok(Some(actual_rows))) => {
+                test_utils::assert_eq_table_rows_unordered(expected_rows.clone(), actual_rows.clone());
+            }
+            (_, _) => {
+                assert_eq!(expected[i], *result);
+            }
+        }
+    }
+}

@@ -5,7 +5,7 @@ use crate::db::table::operations::helpers::common::get_row_indicies_matching_cla
 use crate::interpreter::ast::DeleteStatement;
 
 pub fn delete(table: &mut Table, statement: DeleteStatement, is_transaction: bool) -> Result<Vec<usize>, String> {
-    let row_indicies_to_delete = get_row_indicies_matching_clauses(
+    let mut row_indicies_to_delete = get_row_indicies_matching_clauses(
         table,
         &statement.where_clause,
         &statement.order_by_clause,
@@ -15,11 +15,11 @@ pub fn delete(table: &mut Table, statement: DeleteStatement, is_transaction: boo
     // This means we can swap the semi-deleted rows to the end of the table and then set the length of the table
     // to the length of the table minus the number of semi-deleted rows. Then on rollback we can just extend the length of the table.
     // to then include the deleted rows. if we commit, we pop off the end of the table until at the desired length.
-    swap_remove_bulk(table, &row_indicies_to_delete, is_transaction)?;
+    swap_remove_bulk(table, &mut row_indicies_to_delete, is_transaction)?;
     Ok(row_indicies_to_delete)
 }
 
-fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>, is_transaction: bool) -> Result<(), String> {
+fn swap_remove_bulk(table: &mut Table, row_indicies: &mut Vec<usize>, is_transaction: bool) -> Result<(), String> {
     if table.len() == 0 {
         if row_indicies.len() != 0 {
             unreachable!();
@@ -29,7 +29,8 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>, is_transaction
     let table_len = table.len() - 1;
     let mut row_indicies_set = row_indicies.iter().collect::<HashSet<&usize>>();
     let mut right_pointer = 0;
-    let mut iter = row_indicies.iter();
+    let mut iter = row_indicies.iter().rev(); // We recieve the indexes in ascending order,
+    // We reverse them to get rid of the furtherst indexes first.
 
     while let Some(to_swap) = iter.next() {
         if *to_swap == (table_len - right_pointer) {

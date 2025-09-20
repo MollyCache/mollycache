@@ -9,7 +9,7 @@ use std::ops::{Index, IndexMut};
 pub struct Table {
     pub name: NameStack,
     pub columns: ColumnStack,
-    rows: Vec<RowStack>,
+    pub rows: Vec<RowStack>,
     length: usize,
 }
 
