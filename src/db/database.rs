@@ -40,8 +40,9 @@ impl Database {
                 Ok(Some(result))
             }
             SqlStatement::UpdateStatement(statement) => {
+                let is_transaction = self.transaction.in_transaction();
                 let table = self.get_table_mut(&statement.table_name)?;
-                let rows_updated = update::update(table, statement)?;
+                let rows_updated = update::update(table, statement, is_transaction)?;
                 self.transaction
                     .append_entry(sql_statement_clone, rows_updated)?;
                 Ok(None)

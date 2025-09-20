@@ -168,3 +168,35 @@ fn test_transaction_insert_into() {
         assert_eq!(expected[i], *result);
     }
 }
+
+#[test]
+fn test_transaction_update() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'John');
+    SELECT * FROM users;
+    BEGIN;
+        UPDATE users SET name = 'Jane' WHERE id = 1;
+        SELECT * FROM users;
+    ROLLBACK;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("Jane".to_string())])])),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+    ];
+    for (i, result) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result);
+    }
+}

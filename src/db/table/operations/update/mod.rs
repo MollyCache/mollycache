@@ -2,14 +2,14 @@ use crate::db::table::core::{table::Table, value::DataType};
 use crate::db::table::operations::helpers::common::get_row_indicies_matching_clauses;
 use crate::interpreter::ast::{ColumnValue, UpdateStatement};
 
-pub fn update(table: &mut Table, statement: UpdateStatement) -> Result<Vec<usize>, String> {
+pub fn update(table: &mut Table, statement: UpdateStatement, is_transaction: bool) -> Result<Vec<usize>, String> {
     let row_indicies = get_row_indicies_matching_clauses(
         table,
         &statement.where_clause,
         &statement.order_by_clause,
         &statement.limit_clause,
     )?;
-    update_rows_from_indicies(table, &row_indicies, statement.update_values)?;
+    update_rows_from_indicies(table, &row_indicies, statement.update_values, is_transaction)?;
     Ok(row_indicies)
 }
 
@@ -17,6 +17,7 @@ fn update_rows_from_indicies(
     table: &mut Table,
     row_indicies: &Vec<usize>,
     update_values: Vec<ColumnValue>,
+    is_transaction: bool,
 ) -> Result<(), String> {
     for row_index in row_indicies {
         for update_value in &update_values {
@@ -29,6 +30,9 @@ fn update_rows_from_indicies(
                     update_value.column,
                     update_value.value.get_type()
                 ));
+            }
+            if is_transaction {
+                table.get_row_stacks_mut()[*row_index].append_clone();
             }
             table[*row_index][column_index] = update_value.value.clone();
         }
@@ -62,7 +66,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = update(&mut table, statement);
+        let result = update(&mut table, statement, false);
         assert!(result.is_ok());
         let expected = vec![
             Row(vec![
@@ -163,7 +167,7 @@ mod tests {
                 offset: Some(2),
             }),
         };
-        let result = update(&mut table, statement);
+        let result = update(&mut table, statement, false);
         assert!(result.is_ok());
         let expected = vec![
             Row(vec![
@@ -235,7 +239,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = update(&mut table, statement);
+        let result = update(&mut table, statement, false);
         assert!(result.is_ok());
         let row_indicies = result.unwrap();
         assert_eq!(vec![1, 2, 3], row_indicies);
@@ -289,7 +293,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = update(&mut table, statement);
+        let result = update(&mut table, statement, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), vec![]);
         let expected = vec![];
@@ -309,7 +313,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = update(&mut table, statement);
+        let result = update(&mut table, statement, false);
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -330,7 +334,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = update(&mut table, statement);
+        let result = update(&mut table, statement, false);
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -351,7 +355,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = update(&mut table, statement);
+        let result = update(&mut table, statement, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), vec![0, 1, 2, 3]);
         let expected = vec![

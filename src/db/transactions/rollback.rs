@@ -49,6 +49,12 @@ pub fn rollback_transaction_entry(
                 table.get_row_stacks_mut().pop(); // We can pop all the rows off because they always get pushed to the end
             }
         }
+        SqlStatement::UpdateStatement(_) => {
+            let table = database.get_table_mut(&statement_entry.table_name)?;
+            for index in &statement_entry.affected_rows {
+                table.get_row_stacks_mut()[*index].stack.pop();
+            }
+        }
         _ => return Err("UNSUPPORTED".to_string()),
     }
     return Ok(());
