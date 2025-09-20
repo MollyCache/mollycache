@@ -355,3 +355,49 @@ fn test_transaction_commit_with_savepoint() {
         assert_eq!(expected[i], *result);
     }
 }
+
+#[test]
+fn test_transaction_commit_with_many_changes() {
+    let mut database = Database::new();
+    let sql = "
+    BEGIN;
+        CREATE TABLE users (
+            id INTEGER,
+            name TEXT
+        );
+        INSERT INTO users (id, name) VALUES (1, 'John');
+        SAVEPOINT savepoint_name;
+        DROP TABLE users;
+        SELECT * FROM users;
+        ROLLBACK TO SAVEPOINT savepoint_name;
+        SELECT * FROM users;
+        ALTER TABLE users ADD COLUMN age INTEGER;
+        ALTER TABLE users RENAME COLUMN age TO new_age;
+        SELECT * FROM users;
+        ALTER TABLE users RENAME TO new_users;
+    COMMIT;
+    SELECT * FROM new_users;
+    ";
+    let result = run_sql(&mut database, sql);
+    
+    let expected = vec![
+        Ok(None),                                                                                     
+        Ok(None),                                                                                         
+        Ok(None),                                                                                    
+        Ok(None),                                                                                      
+        Ok(None),                                                                                     
+        Err("Execution Error with statement starting on line 10 \n Error: Table `users` does not exist".to_string()), 
+        Ok(None),                                                                                   
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),                 
+        Ok(None),                                                                                         
+        Ok(None),                                                                                       
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null])])),    
+        Ok(None),                                                                                      
+        Err("Execution Error with statement starting on line 17 \n Error: Table `users` does not exist".to_string()), 
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null])])),
+    ];
+    
+    for (i, result_item) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result_item);
+    }
+}
