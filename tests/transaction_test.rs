@@ -130,3 +130,41 @@ fn test_transaction_drop_table() {
         assert_eq!(expected[i], *result);
     }
 }
+
+
+#[test]
+fn test_transaction_insert_into() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'John');
+    SELECT * FROM users;
+    BEGIN;
+        INSERT INTO users (id, name) VALUES (2, 'Jane');
+        SELECT * FROM users;
+    ROLLBACK;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())])
+        ])),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(1), Value::Text("John".to_string())])
+        ])),
+    ];
+    for (i, result) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result);
+    }
+}
