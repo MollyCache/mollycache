@@ -1,5 +1,5 @@
 use crate::db::database::Database;
-use crate::db::transactions::{TransactionEntry};
+use crate::db::transactions::TransactionEntry;
 
 pub fn commit_transaction(database: &mut Database) -> Result<(), String> {
     let transaction_log = database.transaction.commit_transaction()?;

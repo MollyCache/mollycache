@@ -2,12 +2,14 @@ use crate::db::database::Database;
 use crate::db::transactions::{StatementEntry, TransactionEntry};
 use crate::interpreter::ast::{AlterTableAction, RollbackStatement, SqlStatement};
 
-
-pub fn rollback_statement(database: &mut Database, statement: &RollbackStatement) -> Result<(), String> {
+pub fn rollback_statement(
+    database: &mut Database,
+    statement: &RollbackStatement,
+) -> Result<(), String> {
     if !database.transaction.in_transaction() {
         return Err("No transaction is currently active".to_string());
     }
-    
+
     if let Some(savepoint_name) = &statement.savepoint_name {
         // First make sure the savepoint exists
         if !database.transaction.savepoint_exists(savepoint_name)? {
@@ -30,7 +32,8 @@ pub fn rollback_statement(database: &mut Database, statement: &RollbackStatement
         }
     } else {
         // Full rollback - commit transaction to get entries and clear state
-        if let Some(transaction_log) = database.transaction.commit_transaction()?.entries { // COMMIT TRANSACTIONS CLEARS THIS WITH TAKE
+        if let Some(transaction_log) = database.transaction.commit_transaction()?.entries {
+            // COMMIT TRANSACTIONS CLEARS THIS WITH TAKE
             for transaction_entry in transaction_log.iter().rev() {
                 match transaction_entry {
                     TransactionEntry::Statement(statement) => {
@@ -48,7 +51,6 @@ pub fn rollback_statement(database: &mut Database, statement: &RollbackStatement
     }
     Ok(())
 }
-
 
 pub fn rollback_transaction_entry(
     database: &mut Database,

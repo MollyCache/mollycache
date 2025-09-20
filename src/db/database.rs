@@ -2,8 +2,8 @@ use crate::db::table::core::{row::Row, table::Table};
 use crate::db::table::operations::{
     alter_table, create_table, delete, drop_table, insert, select, update,
 };
+use crate::db::transactions::TransactionLog;
 use crate::db::transactions::{commit::commit_transaction, rollback::rollback_statement};
-use crate::db::transactions::{TransactionLog};
 use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
 

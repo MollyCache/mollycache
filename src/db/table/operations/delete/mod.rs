@@ -4,7 +4,11 @@ use crate::db::table::core::table::Table;
 use crate::db::table::operations::helpers::common::get_row_indicies_matching_clauses;
 use crate::interpreter::ast::DeleteStatement;
 
-pub fn delete(table: &mut Table, statement: DeleteStatement, is_transaction: bool) -> Result<Vec<usize>, String> {
+pub fn delete(
+    table: &mut Table,
+    statement: DeleteStatement,
+    is_transaction: bool,
+) -> Result<Vec<usize>, String> {
     let mut row_indicies_to_delete = get_row_indicies_matching_clauses(
         table,
         &statement.where_clause,
@@ -19,7 +23,11 @@ pub fn delete(table: &mut Table, statement: DeleteStatement, is_transaction: boo
     Ok(row_indicies_to_delete)
 }
 
-fn swap_remove_bulk(table: &mut Table, row_indicies: &mut Vec<usize>, is_transaction: bool) -> Result<(), String> {
+fn swap_remove_bulk(
+    table: &mut Table,
+    row_indicies: &mut Vec<usize>,
+    is_transaction: bool,
+) -> Result<(), String> {
     if table.len() == 0 {
         if row_indicies.len() != 0 {
             unreachable!();

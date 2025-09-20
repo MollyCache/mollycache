@@ -66,11 +66,17 @@ impl Table {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Row> {
-        self.rows.iter().take(self.length).map(|s| s.stack.last().unwrap())
+        self.rows
+            .iter()
+            .take(self.length)
+            .map(|s| s.stack.last().unwrap())
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Row> {
-        self.rows.iter_mut().take(self.length).map(|s| s.stack.last_mut().unwrap() )
+        self.rows
+            .iter_mut()
+            .take(self.length)
+            .map(|s| s.stack.last_mut().unwrap())
     }
 
     pub fn len(&self) -> usize {
@@ -95,7 +101,11 @@ impl Table {
     }
 
     pub fn get_rows(&self) -> Vec<&Row> {
-        self.rows.iter().take(self.length).map(|s| s.stack.last().unwrap()).collect()
+        self.rows
+            .iter()
+            .take(self.length)
+            .map(|s| s.stack.last().unwrap())
+            .collect()
     }
 
     pub fn get_rows_mut(&mut self) -> Vec<&mut Row> {
@@ -145,7 +155,9 @@ impl Table {
         }
         if self.name.stack.len() > 1 {
             let last_name = self.name.stack.pop().unwrap();
-            self.name = NameStack { stack: vec![last_name] };
+            self.name = NameStack {
+                stack: vec![last_name],
+            };
         }
         Ok(())
     }

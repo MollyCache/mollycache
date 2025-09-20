@@ -2,14 +2,23 @@ use crate::db::table::core::{table::Table, value::DataType};
 use crate::db::table::operations::helpers::common::get_row_indicies_matching_clauses;
 use crate::interpreter::ast::{ColumnValue, UpdateStatement};
 
-pub fn update(table: &mut Table, statement: UpdateStatement, is_transaction: bool) -> Result<Vec<usize>, String> {
+pub fn update(
+    table: &mut Table,
+    statement: UpdateStatement,
+    is_transaction: bool,
+) -> Result<Vec<usize>, String> {
     let row_indicies = get_row_indicies_matching_clauses(
         table,
         &statement.where_clause,
         &statement.order_by_clause,
         &statement.limit_clause,
     )?;
-    update_rows_from_indicies(table, &row_indicies, statement.update_values, is_transaction)?;
+    update_rows_from_indicies(
+        table,
+        &row_indicies,
+        statement.update_values,
+        is_transaction,
+    )?;
     Ok(row_indicies)
 }
 
@@ -430,6 +439,11 @@ mod tests {
             ]),
         ];
         assert_table_rows_eq_unordered(expected, table.get_rows_clone());
-        assert!(table.get_row_stacks_mut().iter().all(|row_stack| row_stack.stack.len() == 2));
+        assert!(
+            table
+                .get_row_stacks_mut()
+                .iter()
+                .all(|row_stack| row_stack.stack.len() == 2)
+        );
     }
 }

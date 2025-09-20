@@ -131,7 +131,6 @@ fn test_transaction_drop_table() {
     }
 }
 
-
 #[test]
 fn test_transaction_insert_into() {
     let mut database = Database::new();
@@ -152,17 +151,21 @@ fn test_transaction_insert_into() {
     let expected = vec![
         Ok(None),
         Ok(None),
-        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
         Ok(None),
         Ok(None),
         Ok(Some(vec![
             Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
-            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())])
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
         ])),
         Ok(None),
-        Ok(Some(vec![
-            Row(vec![Value::Integer(1), Value::Text("John".to_string())])
-        ])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
     ];
     for (i, result) in result.iter().enumerate() {
         assert_eq!(expected[i], *result);
@@ -189,12 +192,21 @@ fn test_transaction_update() {
     let expected = vec![
         Ok(None),
         Ok(None),
-        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
         Ok(None),
         Ok(None),
-        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("Jane".to_string())])])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("Jane".to_string()),
+        ])])),
         Ok(None),
-        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
     ];
     for (i, result) in result.iter().enumerate() {
         assert_eq!(expected[i], *result);
@@ -237,9 +249,10 @@ fn test_transaction_delete() {
             Row(vec![Value::Integer(4), Value::Text("Jill".to_string())]),
         ])),
         Ok(None),
-        Ok(Some(vec![
-            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
-        ])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(2),
+            Value::Text("Jane".to_string()),
+        ])])),
         Ok(None),
         Ok(Some(vec![
             Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
@@ -254,7 +267,10 @@ fn test_transaction_delete() {
                 assert_eq!(expected[i], *result);
             }
             (Ok(Some(expected_rows)), Ok(Some(actual_rows))) => {
-                test_utils::assert_eq_table_rows_unordered(expected_rows.clone(), actual_rows.clone());
+                test_utils::assert_eq_table_rows_unordered(
+                    expected_rows.clone(),
+                    actual_rows.clone(),
+                );
             }
             (_, _) => {
                 assert_eq!(expected[i], *result);
@@ -282,15 +298,18 @@ fn test_transaction_savepoint() {
     ";
     let result = run_sql(&mut database, sql);
     let expected = vec![
-        Ok(None),                                         
-        Ok(None),                                                              
-        Ok(None),                                                                 
-        Ok(None),                                                                 
-        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])), 
-        Ok(None),                                                                   
-        Ok(Some(vec![])),                                                     
-        Ok(None),                                                                 
-        Ok(Some(vec![])),                                                           
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
+        Ok(None),
+        Ok(Some(vec![])),
+        Ok(None),
+        Ok(Some(vec![])),
     ];
     for (i, result) in result.iter().enumerate() {
         assert_eq!(expected[i], *result);
@@ -344,12 +363,21 @@ fn test_transaction_commit_with_savepoint() {
         Ok(None),
         Ok(None),
         Ok(None),
-        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
         Ok(None),
         Ok(None),
-        Ok(Some(vec![Row(vec![Value::Integer(2), Value::Text("Jane".to_string())])])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(2),
+            Value::Text("Jane".to_string()),
+        ])])),
         Ok(None),
-        Ok(Some(vec![Row(vec![Value::Integer(2), Value::Text("Jane".to_string())])])),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(2),
+            Value::Text("Jane".to_string()),
+        ])])),
     ];
     for (i, result) in result.iter().enumerate() {
         assert_eq!(expected[i], *result);
@@ -379,25 +407,73 @@ fn test_transaction_commit_with_many_changes() {
     SELECT * FROM new_users;
     ";
     let result = run_sql(&mut database, sql);
-    
+
     let expected = vec![
-        Ok(None),                                                                                     
-        Ok(None),                                                                                         
-        Ok(None),                                                                                    
-        Ok(None),                                                                                      
-        Ok(None),                                                                                     
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
         Err("Execution Error with statement starting on line 10 \n Error: Table `users` does not exist".to_string()), 
-        Ok(None),                                                                                   
-        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),                 
-        Ok(None),                                                                                         
-        Ok(None),                                                                                       
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),  
+        Ok(None),
+        Ok(None),
         Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null])])),    
-        Ok(None),                                                                                      
-        Err("Execution Error with statement starting on line 17 \n Error: Table `users` does not exist".to_string()), 
-        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null])])),
+        Ok(None),
+        Err("Execution Error with statement starting on line 17 \n Error: Table `users` does not exist".to_string()),   
+        Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null])])), 
     ];
-    
+
     for (i, result_item) in result.iter().enumerate() {
         assert_eq!(expected[i], *result_item);
+    }
+}
+
+#[test]
+fn test_transaction_with_multiple_savepoints() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    BEGIN;
+        SAVEPOINT savepoint1;
+        INSERT INTO users (id, name) VALUES (1, 'John');
+        SAVEPOINT savepoint2;
+        INSERT INTO users (id, name) VALUES (2, 'Jane');
+        SELECT * FROM users;
+        ROLLBACK TO SAVEPOINT savepoint2;
+        SELECT * FROM users;
+        ROLLBACK TO SAVEPOINT savepoint1;
+        SELECT * FROM users;
+    COMMIT;
+    SELECT * FROM users;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(1), Value::Text("John".to_string())]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
+        ])),
+        Ok(None),
+        Ok(Some(vec![Row(vec![
+            Value::Integer(1),
+            Value::Text("John".to_string()),
+        ])])),
+        Ok(None),
+        Ok(Some(vec![])),
+        Ok(None),
+        Ok(Some(vec![])),
+    ];
+    for (i, result) in result.iter().enumerate() {
+        assert_eq!(expected[i], *result);
     }
 }
