@@ -1,4 +1,5 @@
 use crate::interpreter::ast::SqlStatement;
+pub mod commit;
 pub mod rollback;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -75,6 +76,13 @@ impl TransactionLog {
         Ok(())
     }
 
+    pub fn savepoint_exists(&self, savepoint_name: &String) -> Result<bool, String> {
+        Ok(self.get_entries()?.iter().any(|entry| match entry {
+            TransactionEntry::Savepoint(savepoint) => savepoint.name == *savepoint_name,
+            _ => false,
+        }))
+    }
+
     pub fn begin_transaction(&mut self) {
         self.entries = Some(vec![]);
     }
@@ -85,6 +93,10 @@ impl TransactionLog {
         };
         self.entries = None;
         Ok(transaction_log)
+    }
+
+    pub fn pop_entry(&mut self) -> Result<Option<TransactionEntry>, String> {
+        Ok(self.get_entries_mut()?.pop())
     }
 
     pub fn get_entries(&self) -> Result<&Vec<TransactionEntry>, String> {

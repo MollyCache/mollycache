@@ -2,8 +2,8 @@ use crate::db::table::core::{row::Row, table::Table};
 use crate::db::table::operations::{
     alter_table, create_table, delete, drop_table, insert, select, update,
 };
-use crate::db::transactions::rollback::rollback_transaction_entry;
-use crate::db::transactions::{TransactionEntry, TransactionLog};
+use crate::db::transactions::TransactionLog;
+use crate::db::transactions::{commit::commit_transaction, rollback::rollback_statement};
 use crate::interpreter::ast::SqlStatement;
 use std::collections::HashMap;
 
@@ -24,7 +24,7 @@ impl Database {
         let sql_statement_clone = sql_statement.clone();
         return match sql_statement {
             SqlStatement::CreateTable(statement) => {
-                create_table::create_table(self, statement)?;
+                create_table::create_table(self, statement, self.transaction.in_transaction())?;
                 self.transaction.append_entry(sql_statement_clone, vec![])?;
                 Ok(None)
             }
@@ -40,15 +40,17 @@ impl Database {
                 Ok(Some(result))
             }
             SqlStatement::UpdateStatement(statement) => {
+                let is_transaction = self.transaction.in_transaction();
                 let table = self.get_table_mut(&statement.table_name)?;
-                let rows_updated = update::update(table, statement)?;
+                let rows_updated = update::update(table, statement, is_transaction)?;
                 self.transaction
                     .append_entry(sql_statement_clone, rows_updated)?;
                 Ok(None)
             }
             SqlStatement::DeleteStatement(statement) => {
+                let is_transaction = self.transaction.in_transaction();
                 let table = self.get_table_mut(&statement.table_name)?;
-                let rows_deleted = delete::delete(table, statement)?;
+                let rows_deleted = delete::delete(table, statement, is_transaction)?;
                 self.transaction
                     .append_entry(sql_statement_clone, rows_deleted)?;
                 Ok(None)
@@ -68,37 +70,11 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::Commit => {
-                let transaction_log = self.transaction.commit_transaction()?;
-                for transaction_entry in transaction_log.get_entries()?.iter() {
-                    match transaction_entry {
-                        TransactionEntry::Statement(statement) => {
-                            let table = self.get_table_mut(&statement.table_name)?;
-                            table.commit_transaction(&statement.affected_rows)?;
-                        }
-                        TransactionEntry::Savepoint(_) => {}
-                    }
-                }
-
+                commit_transaction(self)?;
                 Ok(None)
             }
-            SqlStatement::Rollback(_) => {
-                if let Some(transaction_log) = self.transaction.commit_transaction()?.entries {
-                    // We roll back in reverse order because of dependencies.
-                    for transaction_entry in transaction_log.iter().rev() {
-                        match transaction_entry {
-                            TransactionEntry::Statement(statement) => {
-                                // TODO: Some matching needs to be here for table based operations.
-                                // CURRENTLY SUPPORTED STATEMENTS ARE:
-                                // - ALTER TABLE RENAME COLUMN, ALTER TABLE ADD COLUMN, ALTER TABLE DROP COLUMN, ALTER TABLE RENAME TABLE
-                                // - CREATE TABLE, DROP TABLE
-                                rollback_transaction_entry(self, &statement)?;
-                            }
-                            TransactionEntry::Savepoint(_) => {}
-                        }
-                    }
-                } else {
-                    return Err("No transaction is currently active".to_string());
-                }
+            SqlStatement::Rollback(statement) => {
+                rollback_statement(self, &statement)?;
                 Ok(None)
             }
             SqlStatement::Savepoint(_) => {

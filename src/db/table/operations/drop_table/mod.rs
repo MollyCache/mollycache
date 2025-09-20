@@ -67,4 +67,19 @@ mod tests {
         let result = drop_table(&mut database, statement, false);
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn drop_table_with_transaction_clause_works_correctly() {
+        let statement = DropTableStatement {
+            table_name: "users".to_string(),
+            existence_check: None,
+        };
+        let mut database = default_database();
+        let result = drop_table(&mut database, statement, true);
+        assert!(result.is_ok());
+        assert!(!database.has_table("users"));
+        let table = database.tables.get("users").unwrap();
+        assert!(table.first().unwrap().is_some());
+        assert!(table.last().unwrap().is_none());
+    }
 }

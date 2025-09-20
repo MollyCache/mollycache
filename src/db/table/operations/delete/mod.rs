@@ -4,18 +4,30 @@ use crate::db::table::core::table::Table;
 use crate::db::table::operations::helpers::common::get_row_indicies_matching_clauses;
 use crate::interpreter::ast::DeleteStatement;
 
-pub fn delete(table: &mut Table, statement: DeleteStatement) -> Result<Vec<usize>, String> {
-    let row_indicies_to_delete = get_row_indicies_matching_clauses(
+pub fn delete(
+    table: &mut Table,
+    statement: DeleteStatement,
+    is_transaction: bool,
+) -> Result<Vec<usize>, String> {
+    let mut row_indicies_to_delete = get_row_indicies_matching_clauses(
         table,
         &statement.where_clause,
         &statement.order_by_clause,
         &statement.limit_clause,
     )?;
-    swap_remove_bulk(table, &row_indicies_to_delete)?;
+    // We get omega saved here by the fact that we don't need to guarentee the order of the rows after rollbacks.
+    // This means we can swap the semi-deleted rows to the end of the table and then set the length of the table
+    // to the length of the table minus the number of semi-deleted rows. Then on rollback we can just extend the length of the table.
+    // to then include the deleted rows. if we commit, we pop off the end of the table until at the desired length.
+    swap_remove_bulk(table, &mut row_indicies_to_delete, is_transaction)?;
     Ok(row_indicies_to_delete)
 }
 
-fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), String> {
+fn swap_remove_bulk(
+    table: &mut Table,
+    row_indicies: &mut Vec<usize>,
+    is_transaction: bool,
+) -> Result<(), String> {
     if table.len() == 0 {
         if row_indicies.len() != 0 {
             unreachable!();
@@ -25,7 +37,8 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), 
     let table_len = table.len() - 1;
     let mut row_indicies_set = row_indicies.iter().collect::<HashSet<&usize>>();
     let mut right_pointer = 0;
-    let mut iter = row_indicies.iter();
+    let mut iter = row_indicies.iter().rev(); // We recieve the indexes in ascending order,
+    // We reverse them to get rid of the furtherst indexes first.
 
     while let Some(to_swap) = iter.next() {
         if *to_swap == (table_len - right_pointer) {
@@ -37,8 +50,12 @@ fn swap_remove_bulk(table: &mut Table, row_indicies: &Vec<usize>) -> Result<(), 
             right_pointer += 1;
         }
     }
-    for _ in 0..right_pointer {
-        table.pop();
+    if is_transaction {
+        table.set_length(table.len() - right_pointer);
+    } else {
+        for _ in 0..right_pointer {
+            table.pop();
+        }
     }
     Ok(())
 }
@@ -67,7 +84,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = delete(&mut table, statement);
+        let result = delete(&mut table, statement, false);
         assert!(result.is_ok());
         let expected = vec![
             Row(vec![
@@ -158,7 +175,7 @@ mod tests {
                 offset: Some(2),
             }),
         };
-        let result = delete(&mut table, statement);
+        let result = delete(&mut table, statement, false);
         assert!(result.is_ok());
         let expected = vec![
             Row(vec![
@@ -214,7 +231,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = delete(&mut table, statement);
+        let result = delete(&mut table, statement, false);
         assert!(result.is_ok());
         let row_indicies = result.unwrap();
         assert_eq!(vec![1, 2, 3], row_indicies);
@@ -236,7 +253,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = delete(&mut table, statement);
+        let result = delete(&mut table, statement, false);
         assert!(result.is_ok());
         let expected = vec![];
         assert_table_rows_eq_unordered(expected, table.get_rows_clone());
@@ -252,7 +269,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = delete(&mut table, statement);
+        let result = delete(&mut table, statement, false);
         assert!(result.is_ok());
     }
 
@@ -310,7 +327,7 @@ mod tests {
                 offset: Some(1),
             }),
         };
-        let result = delete(&mut table, statement);
+        let result = delete(&mut table, statement, false);
         assert!(result.is_ok());
         let deleted_indices = result.unwrap();
         assert_eq!(deleted_indices.len(), 2);
@@ -356,7 +373,7 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-        let result = delete(&mut table, statement);
+        let result = delete(&mut table, statement, false);
         assert!(result.is_ok());
         let deleted_indices = result.unwrap();
         assert_eq!(deleted_indices, vec![0]);
