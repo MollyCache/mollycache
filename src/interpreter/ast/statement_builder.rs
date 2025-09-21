@@ -76,8 +76,8 @@ impl StatementBuilder for DefaultStatementBuilder {
 pub struct MockStatementBuilder;
 #[cfg(test)]
 use crate::interpreter::ast::{
-    CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement, SelectStatementColumn, SelectStatementStack,
-    SelectStatementStackElement, SelectableStack, SelectableStackElement,
+    CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement, SelectStatementColumn,
+    SelectStatementStack, SelectStatementStackElement, SelectableStack, SelectableStackElement,
 };
 
 #[cfg(test)]

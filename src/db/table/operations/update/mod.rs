@@ -167,7 +167,9 @@ mod tests {
             })]),
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
+                        "id".to_string(),
+                    ))],
                 },
                 column_names: vec![SelectStatementColumn::new("id".to_string())],
                 directions: vec![OrderByDirection::Desc],

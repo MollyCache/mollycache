@@ -143,7 +143,10 @@ mod tests {
                     SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
                 ],
             },
-            column_names: vec![SelectStatementColumn::new("name".to_string()), SelectStatementColumn::new("age".to_string())],
+            column_names: vec![
+                SelectStatementColumn::new("name".to_string()),
+                SelectStatementColumn::new("age".to_string()),
+            ],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -200,7 +203,10 @@ mod tests {
                     SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
                 ],
             },
-            column_names: vec![SelectStatementColumn::new("name".to_string()), SelectStatementColumn::new("age".to_string())],
+            column_names: vec![
+                SelectStatementColumn::new("name".to_string()),
+                SelectStatementColumn::new("age".to_string()),
+            ],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("money".to_string()),
                 operator: Operator::Equals,
@@ -285,7 +291,9 @@ mod tests {
             where_clause: None,
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("money".to_string()))],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
+                        "money".to_string(),
+                    ))],
                 },
                 column_names: vec![SelectStatementColumn::new("money".to_string())],
                 directions: vec![OrderByDirection::Desc],
@@ -351,7 +359,9 @@ mod tests {
             column_names: vec![SelectStatementColumn::new("name".to_string())],
             mode: SelectMode::Distinct,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("name".to_string()))],
+                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
+                    "name".to_string(),
+                ))],
             },
             where_clause: None,
             order_by_clause: None,

@@ -122,7 +122,11 @@ pub struct SelectStatementColumn {
 
 impl SelectStatementColumn {
     pub fn new(column_name: String) -> Self {
-        Self { column_name, alias: None, table_name: None }
+        Self {
+            column_name,
+            alias: None,
+            table_name: None,
+        }
     }
 }
 

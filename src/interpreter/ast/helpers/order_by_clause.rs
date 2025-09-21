@@ -53,7 +53,9 @@ mod tests {
         let order_by_clause = result.unwrap();
         let expected = Some(OrderByClause {
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
+                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
+                    "id".to_string(),
+                ))],
             },
             column_names: vec![SelectStatementColumn::new("id".to_string())],
             directions: vec![OrderByDirection::Asc],
@@ -102,7 +104,10 @@ mod tests {
                     SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
                 ],
             },
-            column_names: vec![SelectStatementColumn::new("id".to_string()), SelectStatementColumn::new("name".to_string())],
+            column_names: vec![
+                SelectStatementColumn::new("id".to_string()),
+                SelectStatementColumn::new("name".to_string()),
+            ],
             directions: vec![OrderByDirection::Asc, OrderByDirection::Desc],
         });
         assert_eq!(expected, order_by_clause);

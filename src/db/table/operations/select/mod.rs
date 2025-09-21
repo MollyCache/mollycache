@@ -21,8 +21,14 @@ pub fn select_statement_stack(
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
                 let table = database.get_table(&select_statement.table_name)?;
-                let expanded_column_names =
-                    expand_all_column_names(table, select_statement.column_names.iter().map(|column| &column.column_name).collect::<Vec<&String>>())?;
+                let expanded_column_names = expand_all_column_names(
+                    table,
+                    select_statement
+                        .column_names
+                        .iter()
+                        .map(|column| &column.column_name)
+                        .collect::<Vec<&String>>(),
+                )?;
                 match &column_names {
                     Some(column_names) => {
                         if expanded_column_names.len() != column_names.len() {
@@ -144,8 +150,8 @@ mod tests {
     use crate::db::table::core::value::Value;
     use crate::db::table::test_utils::default_database;
     use crate::interpreter::ast::{
-        LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectableStack, SelectStatementColumn,
-        SelectableStackElement, WhereCondition, WhereStackElement,
+        LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectStatementColumn,
+        SelectableStack, SelectableStackElement, WhereCondition, WhereStackElement,
     };
 
     #[test]
