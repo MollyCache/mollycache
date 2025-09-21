@@ -66,7 +66,7 @@ impl Database {
                 Ok(None)
             }
             SqlStatement::BeginTransaction(_) => {
-                self.transaction.begin_transaction();
+                self.transaction.begin_transaction()?;
                 Ok(None)
             }
             SqlStatement::Commit => {

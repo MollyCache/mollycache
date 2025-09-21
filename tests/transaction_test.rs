@@ -4,6 +4,28 @@ use mollycache::db::database::Database;
 use mollycache::db::table::core::{row::Row, value::Value};
 use mollycache::interpreter::run_sql;
 
+fn assert_result_unordered_eq(
+    expected: Vec<Result<Option<Vec<Row>>, String>>,
+    result: Vec<Result<Option<Vec<Row>>, String>>,
+) {
+    for (i, result) in result.iter().enumerate() {
+        match (&expected[i], result) {
+            (Ok(None), Ok(None)) => {
+                assert_eq!(expected[i], *result);
+            }
+            (Ok(Some(expected_rows)), Ok(Some(actual_rows))) => {
+                test_utils::assert_eq_table_rows_unordered(
+                    expected_rows.clone(),
+                    actual_rows.clone(),
+                );
+            }
+            (_, _) => {
+                assert_eq!(expected[i], *result);
+            }
+        }
+    }
+}
+
 #[test]
 fn test_transaction() {
     let mut database = Database::new();
@@ -57,9 +79,7 @@ fn test_transaction() {
         ])])),
         Err("Execution Error with statement starting on line 20 \n Error: Table `new_users` does not exist".to_string()),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -83,9 +103,7 @@ fn test_transaction_create_table() {
         Ok(None),
         Err("Execution Error with statement starting on line 9 \n Error: Table `users` does not exist".to_string()),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -126,9 +144,7 @@ fn test_transaction_drop_table() {
         Ok(None),
         Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -167,9 +183,7 @@ fn test_transaction_insert_into() {
             Value::Text("John".to_string()),
         ])])),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -208,9 +222,7 @@ fn test_transaction_update() {
             Value::Text("John".to_string()),
         ])])),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -261,22 +273,7 @@ fn test_transaction_delete() {
             Row(vec![Value::Integer(4), Value::Text("Jill".to_string())]),
         ])),
     ];
-    for (i, result) in result.iter().enumerate() {
-        match (&expected[i], result) {
-            (Ok(None), Ok(None)) => {
-                assert_eq!(expected[i], *result);
-            }
-            (Ok(Some(expected_rows)), Ok(Some(actual_rows))) => {
-                test_utils::assert_eq_table_rows_unordered(
-                    expected_rows.clone(),
-                    actual_rows.clone(),
-                );
-            }
-            (_, _) => {
-                assert_eq!(expected[i], *result);
-            }
-        }
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -311,9 +308,7 @@ fn test_transaction_savepoint() {
         Ok(None),
         Ok(Some(vec![])),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -334,9 +329,7 @@ fn test_transaction_rollback_to_savepoint_that_does_not_exist() {
         Err("Execution Error with statement starting on line 5 \n Error: Savepoint `savepoint_name` does not exist".to_string()),
         Ok(None),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -379,9 +372,7 @@ fn test_transaction_commit_with_savepoint() {
             Value::Text("Jane".to_string()),
         ])])),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -425,9 +416,7 @@ fn test_transaction_commit_with_many_changes() {
         Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null])])), 
     ];
 
-    for (i, result_item) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result_item);
-    }
+    assert_result_unordered_eq(expected, result);
 }
 
 #[test]
@@ -473,7 +462,128 @@ fn test_transaction_with_multiple_savepoints() {
         Ok(None),
         Ok(Some(vec![])),
     ];
-    for (i, result) in result.iter().enumerate() {
-        assert_eq!(expected[i], *result);
-    }
+    assert_result_unordered_eq(expected, result);
+}
+
+#[test]
+fn test_transaction_with_failed_operations() {
+    let mut database = Database::new();
+    let sql = "
+    BEGIN;
+        INSERT INTO users (id, name) VALUES (1, 'John');
+    COMMIT;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Err("Execution Error with statement starting on line 3 \n Error: Table `users` does not exist".to_string()),
+        Ok(None),
+    ];
+    assert_result_unordered_eq(expected, result);
+}
+
+#[test]
+fn test_incorrect_order_of_transaction_statements() {
+    let mut database = Database::new();
+    let sql = "
+    COMMIT;
+    ROLLBACK;
+    BEGIN;
+        BEGIN;
+    COMMIT;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Err("Execution Error with statement starting on line 2 \n Error: No transaction is currently active".to_string()),
+        Err("Execution Error with statement starting on line 3 \n Error: No transaction is currently active".to_string()),
+        Ok(None),
+        Err("Execution Error with statement starting on line 5 \n Error: Nested transactions are not allowed".to_string()),
+        Ok(None),
+    ];
+    assert_result_unordered_eq(expected, result);
+}
+
+#[test]
+fn test_multiple_operations_on_the_same_row() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    BEGIN;
+        INSERT INTO users (id, name) VALUES (1, 'John');
+        UPDATE users SET name = 'Jane' WHERE id = 1;
+        UPDATE users SET name = 'Jim' WHERE id = 1;
+        INSERT INTO users (id, name) VALUES (2, 'Jane');
+        SELECT * FROM users;
+    ROLLBACK;
+    SELECT * FROM users;
+
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![
+            Row(vec![Value::Integer(1), Value::Text("Jim".to_string())]),
+            Row(vec![Value::Integer(2), Value::Text("Jane".to_string())]),
+        ])),
+        Ok(None),
+        Ok(Some(vec![])),
+    ];
+    assert_result_unordered_eq(expected, result);
+}
+
+#[test]
+fn test_transactions_with_multiple_tables() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER
+    );
+    CREATE TABLE orders (
+        user_id INTEGER
+    );
+    BEGIN;
+        INSERT INTO users (id) VALUES (1);
+        INSERT INTO orders (user_id) VALUES (1);
+        SAVEPOINT savepoint_name;
+        UPDATE users SET id = 2 WHERE id = 1;
+        UPDATE orders SET user_id = 2 WHERE user_id = 1;
+        DELETE FROM users WHERE id = 2;
+        SELECT * FROM users;
+        SELECT * FROM orders;
+        ROLLBACK TO SAVEPOINT savepoint_name;
+        SELECT * FROM users;
+        SELECT * FROM orders;
+    ROLLBACK;
+    SELECT * FROM users;
+    SELECT * FROM orders;
+    ";
+    let result = run_sql(&mut database, sql);
+    let expected = vec![
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(None),
+        Ok(Some(vec![])),
+        Ok(Some(vec![Row(vec![Value::Integer(2)])])),
+        Ok(None),
+        Ok(Some(vec![Row(vec![Value::Integer(1)])])),
+        Ok(Some(vec![Row(vec![Value::Integer(1)])])),
+        Ok(None),
+        Ok(Some(vec![])),
+        Ok(Some(vec![])),
+    ];
+    assert_result_unordered_eq(expected, result);
 }
