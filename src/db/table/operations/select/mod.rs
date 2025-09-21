@@ -20,7 +20,7 @@ pub fn select_statement_stack(
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
-                let table = database.get_table(&select_statement.table_name)?;
+                let table = database.get_table(&select_statement.table_name.table_name)?;
                 let expanded_column_names = expand_all_column_names(
                     table,
                     select_statement
@@ -152,6 +152,7 @@ mod tests {
     use crate::interpreter::ast::{
         LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectStatementColumn,
         SelectableStack, SelectableStackElement, WhereCondition, WhereStackElement,
+        SelectStatementTable,
     };
 
     #[test]
@@ -160,7 +161,7 @@ mod tests {
         let statement = SelectStatementStack {
             elements: vec![SelectStatementStackElement::SelectStatement(
                 SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
@@ -211,7 +212,7 @@ mod tests {
         let statement = SelectStatementStack {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
@@ -226,7 +227,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
@@ -258,7 +259,7 @@ mod tests {
         let statement = SelectStatementStack {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
@@ -269,7 +270,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
@@ -293,7 +294,7 @@ mod tests {
                 }),
                 SelectStatementStackElement::SetOperator(SetOperator::Intersect),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],

@@ -104,13 +104,28 @@ impl SetOperator {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatement {
-    pub table_name: String,
+    pub table_name: SelectStatementTable,
     pub column_names: Vec<SelectStatementColumn>,
     pub mode: SelectMode,
     pub columns: SelectableStack,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct SelectStatementTable {
+    pub table_name: String,
+    pub alias: Option<String>,
+}
+
+impl SelectStatementTable {
+    pub fn new(table_name: String) -> Self {
+        Self {
+            table_name,
+            alias: None,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -132,7 +147,7 @@ impl SelectStatementColumn {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct DeleteStatement {
-    pub table_name: String,
+    pub table_name: SelectStatementTable,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
@@ -140,7 +155,7 @@ pub struct DeleteStatement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct UpdateStatement {
-    pub table_name: String,
+    pub table_name: SelectStatementTable,
     pub update_values: Vec<ColumnValue>,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<OrderByClause>,
@@ -495,7 +510,7 @@ mod tests {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
                     elements: vec![SelectStatementStackElement::SelectStatement(
                         SelectStatement {
-                            table_name: "users".to_string(),
+                            table_name: SelectStatementTable::new("users".to_string()),
                             mode: SelectMode::All,
                             columns: SelectableStack {
                                 selectables: vec![SelectableStackElement::All],
@@ -589,7 +604,7 @@ mod tests {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
                     elements: vec![SelectStatementStackElement::SelectStatement(
                         SelectStatement {
-                            table_name: "users".to_string(),
+                            table_name: SelectStatementTable::new("users".to_string()),
                             mode: SelectMode::All,
                             columns: SelectableStack {
                                 selectables: vec![SelectableStackElement::All],

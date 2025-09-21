@@ -1,7 +1,7 @@
 use crate::interpreter::{
     ast::{
         ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection,
-        SelectStatementColumn, SelectableStack, SelectableStackElement,
+        SelectStatementColumn, SelectableStack, SelectableStackElement, SelectStatementTable,
         helpers::token::token_to_value, parser::Parser,
     },
     tokenizer::token::TokenTypes,
@@ -17,12 +17,21 @@ pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), 
     Ok(())
 }
 
-pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
-    let token = parser.current_token()?;
+pub fn get_table_name(parser: &mut Parser, allow_alias: bool) -> Result<SelectStatementTable, String> {
     expect_token_type(parser, TokenTypes::Identifier)?;
-    let result = token.value.to_string();
+    let table_name = parser.current_token()?.value.to_string();
     parser.advance()?;
-    Ok(result)
+    if allow_alias && parser.current_token()?.token_type == TokenTypes::As {
+        parser.advance()?;
+        expect_token_type(parser, TokenTypes::Identifier)?;
+        let alias = parser.current_token()?.value.to_string();
+        parser.advance()?;
+        return Ok(SelectStatementTable {
+            table_name: table_name,
+            alias: Some(alias),
+        });
+    }
+    Ok(SelectStatementTable::new(table_name))
 }
 
 pub const TOKENS_NEEDING_SPECIAL_HANDLING: [TokenTypes; 5] = [

@@ -132,7 +132,7 @@ mod tests {
     use crate::interpreter::ast::{
         CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement,
         SelectStatementColumn, SelectStatementStack, SelectStatementStackElement, SelectableStack,
-        SelectableStackElement,
+        SelectableStackElement, SelectStatementTable,
     };
 
     #[test]
@@ -194,7 +194,7 @@ mod tests {
         let expected = Some(Ok(SqlStatement::Select(SelectStatementStack {
             elements: vec![SelectStatementStackElement::SelectStatement(
                 SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],

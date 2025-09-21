@@ -172,6 +172,7 @@ mod tests {
     use crate::interpreter::ast::SelectableStack;
     use crate::interpreter::ast::SelectableStackElement;
     use crate::interpreter::ast::SetOperator;
+    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::test_utils::token;
@@ -193,7 +194,7 @@ mod tests {
 
     fn expected_simple_select_statement(id: i64) -> SelectStatementStackElement {
         SelectStatementStackElement::SelectStatement(SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
@@ -357,7 +358,7 @@ mod tests {
         let expected = SqlStatement::Select(SelectStatementStack {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "employees".to_string(),
+                    table_name: SelectStatementTable::new("employees".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::Column(
@@ -374,7 +375,7 @@ mod tests {
                     limit_clause: None,
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "employees".to_string(),
+                    table_name: SelectStatementTable::new("employees".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::Column(

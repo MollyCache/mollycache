@@ -79,6 +79,7 @@ mod tests {
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::SelectMode;
     use crate::interpreter::ast::SelectStatementColumn;
+    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::{
@@ -90,7 +91,7 @@ mod tests {
     fn select_with_all_tokens_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
@@ -135,7 +136,7 @@ mod tests {
     fn select_specific_columns_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
@@ -166,7 +167,7 @@ mod tests {
     fn select_with_where_clause_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
@@ -195,7 +196,7 @@ mod tests {
     fn select_with_where_clause_using_column_not_included_in_selected_columns() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
@@ -228,7 +229,7 @@ mod tests {
     fn select_with_limit_clause_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
@@ -256,7 +257,7 @@ mod tests {
     fn select_with_where_clause_using_column_not_included_in_table_returns_error() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
@@ -282,7 +283,7 @@ mod tests {
     fn select_with_order_by_clause_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
@@ -355,7 +356,7 @@ mod tests {
             Row(vec![Value::Integer(4), Value::Null]),
         ]);
         let statement = SelectStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             column_names: vec![SelectStatementColumn::new("name".to_string())],
             mode: SelectMode::Distinct,
             columns: SelectableStack {

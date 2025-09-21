@@ -25,7 +25,7 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     let (columns, column_names) = get_columns_and_names(parser)?;
     expect_token_type(parser, TokenTypes::From)?; // TODO: this is not true, you can do SELECT 1;
     parser.advance()?;
-    let table_name = get_table_name(parser)?;
+    let table_name = get_table_name(parser, true)?;
     let where_clause: Option<Vec<WhereStackElement>> = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
@@ -61,6 +61,7 @@ mod tests {
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectableStackElement;
+    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::test_utils::token;
@@ -82,7 +83,7 @@ mod tests {
         assert_eq!(
             statement,
             SelectStatement {
-                table_name: "users".to_string(),
+                table_name: SelectStatementTable::new("users".to_string()),
                 mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::All],
@@ -112,7 +113,7 @@ mod tests {
         assert_eq!(
             statement,
             SelectStatement {
-                table_name: "guests".to_string(),
+                table_name: SelectStatementTable::new("guests".to_string()),
                 mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
@@ -146,7 +147,7 @@ mod tests {
         assert_eq!(
             statement,
             SelectStatement {
-                table_name: "users".to_string(),
+                table_name: SelectStatementTable::new("users".to_string()),
                 mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![
@@ -201,7 +202,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
-            table_name: "guests".to_string(),
+            table_name: SelectStatementTable::new("guests".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
@@ -263,7 +264,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
-            table_name: "guests".to_string(),
+            table_name: SelectStatementTable::new("guests".to_string()),
             column_names: vec![SelectStatementColumn::new("id".to_string())],
             mode: SelectMode::Distinct,
             columns: SelectableStack {
@@ -296,7 +297,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
-            table_name: "guests".to_string(),
+            table_name: SelectStatementTable::new("guests".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::Column(SelectStatementColumn {
@@ -340,7 +341,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
-            table_name: "guests".to_string(),
+                table_name: SelectStatementTable::new("guests".to_string()),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
@@ -378,6 +379,44 @@ mod tests {
                     table_name: None,
                 },
             ],
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_table_name_alias_is_generated_correctly() {
+        // SELECT id FROM guests AS g;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "guests"),
+            token(TokenTypes::As, "AS"),
+            token(TokenTypes::Identifier, "g"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SelectStatement {
+            table_name: SelectStatementTable{table_name: "guests".to_string(), alias: Some("g".to_string())},
+            mode: SelectMode::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column(SelectStatementColumn {
+                    column_name: "id".to_string(),
+                    alias: None,
+                    table_name: None,
+                })],
+            },
+            column_names: vec![SelectStatementColumn {
+                column_name: "id".to_string(),
+                alias: None,
+                table_name: None,
+            }],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
