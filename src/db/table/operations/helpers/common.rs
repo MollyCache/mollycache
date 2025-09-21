@@ -60,10 +60,10 @@ pub fn get_columns_from_row(
                 }
             }
             SelectableStackElement::Column(value) => {
-                if let Some(value) = column_values.get(value) {
+                if let Some(value) = column_values.get(&value.column_name) {
                     row_values.push((*value).clone());
                 } else {
-                    return Err(format!("Invalid column name: {}", value));
+                    return Err(format!("Invalid column name: {}", value.column_name));
                 }
             }
             SelectableStackElement::Value(value) => {

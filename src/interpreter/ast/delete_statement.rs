@@ -14,7 +14,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     expect_token_type(parser, TokenTypes::From)?;
     parser.advance()?;
-    let table_name = get_table_name(parser)?;
+    let table_name = get_table_name(parser, true)?;
     let where_clause = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
@@ -36,6 +36,8 @@ mod tests {
     use crate::interpreter::ast::Operator;
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
+    use crate::interpreter::ast::SelectStatementColumn;
+    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::SelectableStack;
     use crate::interpreter::ast::SelectableStackElement;
     use crate::interpreter::ast::WhereCondition;
@@ -56,7 +58,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::DeleteStatement(DeleteStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -90,7 +92,7 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SqlStatement::DeleteStatement(DeleteStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
@@ -98,9 +100,11 @@ mod tests {
             })]),
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
+                        "id".to_string(),
+                    ))],
                 },
-                column_names: vec!["id".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string())],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {

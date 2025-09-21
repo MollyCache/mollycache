@@ -57,16 +57,17 @@ mod tests {
     };
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
     use crate::interpreter::ast::ColumnValue;
+    use crate::interpreter::ast::SelectStatementColumn;
     use crate::interpreter::ast::{
-        LimitClause, Operand, Operator, OrderByClause, OrderByDirection, SelectableStack,
-        SelectableStackElement, WhereCondition, WhereStackElement,
+        LimitClause, Operand, Operator, OrderByClause, OrderByDirection, SelectStatementTable,
+        SelectableStack, SelectableStackElement, WhereCondition, WhereStackElement,
     };
 
     #[test]
     fn update_works_correctly() {
         let mut table = default_table();
         let statement = UpdateStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Text("John".to_string()),
@@ -154,7 +155,7 @@ mod tests {
             ]),
         ]);
         let statement = UpdateStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Text("Fletcher".to_string()),
@@ -166,9 +167,11 @@ mod tests {
             })]),
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
+                        "id".to_string(),
+                    ))],
                 },
-                column_names: vec!["id".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string())],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: Some(LimitClause {
@@ -229,7 +232,7 @@ mod tests {
     fn update_multiple_columns_and_rows_works_correctly() {
         let mut table = default_table();
         let statement = UpdateStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             update_values: vec![
                 ColumnValue {
                     column: "name".to_string(),
@@ -293,7 +296,7 @@ mod tests {
         );
         table.set_rows(vec![]);
         let statement = UpdateStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Text("Fletcher".to_string()),
@@ -313,7 +316,7 @@ mod tests {
     fn update_with_invalid_column_works_correctly() {
         let mut table = default_table();
         let statement = UpdateStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             update_values: vec![ColumnValue {
                 column: "invalid".to_string(),
                 value: Value::Text("Fletcher".to_string()),
@@ -334,7 +337,7 @@ mod tests {
     fn update_with_invalid_value_works_correctly() {
         let mut table = default_table();
         let statement = UpdateStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Integer(1),
@@ -355,7 +358,7 @@ mod tests {
     fn update_with_null_value_works_correctly() {
         let mut table = default_table();
         let statement = UpdateStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             update_values: vec![ColumnValue {
                 column: "money".to_string(),
                 value: Value::Null,
@@ -400,7 +403,7 @@ mod tests {
     fn update_with_transaction_works_correctly() {
         let mut table = default_table();
         let statement = UpdateStatement {
-            table_name: "users".to_string(),
+            table_name: SelectStatementTable::new("users".to_string()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Text("Fletcher".to_string()),

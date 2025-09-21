@@ -32,7 +32,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 
 fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
-    let table_name = get_table_name(parser)?;
+    let table_name = get_table_name(parser, false)?.table_name;
 
     let token = parser.current_token()?;
     let columns = match token.token_type {

@@ -1,0 +1,50 @@
+[1mdiff --git a/src/interpreter/ast/helpers/common.rs b/src/interpreter/ast/helpers/common.rs[m
+[1mindex fd4ea86..997724c 100644[m
+[1m--- a/src/interpreter/ast/helpers/common.rs[m
+[1m+++ b/src/interpreter/ast/helpers/common.rs[m
+[36m@@ -85,7 +85,15 @@[m [mpub fn get_selectables([m
+                 if !allow_multiple {[m
+                     return Err("Unexpected token: COMMA".to_string());[m
+                 } else if let Some(selectable_names_vector) = selectable_names {[m
+[31m-                    selectable_names_vector.push(SelectStatementColumn::new(current_name));[m
+[32m+[m[32m                    let mut column = SelectStatementColumn::new(current_name);[m
+[32m+[m[32m                    let peek_token = parser.peek_token()?;[m
+[32m+[m[32m                    if peek_token.token_type == TokenTypes::As {[m
+[32m+[m[32m                        parser.advance()?;[m
+[32m+[m[32m                        parser.advance()?;[m
+[32m+[m[32m                        expect_token_type(parser, TokenTypes::Identifier)?;[m
+[32m+[m[32m                        column.alias = Some(parser.current_token()?.value.to_string());[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                    selectable_names_vector.push(column);[m
+                 }[m
+                 // Default ordering is ASC[m
+                 if !expect_new_value && let Some(order_by_directions_vector) = order_by_directions {[m
+[36m@@ -245,7 +253,15 @@[m [mpub fn get_selectables([m
+     }[m
+ [m
+     if let Some(selectable_names_vector) = selectable_names {[m
+[31m-        selectable_names_vector.push(SelectStatementColumn::new(current_name));[m
+[32m+[m[32m        let mut column = SelectStatementColumn::new(current_name);[m
+[32m+[m[32m        let peek_token = parser.peek_token()?;[m
+[32m+[m[32m        if peek_token.token_type == TokenTypes::As {[m
+[32m+[m[32m            parser.advance()?;[m
+[32m+[m[32m            parser.advance()?;[m
+[32m+[m[32m            expect_token_type(parser, TokenTypes::Identifier)?;[m
+[32m+[m[32m            column.alias = Some(parser.current_token()?.value.to_string());[m
+[32m+[m[32m        }[m
+[32m+[m[32m        selectable_names_vector.push(column);[m
+     }[m
+ [m
+     Ok(SelectableStack {[m
+[1mdiff --git a/src/interpreter/ast/helpers/order_by_clause.rs b/src/interpreter/ast/helpers/order_by_clause.rs[m
+[1mindex fd20703..05c988c 100644[m
+[1m--- a/src/interpreter/ast/helpers/order_by_clause.rs[m
+[1m+++ b/src/interpreter/ast/helpers/order_by_clause.rs[m
+[36m@@ -48,6 +48,7 @@[m [mmod tests {[m
+         ];[m
+         let mut parser = Parser::new(tokens);[m
+         let result = get_order_by(&mut parser);[m
+[32m+[m[32m        println!("{:?}", result);[m
+         assert!(result.is_ok());[m
+         let order_by_clause = result.unwrap();[m
+         let expected = Some(OrderByClause {[m

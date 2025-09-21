@@ -20,9 +20,15 @@ pub fn select_statement_stack(
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
-                let table = database.get_table(&select_statement.table_name)?;
-                let expanded_column_names =
-                    expand_all_column_names(table, &select_statement.column_names)?;
+                let table = database.get_table(&select_statement.table_name.table_name)?;
+                let expanded_column_names = expand_all_column_names(
+                    table,
+                    select_statement
+                        .column_names
+                        .iter()
+                        .map(|column| &column.column_name)
+                        .collect::<Vec<&String>>(),
+                )?;
                 match &column_names {
                     Some(column_names) => {
                         if expanded_column_names.len() != column_names.len() {
@@ -82,7 +88,7 @@ pub fn select_statement_stack(
                         .as_ref()
                         .ok_or_else(|| "No column names found".to_string())?
                         .iter()
-                        .position(|column_name| column_name == order_by_column_name)
+                        .position(|column_name| *column_name == order_by_column_name.column_name)
                         .ok_or_else(|| {
                             "Ordering column name not found in selected columns".to_string()
                         })?,
@@ -122,18 +128,18 @@ pub fn select_statement_stack(
 // TODO: add this logic in evaluation too
 fn expand_all_column_names(
     table: &Table,
-    column_names: &Vec<String>,
+    column_names: Vec<&String>,
 ) -> Result<Vec<String>, String> {
     let mut new = vec![];
-    for column in column_names {
-        if *column == "*".to_string() {
+    for column in &column_names {
+        if **column == "*".to_string() {
             for name in table.get_column_names()? {
-                if !column_names.contains(name) {
+                if !column_names.contains(&name) {
                     new.push(name.clone());
                 }
             }
         } else {
-            new.push(column.clone());
+            new.push((*column).clone());
         }
     }
     Ok(new)
@@ -144,8 +150,9 @@ mod tests {
     use crate::db::table::core::value::Value;
     use crate::db::table::test_utils::default_database;
     use crate::interpreter::ast::{
-        LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectableStack,
-        SelectableStackElement, WhereCondition, WhereStackElement,
+        LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectStatementColumn,
+        SelectStatementTable, SelectableStack, SelectableStackElement, WhereCondition,
+        WhereStackElement,
     };
 
     #[test]
@@ -154,12 +161,12 @@ mod tests {
         let statement = SelectStatementStack {
             elements: vec![SelectStatementStackElement::SelectStatement(
                 SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
                     },
-                    column_names: vec!["*".to_string()],
+                    column_names: vec![SelectStatementColumn::new("*".to_string())],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -205,12 +212,12 @@ mod tests {
         let statement = SelectStatementStack {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
                     },
-                    column_names: vec!["*".to_string()],
+                    column_names: vec![SelectStatementColumn::new("*".to_string())],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("id".to_string()),
                         operator: Operator::Equals,
@@ -220,12 +227,12 @@ mod tests {
                     limit_clause: None,
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
                     },
-                    column_names: vec!["*".to_string()],
+                    column_names: vec![SelectStatementColumn::new("*".to_string())],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -252,23 +259,23 @@ mod tests {
         let statement = SelectStatementStack {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
                     },
-                    column_names: vec!["*".to_string()],
+                    column_names: vec![SelectStatementColumn::new("*".to_string())],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
                     },
-                    column_names: vec!["*".to_string()],
+                    column_names: vec![SelectStatementColumn::new("*".to_string())],
                     where_clause: Some(vec![
                         WhereStackElement::Condition(WhereCondition {
                             l_side: Operand::Identifier("id".to_string()),
@@ -287,12 +294,12 @@ mod tests {
                 }),
                 SelectStatementStackElement::SetOperator(SetOperator::Intersect),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
                     },
-                    column_names: vec!["*".to_string()],
+                    column_names: vec![SelectStatementColumn::new("*".to_string())],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("id".to_string()),
                         operator: Operator::Equals,

@@ -104,8 +104,8 @@ impl SetOperator {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatement {
-    pub table_name: String,
-    pub column_names: Vec<String>,
+    pub table_name: SelectStatementTable,
+    pub column_names: Vec<SelectStatementColumn>,
     pub mode: SelectMode,
     pub columns: SelectableStack,
     pub where_clause: Option<Vec<WhereStackElement>>,
@@ -114,8 +114,40 @@ pub struct SelectStatement {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct DeleteStatement {
+pub struct SelectStatementTable {
     pub table_name: String,
+    pub alias: Option<String>,
+}
+
+impl SelectStatementTable {
+    pub fn new(table_name: String) -> Self {
+        Self {
+            table_name,
+            alias: None,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct SelectStatementColumn {
+    pub column_name: String,
+    pub alias: Option<String>,
+    pub table_name: Option<String>,
+}
+
+impl SelectStatementColumn {
+    pub fn new(column_name: String) -> Self {
+        Self {
+            column_name,
+            alias: None,
+            table_name: None,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct DeleteStatement {
+    pub table_name: SelectStatementTable,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
@@ -123,7 +155,7 @@ pub struct DeleteStatement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct UpdateStatement {
-    pub table_name: String,
+    pub table_name: SelectStatementTable,
     pub update_values: Vec<ColumnValue>,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<OrderByClause>,
@@ -216,7 +248,7 @@ pub struct SelectableStack {
 #[derive(Debug, PartialEq, Clone)]
 pub enum SelectableStackElement {
     All,
-    Column(String),
+    Column(SelectStatementColumn),
     Value(Value),
     ValueList(Vec<Value>), // TODO: add column as data type in Value
     Function(FunctionSignature),
@@ -316,7 +348,7 @@ pub enum OrderByDirection {
 #[derive(Debug, PartialEq, Clone)]
 pub struct OrderByClause {
     pub columns: SelectableStack,
-    pub column_names: Vec<String>,
+    pub column_names: Vec<SelectStatementColumn>,
     pub directions: Vec<OrderByDirection>,
 }
 
@@ -478,12 +510,12 @@ mod tests {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
                     elements: vec![SelectStatementStackElement::SelectStatement(
                         SelectStatement {
-                            table_name: "users".to_string(),
+                            table_name: SelectStatementTable::new("users".to_string()),
                             mode: SelectMode::All,
                             columns: SelectableStack {
                                 selectables: vec![SelectableStackElement::All],
                             },
-                            column_names: vec!["*".to_string()],
+                            column_names: vec![SelectStatementColumn::new("*".to_string())],
                             where_clause: None,
                             order_by_clause: None,
                             limit_clause: None,
@@ -572,12 +604,12 @@ mod tests {
                 sql_statement: SqlStatement::Select(SelectStatementStack {
                     elements: vec![SelectStatementStackElement::SelectStatement(
                         SelectStatement {
-                            table_name: "users".to_string(),
+                            table_name: SelectStatementTable::new("users".to_string()),
                             mode: SelectMode::All,
                             columns: SelectableStack {
                                 selectables: vec![SelectableStackElement::All],
                             },
-                            column_names: vec!["*".to_string()],
+                            column_names: vec![SelectStatementColumn::new("*".to_string())],
                             where_clause: None,
                             order_by_clause: None,
                             limit_clause: None,

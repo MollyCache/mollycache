@@ -76,8 +76,9 @@ impl StatementBuilder for DefaultStatementBuilder {
 pub struct MockStatementBuilder;
 #[cfg(test)]
 use crate::interpreter::ast::{
-    CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement, SelectStatementStack,
-    SelectStatementStackElement, SelectableStack, SelectableStackElement,
+    CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement, SelectStatementColumn,
+    SelectStatementStack, SelectStatementStackElement, SelectStatementTable, SelectableStack,
+    SelectableStackElement,
 };
 
 #[cfg(test)]
@@ -108,12 +109,12 @@ impl StatementBuilder for MockStatementBuilder {
         return Ok(SqlStatement::Select(SelectStatementStack {
             elements: vec![SelectStatementStackElement::SelectStatement(
                 SelectStatement {
-                    table_name: "users".to_string(),
+                    table_name: SelectStatementTable::new("users".to_string()),
                     mode: SelectMode::All,
                     columns: SelectableStack {
                         selectables: vec![SelectableStackElement::All],
                     },
-                    column_names: vec!["*".to_string()],
+                    column_names: vec![SelectStatementColumn::new("*".to_string())],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,

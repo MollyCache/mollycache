@@ -32,6 +32,7 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::interpreter::ast::SelectStatementColumn;
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::ast::{OrderByDirection, SelectableStack, SelectableStackElement};
 
@@ -47,13 +48,16 @@ mod tests {
         ];
         let mut parser = Parser::new(tokens);
         let result = get_order_by(&mut parser);
+        println!("{:?}", result);
         assert!(result.is_ok());
         let order_by_clause = result.unwrap();
         let expected = Some(OrderByClause {
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column("id".to_string())],
+                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
+                    "id".to_string(),
+                ))],
             },
-            column_names: vec!["id".to_string()],
+            column_names: vec![SelectStatementColumn::new("id".to_string())],
             directions: vec![OrderByDirection::Asc],
         });
         assert_eq!(expected, order_by_clause);
@@ -96,11 +100,14 @@ mod tests {
         let expected = Some(OrderByClause {
             columns: SelectableStack {
                 selectables: vec![
-                    SelectableStackElement::Column("id".to_string()),
-                    SelectableStackElement::Column("name".to_string()),
+                    SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
+                    SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
                 ],
             },
-            column_names: vec!["id".to_string(), "name".to_string()],
+            column_names: vec![
+                SelectStatementColumn::new("id".to_string()),
+                SelectStatementColumn::new("name".to_string()),
+            ],
             directions: vec![OrderByDirection::Asc, OrderByDirection::Desc],
         });
         assert_eq!(expected, order_by_clause);
