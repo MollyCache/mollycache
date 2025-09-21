@@ -342,4 +342,32 @@ mod tests {
         let expected = Err("Columns and values have different lengths".to_string());
         assert_eq!(expected, result);
     }
+
+    #[test]
+    fn insert_with_only_one_column_is_fine() {
+        // INSERT INTO users (id) VALUES (1);
+        let tokens = vec![
+            token(TokenTypes::Insert, "INSERT"),
+            token(TokenTypes::Into, "INTO"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Values, "VALUES"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::IntLiteral, "1"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = build(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SqlStatement::InsertInto(InsertIntoStatement {
+            table_name: "users".to_string(),
+            columns: Some(vec!["id".to_string()]),
+            values: vec![vec![Value::Integer(1)]],
+        });
+        assert_eq!(expected, statement);
+    }
 }
