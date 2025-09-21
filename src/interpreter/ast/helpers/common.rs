@@ -1,8 +1,10 @@
 use crate::interpreter::{
     ast::{
-        helpers::token::token_to_value, parser::Parser, ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection, SelectStatementColumn, SelectStatementTable, SelectableStack, SelectableStackElement
+        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection,
+        SelectStatementColumn, SelectStatementTable, SelectableStack, SelectableStackElement,
+        helpers::token::token_to_value, parser::Parser,
     },
-    tokenizer::{token::TokenTypes},
+    tokenizer::token::TokenTypes,
 };
 use std::cmp::Ordering;
 
@@ -15,7 +17,10 @@ pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), 
     Ok(())
 }
 
-pub fn get_table_name(parser: &mut Parser, allow_alias: bool) -> Result<SelectStatementTable, String> {
+pub fn get_table_name(
+    parser: &mut Parser,
+    allow_alias: bool,
+) -> Result<SelectStatementTable, String> {
     expect_token_type(parser, TokenTypes::Identifier)?;
     let table_name = parser.current_token()?.value.to_string();
     parser.advance()?;
@@ -97,6 +102,7 @@ pub fn get_selectables(
                 } else if let Some(selectable_names_vector) = selectable_names {
                     let mut column = SelectStatementColumn::new(current_name.clone());
                     column.alias = current_alias.clone();
+                    column.table_name = current_table_name.clone();
                     selectable_names_vector.push(column);
                 }
                 // Default ordering is ASC
@@ -312,7 +318,9 @@ pub fn compare_precedence(
     };
 }
 
-pub fn get_select_statement_column<'a>(parser: &mut Parser<'a>) -> Result<SelectStatementColumn, String> {
+pub fn get_select_statement_column<'a>(
+    parser: &mut Parser<'a>,
+) -> Result<SelectStatementColumn, String> {
     let mut current_token = parser.current_token()?;
     let table_name = if parser.peek_token()?.token_type == TokenTypes::Dot {
         let table_name = current_token.value.to_string();
@@ -320,23 +328,23 @@ pub fn get_select_statement_column<'a>(parser: &mut Parser<'a>) -> Result<Select
         parser.advance()?;
         current_token = parser.current_token()?;
         Some(table_name)
-    }
-    else {
+    } else {
         None
     };
 
     let column_name = current_token.value.to_string();
-    let alias = if let Ok(peek_token) = parser.peek_token() && peek_token.token_type == TokenTypes::As {
+    let alias = if let Ok(peek_token) = parser.peek_token()
+        && peek_token.token_type == TokenTypes::As
+    {
         parser.advance()?;
         parser.advance()?;
         expect_token_type(parser, TokenTypes::Identifier)?;
         let alias = Some(parser.current_token()?.value.to_string());
         alias
-    }
-    else {
+    } else {
         None
     };
-    let column = SelectStatementColumn{
+    let column = SelectStatementColumn {
         column_name: column_name,
         alias: alias,
         table_name: table_name,

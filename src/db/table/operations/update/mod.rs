@@ -59,8 +59,8 @@ mod tests {
     use crate::interpreter::ast::ColumnValue;
     use crate::interpreter::ast::SelectStatementColumn;
     use crate::interpreter::ast::{
-        LimitClause, Operand, Operator, OrderByClause, OrderByDirection, SelectableStack,
-        SelectableStackElement, WhereCondition, WhereStackElement, SelectStatementTable,
+        LimitClause, Operand, Operator, OrderByClause, OrderByDirection, SelectStatementTable,
+        SelectableStack, SelectableStackElement, WhereCondition, WhereStackElement,
     };
 
     #[test]

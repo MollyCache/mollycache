@@ -151,8 +151,8 @@ mod tests {
     use crate::db::table::test_utils::default_database;
     use crate::interpreter::ast::{
         LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectStatementColumn,
-        SelectableStack, SelectableStackElement, WhereCondition, WhereStackElement,
-        SelectStatementTable,
+        SelectStatementTable, SelectableStack, SelectableStackElement, WhereCondition,
+        WhereStackElement,
     };
 
     #[test]

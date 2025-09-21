@@ -37,9 +37,9 @@ mod tests {
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectStatementColumn;
+    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::SelectableStack;
     use crate::interpreter::ast::SelectableStackElement;
-    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::test_utils::token;

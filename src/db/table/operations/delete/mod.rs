@@ -66,8 +66,8 @@ mod tests {
     use crate::db::table::core::{row::Row, value::Value};
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
     use crate::interpreter::ast::LimitClause;
-    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::SelectStatementColumn;
+    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::{
         Operand, Operator, OrderByClause, OrderByDirection, SelectableStack,
         SelectableStackElement, WhereCondition, WhereStackElement,

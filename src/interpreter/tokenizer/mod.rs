@@ -366,9 +366,7 @@ mod tests {
 
     #[test]
     fn tokenizer_parses_table_name_with_alias() {
-        let result = tokenize(
-            "SELECT u.id AS user_id FROM users AS u"
-        );
+        let result = tokenize("SELECT u.id AS user_id FROM users AS u");
         let expected = vec![
             token(TokenTypes::Select, "SELECT", 0, 1),
             token(TokenTypes::Identifier, "u", 7, 1),
