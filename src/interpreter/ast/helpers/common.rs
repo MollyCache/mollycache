@@ -47,6 +47,7 @@ pub fn get_selectables(
     let mut operators: Vec<ExtendedSelectableStackElement> = vec![];
     let mut depth = 0;
     let mut current_name = "".to_string();
+    let mut current_alias: Option<String> = None;
 
     let mut first = true;
     let mut expect_new_value = false; // Will be set after a valid ASC or DESC to ensure proper syntax
@@ -85,7 +86,9 @@ pub fn get_selectables(
                 if !allow_multiple {
                     return Err("Unexpected token: COMMA".to_string());
                 } else if let Some(selectable_names_vector) = selectable_names {
-                    selectable_names_vector.push(SelectStatementColumn::new(current_name));
+                    let mut column = SelectStatementColumn::new(current_name.clone());
+                    column.alias = current_alias.clone();
+                    selectable_names_vector.push(column);
                 }
                 // Default ordering is ASC
                 if !expect_new_value && let Some(order_by_directions_vector) = order_by_directions {
@@ -93,6 +96,7 @@ pub fn get_selectables(
                 }
                 expect_new_value = false;
                 current_name = "".to_string();
+                current_alias = None;
             } else {
                 current_name += token.value;
             }
@@ -226,7 +230,20 @@ pub fn get_selectables(
             TokenTypes::HexLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
             // TODO: handle ValueList (arrays)
-            TokenTypes::Identifier => SelectableStackElement::Column(SelectStatementColumn::new(token.value.to_string())), // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
+            TokenTypes::Identifier => {
+                let mut column = SelectStatementColumn::new(token.value.to_string());
+                if let Ok(peek_token) = parser.peek_token() {
+                    if peek_token.token_type == TokenTypes::As {
+                        parser.advance()?;
+                        parser.advance()?;
+                        expect_token_type(parser, TokenTypes::Identifier)?;
+                        let alias = parser.current_token()?.value.to_string();
+                        column.alias = Some(alias.clone());
+                        current_alias = Some(alias);
+                    }
+                }
+                SelectableStackElement::Column(column) // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
+            }
             _ => return Err(parser.format_error()), // TODO: better error handling
         };
         output.push(element);
@@ -245,7 +262,9 @@ pub fn get_selectables(
     }
 
     if let Some(selectable_names_vector) = selectable_names {
-        selectable_names_vector.push(SelectStatementColumn::new(current_name));
+        let mut column = SelectStatementColumn::new(current_name);
+        column.alias = current_alias;
+        selectable_names_vector.push(column);
     }
 
     Ok(SelectableStack {

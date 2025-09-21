@@ -239,19 +239,51 @@ mod tests {
         let result = get_statement(&mut parser);
         assert!(result.is_ok());
         let statement = result.unwrap();
+        let expected = SelectStatement {
+            table_name: "guests".to_string(),
+            column_names: vec![SelectStatementColumn::new("id".to_string())],
+            mode: SelectMode::Distinct,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
+            },
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        };
         assert_eq!(
-            statement,
-            SelectStatement {
-                table_name: "guests".to_string(),
-                column_names: vec![SelectStatementColumn::new("id".to_string())],
-                mode: SelectMode::Distinct,
-                columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
-                },
-                where_clause: None,
-                order_by_clause: None,
-                limit_clause: None,
-            }
+            expected,
+            statement
         );
+    }
+
+    #[test]
+    fn select_statement_with_column_alias_is_generated_correctly() {
+        // SELECT id AS user_id FROM guests;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::As, "AS"),
+            token(TokenTypes::Identifier, "user_id"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "guests"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SelectStatement {
+            table_name: "guests".to_string(),
+            mode: SelectMode::All,
+            columns: SelectableStack {
+                selectables: vec![SelectableStackElement::Column(SelectStatementColumn{column_name: "id".to_string(), alias: Some("user_id".to_string()), table_name: None})],
+            },
+            column_names: vec![SelectStatementColumn{column_name: "id".to_string(), alias: Some("user_id".to_string()), table_name: None}],
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        assert_eq!(expected, statement);
     }
 }
