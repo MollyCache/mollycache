@@ -1,10 +1,8 @@
 use crate::interpreter::{
     ast::{
-        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection,
-        SelectStatementColumn, SelectableStack, SelectableStackElement, SelectStatementTable,
-        helpers::token::token_to_value, parser::Parser,
+        helpers::token::token_to_value, parser::Parser, ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection, SelectStatementColumn, SelectStatementTable, SelectableStack, SelectableStackElement
     },
-    tokenizer::token::TokenTypes,
+    tokenizer::{token::TokenTypes},
 };
 use std::cmp::Ordering;
 
@@ -58,6 +56,7 @@ pub fn get_selectables(
     let mut depth = 0;
     let mut current_name = "".to_string();
     let mut current_alias: Option<String> = None;
+    let mut current_table_name: Option<String> = None;
 
     let mut first = true;
     let mut expect_new_value = false; // Will be set after a valid ASC or DESC to ensure proper syntax
@@ -241,18 +240,11 @@ pub fn get_selectables(
             TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
             // TODO: handle ValueList (arrays)
             TokenTypes::Identifier => {
-                let mut column = SelectStatementColumn::new(token.value.to_string());
-                if let Ok(peek_token) = parser.peek_token() {
-                    if peek_token.token_type == TokenTypes::As {
-                        parser.advance()?;
-                        parser.advance()?;
-                        expect_token_type(parser, TokenTypes::Identifier)?;
-                        let alias = parser.current_token()?.value.to_string();
-                        column.alias = Some(alias.clone());
-                        current_alias = Some(alias);
-                    }
-                }
-                SelectableStackElement::Column(column) // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
+                let column = get_select_statement_column(parser)?;
+                current_alias = column.alias.clone();
+                current_table_name = column.table_name.clone();
+                current_name = column.column_name.clone();
+                SelectableStackElement::Column(column)
             }
             _ => return Err(parser.format_error()), // TODO: better error handling
         };
@@ -274,6 +266,7 @@ pub fn get_selectables(
     if let Some(selectable_names_vector) = selectable_names {
         let mut column = SelectStatementColumn::new(current_name);
         column.alias = current_alias;
+        column.table_name = current_table_name;
         selectable_names_vector.push(column);
     }
 
@@ -317,6 +310,38 @@ pub fn compare_precedence(
     } else {
         Ok(Ordering::Greater)
     };
+}
+
+pub fn get_select_statement_column<'a>(parser: &mut Parser<'a>) -> Result<SelectStatementColumn, String> {
+    let mut current_token = parser.current_token()?;
+    let table_name = if parser.peek_token()?.token_type == TokenTypes::Dot {
+        let table_name = current_token.value.to_string();
+        parser.advance()?;
+        parser.advance()?;
+        current_token = parser.current_token()?;
+        Some(table_name)
+    }
+    else {
+        None
+    };
+
+    let column_name = current_token.value.to_string();
+    let alias = if let Ok(peek_token) = parser.peek_token() && peek_token.token_type == TokenTypes::As {
+        parser.advance()?;
+        parser.advance()?;
+        expect_token_type(parser, TokenTypes::Identifier)?;
+        let alias = Some(parser.current_token()?.value.to_string());
+        alias
+    }
+    else {
+        None
+    };
+    let column = SelectStatementColumn{
+        column_name: column_name,
+        alias: alias,
+        table_name: table_name,
+    };
+    Ok(column)
 }
 
 fn get_precedence(operator: &SelectableStackElement) -> Result<i32, String> {
