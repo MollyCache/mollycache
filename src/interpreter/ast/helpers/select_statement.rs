@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        SelectMode, SelectStatement, SelectableStack, WhereStackElement,
+        SelectMode, SelectStatement, SelectableStack, SelectStatementColumn, WhereStackElement,
         helpers::{
             common::{get_selectables, get_table_name},
             limit_clause::get_limit,
@@ -41,8 +41,8 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     });
 }
 
-fn get_columns_and_names(parser: &mut Parser) -> Result<(SelectableStack, Vec<String>), String> {
-    let mut column_names: Vec<String> = vec![];
+fn get_columns_and_names(parser: &mut Parser) -> Result<(SelectableStack, Vec<SelectStatementColumn>), String> {
+    let mut column_names: Vec<SelectStatementColumn> = vec![];
     Ok((
         get_selectables(parser, true, &mut None, &mut Some(&mut column_names))?,
         column_names,
@@ -85,7 +85,7 @@ mod tests {
                 columns: SelectableStack {
                     selectables: vec![SelectableStackElement::All],
                 },
-                column_names: vec!["*".to_string()],
+                column_names: vec![SelectStatementColumn::new("*".to_string())],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
@@ -113,9 +113,9 @@ mod tests {
                 table_name: "guests".to_string(),
                 mode: SelectMode::All,
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
                 },
-                column_names: vec!["id".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string())],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
@@ -146,11 +146,11 @@ mod tests {
                 mode: SelectMode::All,
                 columns: SelectableStack {
                     selectables: vec![
-                        SelectableStackElement::Column("id".to_string()),
-                        SelectableStackElement::Column("name".to_string()),
+                        SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
+                        SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
                     ],
                 },
-                column_names: vec!["id".to_string(), "name".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string()), SelectStatementColumn::new("name".to_string())],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
@@ -193,9 +193,9 @@ mod tests {
             table_name: "guests".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column("id".to_string())],
+                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
             },
-            column_names: vec!["id".to_string()],
+            column_names: vec![SelectStatementColumn::new("id".to_string())],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
@@ -204,12 +204,12 @@ mod tests {
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
                     selectables: vec![
-                        SelectableStackElement::Column("id".to_string()),
-                        SelectableStackElement::Column("name".to_string()),
-                        SelectableStackElement::Column("age".to_string()),
+                        SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
+                        SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
+                        SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
                     ],
                 },
-                column_names: vec!["id".to_string(), "name".to_string(), "age".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string()), SelectStatementColumn::new("name".to_string()), SelectStatementColumn::new("age".to_string())],
                 directions: vec![
                     OrderByDirection::Asc,
                     OrderByDirection::Desc,
@@ -243,10 +243,10 @@ mod tests {
             statement,
             SelectStatement {
                 table_name: "guests".to_string(),
-                column_names: vec!["id".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string())],
                 mode: SelectMode::Distinct,
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
                 },
                 where_clause: None,
                 order_by_clause: None,

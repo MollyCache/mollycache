@@ -171,6 +171,7 @@ mod tests {
     use crate::interpreter::ast::SelectableStack;
     use crate::interpreter::ast::SelectableStackElement;
     use crate::interpreter::ast::SetOperator;
+    use crate::interpreter::ast::SelectStatementColumn;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::test_utils::token;
@@ -197,7 +198,7 @@ mod tests {
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
             },
-            column_names: vec!["*".to_string()],
+            column_names: vec![SelectStatementColumn::new("*".to_string())],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
@@ -359,9 +360,9 @@ mod tests {
                     table_name: "employees".to_string(),
                     mode: SelectMode::All,
                     columns: SelectableStack {
-                        selectables: vec![SelectableStackElement::Column("name".to_string())],
+                        selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("name".to_string()))],
                     },
-                    column_names: vec!["name".to_string()],
+                    column_names: vec![SelectStatementColumn::new("name".to_string())],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
                         operator: Operator::Equals,
@@ -374,9 +375,9 @@ mod tests {
                     table_name: "employees".to_string(),
                     mode: SelectMode::All,
                     columns: SelectableStack {
-                        selectables: vec![SelectableStackElement::Column("name".to_string())],
+                        selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("name".to_string()))],
                     },
-                    column_names: vec!["name".to_string()],
+                    column_names: vec![SelectStatementColumn::new("name".to_string())],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
                         operator: Operator::Equals,
@@ -389,9 +390,9 @@ mod tests {
             ],
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("name".to_string()))],
                 },
-                column_names: vec!["name".to_string()],
+                column_names: vec![SelectStatementColumn::new("name".to_string())],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {
@@ -431,9 +432,9 @@ mod tests {
             ],
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("name".to_string()))],
                 },
-                column_names: vec!["name".to_string()],
+                column_names: vec![SelectStatementColumn::new("name".to_string())],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {

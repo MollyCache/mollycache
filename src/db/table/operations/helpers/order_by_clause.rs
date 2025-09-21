@@ -42,7 +42,8 @@ mod tests {
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectableStack;
     use crate::interpreter::ast::SelectableStackElement;
-
+    use crate::interpreter::ast::SelectStatementColumn;
+    
     #[test]
     fn apply_order_by_from_precomputed_single_column_asc() {
         let mut to_order = vec!["second", "fourth", "third", "first"];
@@ -56,9 +57,9 @@ mod tests {
 
         let order_by_clause = OrderByClause {
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column("age".to_string())],
+                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("age".to_string()))],
             },
-            column_names: vec!["age".to_string()],
+            column_names: vec![SelectStatementColumn::new("age".to_string())],
             directions: vec![OrderByDirection::Asc],
         };
 

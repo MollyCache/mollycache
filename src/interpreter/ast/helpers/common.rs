@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection, SelectableStack,
+        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection, SelectableStack, SelectStatementColumn,
         SelectableStackElement, helpers::token::token_to_value, parser::Parser,
     },
     tokenizer::token::TokenTypes,
@@ -24,11 +24,19 @@ pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
     Ok(result)
 }
 
+pub const TOKENS_NEEDING_SPECIAL_HANDLING: [TokenTypes; 5] = [
+    TokenTypes::From,
+    TokenTypes::SemiColon,
+    TokenTypes::Where,
+    TokenTypes::Order,
+    TokenTypes::Limit,
+];
+
 pub fn get_selectables(
     parser: &mut Parser,
     allow_multiple: bool,
     order_by_directions: &mut Option<&mut Vec<OrderByDirection>>,
-    selectable_names: &mut Option<&mut Vec<String>>,
+    selectable_names: &mut Option<&mut Vec<SelectStatementColumn>>,
 ) -> Result<SelectableStack, String> {
     #[derive(PartialEq)]
     enum ExtendedSelectableStackElement {
@@ -55,15 +63,7 @@ pub fn get_selectables(
 
         // Tokens needing special handling
         // TODO: more tokens should be added here (e.g. Group for GROUP BY)
-        if [
-            TokenTypes::From,
-            TokenTypes::SemiColon,
-            TokenTypes::Where,
-            TokenTypes::Order,
-            TokenTypes::Limit,
-        ]
-        .contains(&token.token_type)
-        {
+        if TOKENS_NEEDING_SPECIAL_HANDLING.contains(&token.token_type) {
             // Default ordering is ASC
             if !expect_new_value && let Some(order_by_directions_vector) = order_by_directions {
                 order_by_directions_vector.push(OrderByDirection::Asc);
@@ -85,7 +85,7 @@ pub fn get_selectables(
                 if !allow_multiple {
                     return Err("Unexpected token: COMMA".to_string());
                 } else if let Some(selectable_names_vector) = selectable_names {
-                    selectable_names_vector.push(current_name);
+                    selectable_names_vector.push(SelectStatementColumn::new(current_name));
                 }
                 // Default ordering is ASC
                 if !expect_new_value && let Some(order_by_directions_vector) = order_by_directions {
@@ -226,7 +226,7 @@ pub fn get_selectables(
             TokenTypes::HexLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
             // TODO: handle ValueList (arrays)
-            TokenTypes::Identifier => SelectableStackElement::Column(token.value.to_string()), // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
+            TokenTypes::Identifier => SelectableStackElement::Column(SelectStatementColumn::new(token.value.to_string())), // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
             _ => return Err(parser.format_error()), // TODO: better error handling
         };
         output.push(element);
@@ -245,7 +245,7 @@ pub fn get_selectables(
     }
 
     if let Some(selectable_names_vector) = selectable_names {
-        selectable_names_vector.push(current_name);
+        selectable_names_vector.push(SelectStatementColumn::new(current_name));
     }
 
     Ok(SelectableStack {

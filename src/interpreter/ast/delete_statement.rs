@@ -38,6 +38,7 @@ mod tests {
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectableStack;
     use crate::interpreter::ast::SelectableStackElement;
+    use crate::interpreter::ast::SelectStatementColumn;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::test_utils::token;
@@ -98,9 +99,9 @@ mod tests {
             })]),
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
                 },
-                column_names: vec!["id".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string())],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {

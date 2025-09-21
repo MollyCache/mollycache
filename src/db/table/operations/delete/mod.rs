@@ -66,6 +66,7 @@ mod tests {
     use crate::db::table::core::{row::Row, value::Value};
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
     use crate::interpreter::ast::LimitClause;
+    use crate::interpreter::ast::SelectStatementColumn;
     use crate::interpreter::ast::{
         Operand, Operator, OrderByClause, OrderByDirection, SelectableStack,
         SelectableStackElement, WhereCondition, WhereStackElement,
@@ -165,9 +166,9 @@ mod tests {
             })]),
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
                 },
-                column_names: vec!["id".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string())],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: Some(LimitClause {
@@ -317,9 +318,9 @@ mod tests {
             })]),
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new("id".to_string()))],
                 },
-                column_names: vec!["id".to_string()],
+                column_names: vec![SelectStatementColumn::new("id".to_string())],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: Some(LimitClause {
