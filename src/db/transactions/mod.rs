@@ -83,8 +83,12 @@ impl TransactionLog {
         }))
     }
 
-    pub fn begin_transaction(&mut self) {
+    pub fn begin_transaction(&mut self) -> Result<(), String> {
+        if self.in_transaction() {
+            return Err("Nested transactions are not allowed".to_string());
+        }
         self.entries = Some(vec![]);
+        Ok(())
     }
 
     pub fn commit_transaction(&mut self) -> Result<TransactionLog, String> {
