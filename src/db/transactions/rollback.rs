@@ -114,3 +114,129 @@ pub fn rollback_transaction_entry(
     }
     return Ok(());
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::table::core::{row::Row, value::Value};
+    use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_database};
+    use crate::db::transactions::{Savepoint, StatementEntry};
+    use crate::interpreter::ast::{InsertIntoStatement, SqlStatement};
+
+    #[test]
+    fn test_rollback_statement_no_active_transaction() {
+        let mut database = default_database();
+        let statement = RollbackStatement {
+            savepoint_name: None,
+        };
+        let result = rollback_statement(&mut database, &statement);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "No transaction is currently active");
+    }
+
+    #[test]
+    fn test_rollback_statement_with_savepoint() {
+        let mut database = default_database();
+
+        database.transaction.begin_transaction().unwrap();
+        let savepoint = Savepoint {
+            name: "test_savepoint".to_string(),
+        };
+        database.transaction.append_savepoint(savepoint).unwrap();
+
+        let table = database.get_table_mut("users").unwrap();
+        table.push(Row(vec![
+            Value::Integer(5),
+            Value::Text("test".to_string()),
+            Value::Integer(50),
+            Value::Real(5000.0),
+        ]));
+        let insert_statement = SqlStatement::InsertInto(InsertIntoStatement {
+            table_name: "users".to_string(),
+            columns: Some(vec![
+                "id".to_string(),
+                "name".to_string(),
+                "age".to_string(),
+                "money".to_string(),
+            ]),
+            values: vec![vec![
+                Value::Integer(5),
+                Value::Text("test".to_string()),
+                Value::Integer(50),
+                Value::Real(5000.0),
+            ]],
+        });
+        database
+            .transaction
+            .append_entry(insert_statement, vec![4])
+            .unwrap();
+
+        assert_eq!(database.transaction.get_entries().unwrap().len(), 2);
+        assert_eq!(database.get_table("users").unwrap().len(), 5);
+        let rollback_stmt = RollbackStatement {
+            savepoint_name: Some("test_savepoint".to_string()),
+        };
+        let result = rollback_statement(&mut database, &rollback_stmt);
+
+        assert!(result.is_ok());
+        assert!(database.transaction.in_transaction());
+        assert_eq!(database.get_table("users").unwrap().len(), 4);
+        assert_table_rows_eq_unordered(
+            database.get_table("users").unwrap().get_rows_clone(),
+            default_database()
+                .get_table("users")
+                .unwrap()
+                .get_rows_clone(),
+        );
+    }
+
+    #[test]
+    fn test_rollback_transaction_entry_various_statements() {
+        let mut database = default_database();
+
+        let table = database.get_table_mut("users").unwrap();
+        table.push(Row(vec![
+            Value::Integer(5),
+            Value::Text("test".to_string()),
+            Value::Integer(50),
+            Value::Real(5000.0),
+        ]));
+
+        let insert_statement = SqlStatement::InsertInto(InsertIntoStatement {
+            table_name: "users".to_string(),
+            columns: Some(vec![
+                "id".to_string(),
+                "name".to_string(),
+                "age".to_string(),
+                "money".to_string(),
+            ]),
+            values: vec![vec![
+                Value::Integer(5),
+                Value::Text("test".to_string()),
+                Value::Integer(50),
+                Value::Real(5000.0),
+            ]],
+        });
+
+        let statement_entry = StatementEntry {
+            statement: insert_statement,
+            table_name: "users".to_string(),
+            affected_rows: vec![4],
+        };
+
+        assert_eq!(table.len(), 5);
+
+        let result = rollback_transaction_entry(&mut database, &statement_entry);
+
+        assert!(result.is_ok());
+        assert_eq!(database.get_table("users").unwrap().len(), 4);
+        assert_table_rows_eq_unordered(
+            database.get_table("users").unwrap().get_rows_clone(),
+            default_database()
+                .get_table("users")
+                .unwrap()
+                .get_rows_clone(),
+        );
+    }
+}
