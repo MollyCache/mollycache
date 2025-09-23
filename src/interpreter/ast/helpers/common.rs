@@ -115,6 +115,20 @@ pub fn get_selectables(
             } else {
                 current_name += token.value;
             }
+
+            // Also push all current operators on the stack inside the current parenthesis
+            while !operators.is_empty() {
+                match operators.last() {
+                    Some(value) => match value {
+                        ExtendedSelectableStackElement::LeftParen => { break; }
+                        ExtendedSelectableStackElement::SelectableStackElement(inner) => {
+                            output.push(inner.clone());
+                            operators.pop();
+                        }
+                    }
+                    None => { break; }
+                }
+            }
             continue;
         } else if token.token_type == TokenTypes::LeftParen {
             operators.push(ExtendedSelectableStackElement::LeftParen);
@@ -211,7 +225,7 @@ pub fn get_selectables(
                 match operators.last() {
                     Some(last) => match last {
                         ExtendedSelectableStackElement::SelectableStackElement(inner) => {
-                            if compare_precedence(&value, inner)? == Ordering::Greater {
+                            if compare_precedence(&value, inner)? != Ordering::Greater {
                                 output.push(inner.clone());
                                 operators.pop();
                             } else {
@@ -309,9 +323,9 @@ pub fn compare_precedence(
 ) -> Result<Ordering, String> {
     let first_precedence = get_precedence(first)?;
     let second_precedence = get_precedence(second)?;
-    return if second_precedence == first_precedence {
+    return if first_precedence == second_precedence {
         Ok(Ordering::Equal)
-    } else if second_precedence > first_precedence {
+    } else if first_precedence < second_precedence {
         Ok(Ordering::Less)
     } else {
         Ok(Ordering::Greater)
