@@ -58,6 +58,7 @@ mod tests {
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::Operator;
+    use crate::interpreter::ast::MathOperator;
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectStatementTable;
@@ -561,6 +562,129 @@ mod tests {
             ],
             where_clause: None,
             order_by_clause: None,
+            limit_clause: None,
+        };
+        assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_complex_selectables_is_generated_correctly() {
+        // SELECT id, age + money, 2 * ((age - (id % age - id / money))), money >= 300.0 OR NOT age > 20 AND money >= 100.5 FROM people ORDER BY id * age;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Distinct, "DISTINCT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "age"),
+            token(TokenTypes::Plus, "+"),
+            token(TokenTypes::Identifier, "money"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::IntLiteral, "2"),
+            token(TokenTypes::Asterisk, "*"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "age"),
+            token(TokenTypes::Minus, "-"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Modulo, "%"),
+            token(TokenTypes::Identifier, "age"),
+            token(TokenTypes::Minus, "-"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Divide, "/"),
+            token(TokenTypes::Identifier, "money"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "people"),
+            token(TokenTypes::Order, "ORDER"),
+            token(TokenTypes::By, "BY"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Asterisk, "*"),
+            token(TokenTypes::Identifier, "age"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+
+        let select_statement_column_id = SelectStatementColumn {
+            column_name: "id".to_string(),
+            alias: None,
+            table_name: None,
+        };
+        let select_statement_column_age = SelectStatementColumn {
+            column_name: "age".to_string(),
+            alias: None,
+            table_name: None,
+        };
+        let select_statement_column_money = SelectStatementColumn {
+            column_name: "money".to_string(),
+            alias: None,
+            table_name: None,
+        };
+
+        let expected = SelectStatement {
+            table_name: SelectStatementTable {
+                table_name: "people".to_string(),
+                alias: None
+            },
+            mode: SelectMode::Distinct,
+            columns: SelectableStack {
+                selectables: vec![
+                    SelectableStackElement::Column(select_statement_column_id.clone()),
+                    SelectableStackElement::Column(select_statement_column_age.clone()),
+                    SelectableStackElement::Column(select_statement_column_money.clone()),
+                    SelectableStackElement::MathOperator(MathOperator::Add),
+                    SelectableStackElement::Value(Value::Integer(2)),
+                    SelectableStackElement::Column(select_statement_column_age.clone()),
+                    SelectableStackElement::Column(select_statement_column_id.clone()),
+                    SelectableStackElement::Column(select_statement_column_age.clone()),
+                    SelectableStackElement::MathOperator(MathOperator::Modulo),
+                    SelectableStackElement::Column(select_statement_column_id.clone()),
+                    SelectableStackElement::MathOperator(MathOperator::Divide),
+                    SelectableStackElement::MathOperator(MathOperator::Subtract),
+                    SelectableStackElement::MathOperator(MathOperator::Subtract),
+                    SelectableStackElement::MathOperator(MathOperator::Multiply),
+                    SelectableStackElement::Column(select_statement_column_money.clone()),
+                    SelectableStackElement::Operator(Operator::GreaterEquals),
+                ],
+            },
+            column_names: vec![
+                SelectStatementColumn {
+                    column_name: "id".to_string(),
+                    alias: None,
+                    table_name: None,
+                },
+                SelectStatementColumn {
+                    column_name: "age + money".to_string(),
+                    alias: None,
+                    table_name: None,
+                },
+                SelectStatementColumn {
+                    column_name: "2 * ((age - (id % age - id / money)))".to_string(),
+                    alias: None,
+                    table_name: None,
+                },
+            ],
+            where_clause: None,
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack {
+                    selectables: vec![
+                        SelectableStackElement::Column(select_statement_column_id.clone()),
+                        SelectableStackElement::Column(select_statement_column_age.clone()),
+                        SelectableStackElement::MathOperator(MathOperator::Multiply),
+                    ],
+                },
+                column_names: vec![SelectStatementColumn {
+                    column_name: "id * age".to_string(),
+                    alias: None,
+                    table_name: None,
+                }],
+                directions: vec![OrderByDirection::Asc],
+            }),
             limit_clause: None,
         };
         assert_eq!(expected, statement);
