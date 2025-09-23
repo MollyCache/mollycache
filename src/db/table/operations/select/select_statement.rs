@@ -84,7 +84,7 @@ mod tests {
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::{
         LimitClause, Operator, OrderByClause, OrderByDirection, SelectableStack,
-        SelectableStackElement,
+        SelectableStackElement, MathOperator
     };
 
     #[test]
@@ -376,5 +376,107 @@ mod tests {
             Row(vec![Value::Null]),
         ];
         assert_table_rows_eq_unordered(expected, result.unwrap());
+    }
+
+    #[test]
+    fn select_with_math_and_logic_operations_is_generated_correctly() {
+        let table = default_table();
+        let statement = SelectStatement {
+            table_name: SelectStatementTable::new("users".to_string()),
+            mode: SelectMode::All,
+            columns: SelectableStack { selectables: vec![
+                SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
+                SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
+                SelectableStackElement::Column(SelectStatementColumn::new("money".to_string())),
+                SelectableStackElement::MathOperator(MathOperator::Add),
+                SelectableStackElement::Column(SelectStatementColumn::new("money".to_string())),
+                SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
+                SelectableStackElement::MathOperator(MathOperator::Divide),
+                SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
+                SelectableStackElement::MathOperator(MathOperator::Add),
+                SelectableStackElement::Column(SelectStatementColumn::new("money".to_string())),
+                SelectableStackElement::Value(Value::Integer(2000)),
+                SelectableStackElement::Operator(Operator::GreaterEquals),
+                SelectableStackElement::Value(Value::Integer(1)),
+                SelectableStackElement::Value(Value::Real(1.0)),
+                SelectableStackElement::MathOperator(MathOperator::Add),
+            ]},
+            column_names: vec![
+                SelectStatementColumn::new("id".to_string()),
+                SelectStatementColumn::new("age + money".to_string()),
+                SelectStatementColumn::new("money / age + id".to_string()),
+                SelectStatementColumn::new("money >= 2000".to_string()),
+                SelectStatementColumn::new("1 + 1.0".to_string()),
+            ],
+            where_clause: None,
+            order_by_clause: Some(OrderByClause {
+                columns: SelectableStack { selectables: vec![
+                    SelectableStackElement::Column(SelectStatementColumn::new("money".to_string())),
+                    SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
+                    SelectableStackElement::MathOperator(MathOperator::Divide),
+                    SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
+                    SelectableStackElement::MathOperator(MathOperator::Add),
+                ]},
+                column_names: vec![SelectStatementColumn::new("money / age + id".to_string())],
+                directions: vec![OrderByDirection::Desc],
+            }),
+            limit_clause: None,
+        };
+
+        let result = select_statement(&table, &statement);
+        assert!(result.is_ok());
+
+        let expected = vec![
+            Row(vec![Value::Integer(4), Value::Real(4040.0), Value::Real(104.0), Value::Integer(1), Value::Real(2.0)]),
+            Row(vec![Value::Integer(3), Value::Real(3035.0), Value::Real(88.71428571428571), Value::Integer(1), Value::Real(2.0)]),
+            Row(vec![Value::Integer(2), Value::Real(2030.0), Value::Real(68.66666666666667), Value::Integer(1), Value::Real(2.0)]),
+            Row(vec![Value::Integer(1), Value::Real(1025.0), Value::Real(41.0), Value::Integer(0), Value::Real(2.0)]),
+        ];
+
+        assert_eq!(expected, result.unwrap());
+    }
+
+    #[test]
+    fn select_with_operators_is_generated_correctly() {
+        let table = default_table();
+        let statement = SelectStatement {
+            table_name: SelectStatementTable::new("users".to_string()),
+            mode: SelectMode::All,
+            columns: SelectableStack { selectables: vec![
+                SelectableStackElement::Value(Value::Integer(1)),
+                SelectableStackElement::Value(Value::Real(1.0)),
+                SelectableStackElement::Operator(Operator::GreaterEquals),
+                SelectableStackElement::Value(Value::Real(3000.0)),
+                SelectableStackElement::Value(Value::Real(2000.0)),
+                SelectableStackElement::Operator(Operator::LessThan),
+                SelectableStackElement::Value(Value::Integer(10)),
+                SelectableStackElement::Value(Value::Integer(-11)),
+                SelectableStackElement::Operator(Operator::LessEquals),
+                SelectableStackElement::Value(Value::Integer(10)),
+                SelectableStackElement::Value(Value::Real(10.0)),
+                SelectableStackElement::Operator(Operator::Equals),
+            ]},
+            column_names: vec![
+                SelectStatementColumn::new("1 >= -1.0".to_string()),
+                SelectStatementColumn::new("3000.0 < 2000.0".to_string()),
+                SelectStatementColumn::new("10 <= -11".to_string()),                
+                SelectStatementColumn::new("10 == 10.0".to_string()),
+            ],
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        };
+
+        let result = select_statement(&table, &statement);
+        assert!(result.is_ok());
+
+        let expected = vec![
+            Row(vec![Value::Integer(1), Value::Integer(0), Value::Integer(0), Value::Integer(1)]),
+            Row(vec![Value::Integer(1), Value::Integer(0), Value::Integer(0), Value::Integer(1)]),
+            Row(vec![Value::Integer(1), Value::Integer(0), Value::Integer(0), Value::Integer(1)]),
+            Row(vec![Value::Integer(1), Value::Integer(0), Value::Integer(0), Value::Integer(1)]),
+        ];
+
+        assert_eq!(expected, result.unwrap());
     }
 }
