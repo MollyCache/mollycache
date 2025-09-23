@@ -77,42 +77,54 @@ pub fn get_columns_from_row(
             }
             SelectableStackElement::Operator(op) => {
                 let res = match op {
-                    Operator::Equals => {
-                        pop_two_and_operate(|a, b| match (a.as_f64(), b.as_f64()) {
+                    Operator::Equals => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 == val2),
                             _ => Ok(a == b),
-                        }, &mut row_values, None)?
-                    }
-                    Operator::NotEquals => {
-                        pop_two_and_operate(|a, b| match (a.as_f64(), b.as_f64()) {
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::NotEquals => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 != val2),
                             _ => Ok(a != b),
-                        }, &mut row_values, None)?
-                    }
-                    Operator::LessThan => {
-                        pop_two_and_operate(|a, b| match (a.as_f64(), b.as_f64()) {
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::LessThan => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 < val2),
                             _ => Ok(a < b),
-                        }, &mut row_values, None)?
-                    }
-                    Operator::GreaterThan => {
-                        pop_two_and_operate(|a, b| match (a.as_f64(), b.as_f64()) {
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::GreaterThan => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 > val2),
                             _ => Ok(a > b),
-                        }, &mut row_values, None)?
-                    }
-                    Operator::LessEquals => {
-                        pop_two_and_operate(|a, b| match (a.as_f64(), b.as_f64()) {
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::LessEquals => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 <= val2),
                             _ => Ok(a <= b),
-                        }, &mut row_values, None)?
-                    }
-                    Operator::GreaterEquals => {
-                        pop_two_and_operate(|a, b| match (a.as_f64(), b.as_f64()) {
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::GreaterEquals => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 >= val2),
                             _ => Ok(a >= b),
-                        }, &mut row_values, None)?
-                    }
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
                     // TODO: In, NotIn, Is, IsNot
                     _ => false,
                 };

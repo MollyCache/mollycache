@@ -69,7 +69,7 @@ mod tests {
 
         assert_eq!(to_order, vec!["first", "second", "third", "fourth"]);
     }
-    
+
     #[test]
     fn apply_order_by_from_precomputed_multiple_columns_desc() {
         let mut to_order = vec!["fifth", "second", "sixth", "third", "fourth", "first"];
@@ -85,18 +85,23 @@ mod tests {
 
         let order_by_clause = OrderByClause {
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
-                    "age".to_string(),
-                )), SelectableStackElement::Column(SelectStatementColumn::new(
-                    "money".to_string(),
-                ))],
+                selectables: vec![
+                    SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
+                    SelectableStackElement::Column(SelectStatementColumn::new("money".to_string())),
+                ],
             },
-            column_names: vec![SelectStatementColumn::new("age".to_string()), SelectStatementColumn::new("money".to_string())],
+            column_names: vec![
+                SelectStatementColumn::new("age".to_string()),
+                SelectStatementColumn::new("money".to_string()),
+            ],
             directions: vec![OrderByDirection::Desc, OrderByDirection::Asc],
         };
 
         apply_order_by_from_precomputed(&mut to_order, precomputed, "default", &order_by_clause);
 
-        assert_eq!(to_order, vec!["first", "second", "third", "fourth", "fifth", "sixth"]);
+        assert_eq!(
+            to_order,
+            vec!["first", "second", "third", "fourth", "fifth", "sixth"]
+        );
     }
 }
