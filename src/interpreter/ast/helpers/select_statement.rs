@@ -293,7 +293,6 @@ mod tests {
         ];
         let mut parser = Parser::new(tokens);
         let result = get_statement(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
