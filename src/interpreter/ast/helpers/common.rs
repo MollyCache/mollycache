@@ -258,7 +258,7 @@ pub fn get_selectables(
     }
 
     while !operators.is_empty() {
-        match operators.last() {
+        match operators.pop() {
             Some(value) => match value {
                 ExtendedSelectableStackElement::SelectableStackElement(inner) => {
                     output.push(inner.clone());

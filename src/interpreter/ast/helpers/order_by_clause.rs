@@ -48,7 +48,6 @@ mod tests {
         ];
         let mut parser = Parser::new(tokens);
         let result = get_order_by(&mut parser);
-        println!("{:?}", result);
         assert!(result.is_ok());
         let order_by_clause = result.unwrap();
         let expected = Some(OrderByClause {

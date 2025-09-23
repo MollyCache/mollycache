@@ -77,24 +77,54 @@ pub fn get_columns_from_row(
             }
             SelectableStackElement::Operator(op) => {
                 let res = match op {
-                    Operator::Equals => {
-                        pop_two_and_operate(|a, b| Ok(a == b), &mut row_values, None)?
-                    }
-                    Operator::NotEquals => {
-                        pop_two_and_operate(|a, b| Ok(a != b), &mut row_values, None)?
-                    }
-                    Operator::LessThan => {
-                        pop_two_and_operate(|a, b| Ok(a < b), &mut row_values, None)?
-                    }
-                    Operator::GreaterThan => {
-                        pop_two_and_operate(|a, b| Ok(a > b), &mut row_values, None)?
-                    }
-                    Operator::LessEquals => {
-                        pop_two_and_operate(|a, b| Ok(a <= b), &mut row_values, None)?
-                    }
-                    Operator::GreaterEquals => {
-                        pop_two_and_operate(|a, b| Ok(a >= b), &mut row_values, None)?
-                    }
+                    Operator::Equals => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
+                            (Some(val1), Some(val2)) => Ok(val1 == val2),
+                            _ => Ok(a == b),
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::NotEquals => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
+                            (Some(val1), Some(val2)) => Ok(val1 != val2),
+                            _ => Ok(a != b),
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::LessThan => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
+                            (Some(val1), Some(val2)) => Ok(val1 < val2),
+                            _ => Ok(a < b),
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::GreaterThan => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
+                            (Some(val1), Some(val2)) => Ok(val1 > val2),
+                            _ => Ok(a > b),
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::LessEquals => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
+                            (Some(val1), Some(val2)) => Ok(val1 <= val2),
+                            _ => Ok(a <= b),
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::GreaterEquals => pop_two_and_operate(
+                        |a, b| match (a.as_f64(), b.as_f64()) {
+                            (Some(val1), Some(val2)) => Ok(val1 >= val2),
+                            _ => Ok(a >= b),
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
                     // TODO: In, NotIn, Is, IsNot
                     _ => false,
                 };
@@ -118,7 +148,7 @@ pub fn get_columns_from_row(
                     LogicalOperator::And => pop_two_and_operate(
                         |a, b| {
                             if let (Value::Integer(val1), Value::Integer(val2)) = (a, b) {
-                                Ok(val1 != 0 && val2 != 1)
+                                Ok(val1 != 0 && val2 != 0)
                             } else {
                                 Err("Unexpected type(s) for AND".to_string())
                             }
@@ -129,7 +159,7 @@ pub fn get_columns_from_row(
                     LogicalOperator::Or => pop_two_and_operate(
                         |a, b| {
                             if let (Value::Integer(val1), Value::Integer(val2)) = (a, b) {
-                                Ok(val1 == 1 || val2 == 1)
+                                Ok(val1 != 0 || val2 != 0)
                             } else {
                                 Err("Unexpected type(s) for OR".to_string())
                             }
