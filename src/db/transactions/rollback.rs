@@ -228,4 +228,131 @@ mod tests {
                 .get_rows_clone(),
         );
     }
+
+    #[test]
+    fn test_rollback_transaction_with_multiple_tables() {
+        let mut database = default_database();
+        database.tables.insert(
+            "orders".to_string(),
+            vec![Some({
+                let mut orders_table = crate::db::table::core::table::Table::new(
+                    "orders".to_string(),
+                    vec![
+                        crate::db::table::core::column::ColumnDefinition {
+                            name: "id".to_string(),
+                            data_type: crate::db::table::core::value::DataType::Integer,
+                            constraints: vec![],
+                        },
+                        crate::db::table::core::column::ColumnDefinition {
+                            name: "user_id".to_string(),
+                            data_type: crate::db::table::core::value::DataType::Integer,
+                            constraints: vec![],
+                        },
+                        crate::db::table::core::column::ColumnDefinition {
+                            name: "amount".to_string(),
+                            data_type: crate::db::table::core::value::DataType::Real,
+                            constraints: vec![],
+                        },
+                    ],
+                );
+                orders_table.set_rows(vec![
+                    Row(vec![
+                        Value::Integer(1),
+                        Value::Integer(1),
+                        Value::Real(100.0),
+                    ]),
+                    Row(vec![
+                        Value::Integer(2),
+                        Value::Integer(2),
+                        Value::Real(200.0),
+                    ]),
+                ]);
+                orders_table
+            })],
+        );
+        database.transaction.begin_transaction().unwrap();
+        let users_table = database.get_table_mut("users").unwrap();
+        users_table.push(Row(vec![
+            Value::Integer(5),
+            Value::Text("Alice".to_string()),
+            Value::Integer(28),
+            Value::Real(5000.0),
+        ]));
+        let users_insert = SqlStatement::InsertInto(InsertIntoStatement {
+            table_name: "users".to_string(),
+            columns: Some(vec![
+                "id".to_string(),
+                "name".to_string(),
+                "age".to_string(),
+                "money".to_string(),
+            ]),
+            values: vec![vec![
+                Value::Integer(5),
+                Value::Text("Alice".to_string()),
+                Value::Integer(28),
+                Value::Real(5000.0),
+            ]],
+        });
+        database
+            .transaction
+            .append_entry(users_insert, vec![4])
+            .unwrap();
+        let orders_table = database.get_table_mut("orders").unwrap();
+        orders_table.push(Row(vec![
+            Value::Integer(3),
+            Value::Integer(5),
+            Value::Real(150.0),
+        ]));
+        let orders_insert = SqlStatement::InsertInto(InsertIntoStatement {
+            table_name: "orders".to_string(),
+            columns: Some(vec![
+                "id".to_string(),
+                "user_id".to_string(),
+                "amount".to_string(),
+            ]),
+            values: vec![vec![
+                Value::Integer(3),
+                Value::Integer(5),
+                Value::Real(150.0),
+            ]],
+        });
+        database
+            .transaction
+            .append_entry(orders_insert, vec![2])
+            .unwrap();
+        assert_eq!(database.get_table("users").unwrap().len(), 5);
+        assert_eq!(database.get_table("orders").unwrap().len(), 3);
+        assert_eq!(database.transaction.get_entries().unwrap().len(), 2);
+        let rollback_stmt = RollbackStatement {
+            savepoint_name: None,
+        };
+        let result = rollback_statement(&mut database, &rollback_stmt);
+        assert!(result.is_ok());
+        assert_eq!(database.get_table("users").unwrap().len(), 4);
+        assert_eq!(database.get_table("orders").unwrap().len(), 2);
+        assert!(!database.transaction.in_transaction());
+        assert_table_rows_eq_unordered(
+            database.get_table("users").unwrap().get_rows_clone(),
+            default_database()
+                .get_table("users")
+                .unwrap()
+                .get_rows_clone(),
+        );
+        let expected_orders = vec![
+            Row(vec![
+                Value::Integer(1),
+                Value::Integer(1),
+                Value::Real(100.0),
+            ]),
+            Row(vec![
+                Value::Integer(2),
+                Value::Integer(2),
+                Value::Real(200.0),
+            ]),
+        ];
+        assert_table_rows_eq_unordered(
+            database.get_table("orders").unwrap().get_rows_clone(),
+            expected_orders,
+        );
+    }
 }
