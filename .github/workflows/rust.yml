@@ -25,7 +25,7 @@ jobs:
         run: RUSTFLAGS="-D warnings" cargo check --verbose
     
   lint:
-    name: Rust Lint Check
+    name: Rust Formatter Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,10 +35,10 @@ jobs:
           toolchain: stable
           override: true
       
-      - name: Install Linter
+      - name: Install Formatter
         run: rustup component add rustfmt
 
-      - name: Run Linter
+      - name: Run Formatter
         run: cargo fmt --all -- --check
 
   test:
