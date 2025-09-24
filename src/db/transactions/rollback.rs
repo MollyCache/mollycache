@@ -232,41 +232,44 @@ mod tests {
     #[test]
     fn test_rollback_transaction_with_multiple_tables() {
         let mut database = default_database();
-        database.tables.insert("orders".to_string(), vec![Some({
-            let mut orders_table = crate::db::table::core::table::Table::new(
-                "orders".to_string(),
-                vec![
-                    crate::db::table::core::column::ColumnDefinition {
-                        name: "id".to_string(),
-                        data_type: crate::db::table::core::value::DataType::Integer,
-                        constraints: vec![],
-                    },
-                    crate::db::table::core::column::ColumnDefinition {
-                        name: "user_id".to_string(),
-                        data_type: crate::db::table::core::value::DataType::Integer,
-                        constraints: vec![],
-                    },
-                    crate::db::table::core::column::ColumnDefinition {
-                        name: "amount".to_string(),
-                        data_type: crate::db::table::core::value::DataType::Real,
-                        constraints: vec![],
-                    },
-                ],
-            );
-            orders_table.set_rows(vec![
-                Row(vec![
-                    Value::Integer(1),
-                    Value::Integer(1),
-                    Value::Real(100.0),
-                ]),
-                Row(vec![
-                    Value::Integer(2),
-                    Value::Integer(2),
-                    Value::Real(200.0),
-                ]),
-            ]);
-            orders_table
-        })]);
+        database.tables.insert(
+            "orders".to_string(),
+            vec![Some({
+                let mut orders_table = crate::db::table::core::table::Table::new(
+                    "orders".to_string(),
+                    vec![
+                        crate::db::table::core::column::ColumnDefinition {
+                            name: "id".to_string(),
+                            data_type: crate::db::table::core::value::DataType::Integer,
+                            constraints: vec![],
+                        },
+                        crate::db::table::core::column::ColumnDefinition {
+                            name: "user_id".to_string(),
+                            data_type: crate::db::table::core::value::DataType::Integer,
+                            constraints: vec![],
+                        },
+                        crate::db::table::core::column::ColumnDefinition {
+                            name: "amount".to_string(),
+                            data_type: crate::db::table::core::value::DataType::Real,
+                            constraints: vec![],
+                        },
+                    ],
+                );
+                orders_table.set_rows(vec![
+                    Row(vec![
+                        Value::Integer(1),
+                        Value::Integer(1),
+                        Value::Real(100.0),
+                    ]),
+                    Row(vec![
+                        Value::Integer(2),
+                        Value::Integer(2),
+                        Value::Real(200.0),
+                    ]),
+                ]);
+                orders_table
+            })],
+        );
         database.transaction.begin_transaction().unwrap();
         let users_table = database.get_table_mut("users").unwrap();
         users_table.push(Row(vec![
