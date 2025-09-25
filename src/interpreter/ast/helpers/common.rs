@@ -258,7 +258,7 @@ pub fn get_selectables(
                 current_name = column.column_name.clone();
                 SelectableStackElement::Column(column)
             }
-            TokenTypes::Count => {
+            TokenTypes::Count => { // TODO: GENERALIZE THIS FOR ALL FUNCTIONS
                 let mut function_name = token.value.to_string();
                 let has_parentheses = if let Ok(peek_token) = parser.peek_token() {
                     peek_token.token_type == TokenTypes::LeftParen
