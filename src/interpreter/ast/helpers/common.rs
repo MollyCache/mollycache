@@ -1,8 +1,8 @@
 use crate::interpreter::{
     ast::{
-        ExistenceCheck, FunctionName, FunctionSignature, LogicalOperator, MathOperator, Operator, OrderByDirection,
-        SelectStatementColumn, SelectStatementTable, SelectableStack, SelectableStackElement,
-        helpers::token::token_to_value, parser::Parser,
+        ExistenceCheck, FunctionName, FunctionSignature, LogicalOperator, MathOperator, Operator,
+        OrderByDirection, SelectStatementColumn, SelectStatementTable, SelectableStack,
+        SelectableStackElement, helpers::token::token_to_value, parser::Parser,
     },
     tokenizer::token::TokenTypes,
 };
@@ -258,27 +258,28 @@ pub fn get_selectables(
                 current_name = column.column_name.clone();
                 SelectableStackElement::Column(column)
             }
-            TokenTypes::Count => { // TODO: GENERALIZE THIS FOR ALL FUNCTIONS
+            TokenTypes::Count => {
+                // TODO: GENERALIZE THIS FOR ALL FUNCTIONS
                 let mut function_name = token.value.to_string();
                 let has_parentheses = if let Ok(peek_token) = parser.peek_token() {
                     peek_token.token_type == TokenTypes::LeftParen
                 } else {
                     false
                 };
-                
+
                 if has_parentheses {
                     parser.advance()?;
                     function_name += parser.current_token()?.value;
-                    
+
                     parser.advance()?;
                     while parser.current_token()?.token_type != TokenTypes::RightParen {
                         function_name += parser.current_token()?.value;
                         parser.advance()?;
                     }
-                    
+
                     function_name += parser.current_token()?.value;
                 }
-                
+
                 current_name = function_name;
                 SelectableStackElement::Function(FunctionSignature {
                     name: FunctionName::CountFunction,
