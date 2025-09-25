@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection,
+        ExistenceCheck, FunctionName, FunctionSignature, LogicalOperator, MathOperator, Operator, OrderByDirection,
         SelectStatementColumn, SelectStatementTable, SelectableStack, SelectableStackElement,
         helpers::token::token_to_value, parser::Parser,
     },
@@ -114,6 +114,12 @@ pub fn get_selectables(
                 current_alias = None;
             } else {
                 current_name += token.value;
+            }
+            continue;
+        } else if token.token_type == TokenTypes::As {
+            parser.advance()?;
+            if parser.current_token()?.token_type == TokenTypes::Identifier {
+                current_alias = Some(parser.current_token()?.value.to_string());
             }
             continue;
         } else if token.token_type == TokenTypes::LeftParen {
@@ -251,6 +257,34 @@ pub fn get_selectables(
                 current_table_name = column.table_name.clone();
                 current_name = column.column_name.clone();
                 SelectableStackElement::Column(column)
+            }
+            TokenTypes::Count => {
+                let mut function_name = token.value.to_string();
+                let has_parentheses = if let Ok(peek_token) = parser.peek_token() {
+                    peek_token.token_type == TokenTypes::LeftParen
+                } else {
+                    false
+                };
+                
+                if has_parentheses {
+                    parser.advance()?;
+                    function_name += parser.current_token()?.value;
+                    
+                    parser.advance()?;
+                    while parser.current_token()?.token_type != TokenTypes::RightParen {
+                        function_name += parser.current_token()?.value;
+                        parser.advance()?;
+                    }
+                    
+                    function_name += parser.current_token()?.value;
+                }
+                
+                current_name = function_name;
+                SelectableStackElement::Function(FunctionSignature {
+                    name: FunctionName::CountFunction,
+                    input_count: 0,
+                    has_parentheses,
+                })
             }
             _ => return Err(parser.format_error()), // TODO: better error handling
         };
