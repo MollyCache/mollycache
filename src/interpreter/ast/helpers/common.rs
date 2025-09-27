@@ -120,13 +120,17 @@ pub fn get_selectables(
             while !operators.is_empty() {
                 match operators.last() {
                     Some(value) => match value {
-                        ExtendedSelectableStackElement::LeftParen => { break; }
+                        ExtendedSelectableStackElement::LeftParen => {
+                            break;
+                        }
                         ExtendedSelectableStackElement::SelectableStackElement(inner) => {
                             output.push(inner.clone());
                             operators.pop();
                         }
+                    },
+                    None => {
+                        break;
                     }
-                    None => { break; }
                 }
             }
             continue;

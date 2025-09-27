@@ -57,9 +57,9 @@ mod tests {
     use crate::db::table::core::value::Value;
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::LogicalOperator;
+    use crate::interpreter::ast::MathOperator;
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::Operator;
-    use crate::interpreter::ast::MathOperator;
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectStatementTable;
@@ -643,7 +643,7 @@ mod tests {
         let expected = SelectStatement {
             table_name: SelectStatementTable {
                 table_name: "people".to_string(),
-                alias: None
+                alias: None,
             },
             mode: SelectMode::Distinct,
             columns: SelectableStack {
@@ -700,7 +700,7 @@ mod tests {
                     column_name: "money>=100.5".to_string(),
                     alias: None,
                     table_name: None,
-                }
+                },
             ],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
