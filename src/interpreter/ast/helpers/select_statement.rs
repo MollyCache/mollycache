@@ -56,6 +56,7 @@ mod tests {
     use super::*;
     use crate::db::table::core::value::Value;
     use crate::interpreter::ast::LimitClause;
+    use crate::interpreter::ast::LogicalOperator;
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::Operator;
     use crate::interpreter::ast::MathOperator;
@@ -596,6 +597,19 @@ mod tests {
             token(TokenTypes::RightParen, ")"),
             token(TokenTypes::RightParen, ")"),
             token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "money"),
+            token(TokenTypes::GreaterEquals, ">="),
+            token(TokenTypes::RealLiteral, "300.0"),
+            token(TokenTypes::Or, "OR"),
+            token(TokenTypes::Not, "NOT"),
+            token(TokenTypes::Identifier, "age"),
+            token(TokenTypes::GreaterThan, ">"),
+            token(TokenTypes::IntLiteral, "20"),
+            token(TokenTypes::And, "AND"),
+            token(TokenTypes::Identifier, "money"),
+            token(TokenTypes::GreaterEquals, ">="),
+            token(TokenTypes::RealLiteral, "100.5"),
             token(TokenTypes::From, "FROM"),
             token(TokenTypes::Identifier, "people"),
             token(TokenTypes::Order, "ORDER"),
@@ -644,12 +658,23 @@ mod tests {
                     SelectableStackElement::Column(select_statement_column_age.clone()),
                     SelectableStackElement::MathOperator(MathOperator::Modulo),
                     SelectableStackElement::Column(select_statement_column_id.clone()),
+                    SelectableStackElement::Column(select_statement_column_money.clone()),
                     SelectableStackElement::MathOperator(MathOperator::Divide),
                     SelectableStackElement::MathOperator(MathOperator::Subtract),
                     SelectableStackElement::MathOperator(MathOperator::Subtract),
                     SelectableStackElement::MathOperator(MathOperator::Multiply),
                     SelectableStackElement::Column(select_statement_column_money.clone()),
+                    SelectableStackElement::Value(Value::Real(300.0)),
                     SelectableStackElement::Operator(Operator::GreaterEquals),
+                    SelectableStackElement::Column(select_statement_column_age.clone()),
+                    SelectableStackElement::Value(Value::Integer(20)),
+                    SelectableStackElement::Operator(Operator::GreaterThan),
+                    SelectableStackElement::LogicalOperator(LogicalOperator::Not),
+                    SelectableStackElement::Column(select_statement_column_money.clone()),
+                    SelectableStackElement::Value(Value::Real(100.5)),
+                    SelectableStackElement::Operator(Operator::GreaterEquals),
+                    SelectableStackElement::LogicalOperator(LogicalOperator::And),
+                    SelectableStackElement::LogicalOperator(LogicalOperator::Or),
                 ],
             },
             column_names: vec![
@@ -659,15 +684,23 @@ mod tests {
                     table_name: None,
                 },
                 SelectStatementColumn {
-                    column_name: "age + money".to_string(),
+                    // TODO: replace this by "age + money"
+                    column_name: "money".to_string(),
                     alias: None,
                     table_name: None,
                 },
                 SelectStatementColumn {
-                    column_name: "2 * ((age - (id % age - id / money)))".to_string(),
+                    // TODO: replace this by "2 * ((age - (id % age - id / money)))"
+                    column_name: "money)))".to_string(),
                     alias: None,
                     table_name: None,
                 },
+                SelectStatementColumn {
+                    // TODO: replace this by "money >= 300.0 OR NOT age > 20 AND money >= 100.5"
+                    column_name: "money>=100.5".to_string(),
+                    alias: None,
+                    table_name: None,
+                }
             ],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
@@ -679,7 +712,8 @@ mod tests {
                     ],
                 },
                 column_names: vec![SelectStatementColumn {
-                    column_name: "id * age".to_string(),
+                    // TODO: replace this by "id * age"
+                    column_name: "age".to_string(),
                     alias: None,
                     table_name: None,
                 }],
