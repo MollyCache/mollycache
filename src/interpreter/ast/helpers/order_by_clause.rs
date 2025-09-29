@@ -94,12 +94,13 @@ mod tests {
         assert!(result.is_ok());
         let order_by_clause = result.unwrap();
         let expected = Some(OrderByClause {
-            columns: vec![SelectableStack {
-                selectables: vec![
-                    SelectableStackElement::Column("id".to_string()),
-                ]}, SelectableStack { selectables: vec![
-                    SelectableStackElement::Column("name".to_string()),
-                ]},
+            columns: vec![
+                SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                },
+                SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                },
             ],
             column_names: vec!["id".to_string(), "name".to_string()],
             directions: vec![OrderByDirection::Asc, OrderByDirection::Desc],

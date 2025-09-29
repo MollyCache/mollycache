@@ -36,7 +36,11 @@ pub fn get_columns(
 ) -> Result<Row, String> {
     let mut columns = vec![];
     for col in selected_columns {
-        if col.selectables.first().is_some_and(|elem| elem == &SelectableStackElement::All) {
+        if col
+            .selectables
+            .first()
+            .is_some_and(|elem| elem == &SelectableStackElement::All)
+        {
             for val in row.iter() {
                 // TODO: can we do this?
                 columns.push(val.clone());

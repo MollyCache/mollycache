@@ -121,7 +121,9 @@ pub fn get_selectables(
             }
 
             if current_column.len() > 0 {
-                all_columns.push(SelectableStack { selectables: current_column });
+                all_columns.push(SelectableStack {
+                    selectables: current_column,
+                });
                 current_column = vec![];
             }
 
@@ -153,7 +155,8 @@ pub fn get_selectables(
                     ExtendedSelectableStackElement::SelectableStackElement(inner) => match inner {
                         SelectableStackElement::Function(function) => {
                             if function.has_parentheses {
-                                current_column.push(SelectableStackElement::Function(function.clone()));
+                                current_column
+                                    .push(SelectableStackElement::Function(function.clone()));
                             }
                         }
                         _ => {}
@@ -277,7 +280,9 @@ pub fn get_selectables(
     }
 
     if current_column.len() > 0 {
-        all_columns.push(SelectableStack { selectables: current_column });
+        all_columns.push(SelectableStack {
+            selectables: current_column,
+        });
     }
 
     if let Some(selectable_names_vector) = selectable_names {
