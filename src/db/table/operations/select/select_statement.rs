@@ -380,8 +380,8 @@ mod tests {
                 ]}, SelectableStack { selectables: vec![
                     SelectableStackElement::Column("age".to_string()),
                     SelectableStackElement::Column("money".to_string()),
-                ]}, SelectableStack { selectables: vec![
                     SelectableStackElement::MathOperator(MathOperator::Add),
+                ]}, SelectableStack { selectables: vec![
                     SelectableStackElement::Column("money".to_string()),
                     SelectableStackElement::Column("age".to_string()),
                     SelectableStackElement::MathOperator(MathOperator::Divide),
