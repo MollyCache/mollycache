@@ -165,9 +165,9 @@ mod tests {
                 r_side: Operand::Value(Value::Text("John".to_string())),
             })]),
             order_by_clause: Some(OrderByClause {
-                columns: SelectableStack {
+                columns: vec![SelectableStack {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
-                },
+                }],
                 column_names: vec!["id".to_string()],
                 directions: vec![OrderByDirection::Desc],
             }),

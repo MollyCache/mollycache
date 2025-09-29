@@ -195,9 +195,9 @@ mod tests {
                 SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::All],
-                    },
+                    }],
                     column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,

@@ -107,7 +107,7 @@ pub struct SelectStatement {
     pub table_name: String,
     pub column_names: Vec<String>,
     pub mode: SelectMode,
-    pub columns: SelectableStack,
+    pub columns: Vec<SelectableStack>,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
@@ -315,7 +315,7 @@ pub enum OrderByDirection {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct OrderByClause {
-    pub columns: SelectableStack,
+    pub columns: Vec<SelectableStack>,
     pub column_names: Vec<String>,
     pub directions: Vec<OrderByDirection>,
 }
@@ -480,9 +480,9 @@ mod tests {
                         SelectStatement {
                             table_name: "users".to_string(),
                             mode: SelectMode::All,
-                            columns: SelectableStack {
+                            columns: vec![SelectableStack {
                                 selectables: vec![SelectableStackElement::All],
-                            },
+                            }],
                             column_names: vec!["*".to_string()],
                             where_clause: None,
                             order_by_clause: None,
@@ -574,9 +574,9 @@ mod tests {
                         SelectStatement {
                             table_name: "users".to_string(),
                             mode: SelectMode::All,
-                            columns: SelectableStack {
+                            columns: vec![SelectableStack {
                                 selectables: vec![SelectableStackElement::All],
-                            },
+                            }],
                             column_names: vec!["*".to_string()],
                             where_clause: None,
                             order_by_clause: None,

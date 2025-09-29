@@ -229,9 +229,9 @@ mod tests {
                 r_side: Operand::Value(Value::Integer(1)),
             })]),
             order_by_clause: Some(OrderByClause {
-                columns: SelectableStack {
+                columns: vec![SelectableStack {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
-                },
+                }],
                 column_names: vec!["id".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),

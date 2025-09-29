@@ -29,13 +29,14 @@ pub fn get_selectables(
     allow_multiple: bool,
     order_by_directions: &mut Option<&mut Vec<OrderByDirection>>,
     selectable_names: &mut Option<&mut Vec<String>>,
-) -> Result<SelectableStack, String> {
+) -> Result<Vec<SelectableStack>, String> {
     #[derive(PartialEq)]
     enum ExtendedSelectableStackElement {
         SelectableStackElement(SelectableStackElement),
         LeftParen,
     }
-    let mut output: Vec<SelectableStackElement> = vec![];
+    let mut all_columns: Vec<SelectableStack> = vec![];
+    let mut current_column: Vec<SelectableStackElement> = vec![];
     let mut operators: Vec<ExtendedSelectableStackElement> = vec![];
     let mut depth = 0;
     let mut current_name = "".to_string();
@@ -61,6 +62,7 @@ pub fn get_selectables(
             TokenTypes::Where,
             TokenTypes::Order,
             TokenTypes::Limit,
+            TokenTypes::EOF,
         ]
         .contains(&token.token_type)
         {
@@ -77,7 +79,7 @@ pub fn get_selectables(
             && (was_first || [TokenTypes::Comma, TokenTypes::LeftParen].contains(&last_token_type))
         {
             // * (All) is only allowed at certain places, otherwise it's * (Multiply)
-            output.push(SelectableStackElement::All);
+            current_column.push(SelectableStackElement::All);
             current_name += token.value;
             current_name += " ";
             continue;
@@ -108,7 +110,7 @@ pub fn get_selectables(
                             break;
                         }
                         ExtendedSelectableStackElement::SelectableStackElement(inner) => {
-                            output.push(inner.clone());
+                            current_column.push(inner.clone());
                             operators.pop();
                         }
                     },
@@ -117,6 +119,14 @@ pub fn get_selectables(
                     }
                 }
             }
+
+            if current_column.len() > 0 {
+                all_columns.push(SelectableStack {
+                    selectables: current_column,
+                });
+                current_column = vec![];
+            }
+
             continue;
         } else if token.token_type == TokenTypes::LeftParen {
             operators.push(ExtendedSelectableStackElement::LeftParen);
@@ -134,7 +144,7 @@ pub fn get_selectables(
                         break;
                     }
                     ExtendedSelectableStackElement::SelectableStackElement(value) => {
-                        output.push(value);
+                        current_column.push(value);
                     }
                 }
             }
@@ -145,7 +155,8 @@ pub fn get_selectables(
                     ExtendedSelectableStackElement::SelectableStackElement(inner) => match inner {
                         SelectableStackElement::Function(function) => {
                             if function.has_parentheses {
-                                output.push(SelectableStackElement::Function(function.clone()));
+                                current_column
+                                    .push(SelectableStackElement::Function(function.clone()));
                             }
                         }
                         _ => {}
@@ -217,7 +228,7 @@ pub fn get_selectables(
                     Some(last) => match last {
                         ExtendedSelectableStackElement::SelectableStackElement(inner) => {
                             if compare_precedence(&value, inner)? != Ordering::Greater {
-                                output.push(inner.clone());
+                                current_column.push(inner.clone());
                                 operators.pop();
                             } else {
                                 break;
@@ -253,14 +264,14 @@ pub fn get_selectables(
             TokenTypes::Identifier => SelectableStackElement::Column(token.value.to_string()), // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
             _ => return Err(parser.format_error()), // TODO: better error handling
         };
-        output.push(element);
+        current_column.push(element);
     }
 
     while !operators.is_empty() {
         match operators.pop() {
             Some(value) => match value {
                 ExtendedSelectableStackElement::SelectableStackElement(inner) => {
-                    output.push(inner.clone());
+                    current_column.push(inner.clone());
                 }
                 _ => {}
             },
@@ -268,14 +279,18 @@ pub fn get_selectables(
         }
     }
 
+    if current_column.len() > 0 {
+        all_columns.push(SelectableStack {
+            selectables: current_column,
+        });
+    }
+
     if let Some(selectable_names_vector) = selectable_names {
         current_name = current_name.trim().to_string();
         selectable_names_vector.push(current_name);
     }
 
-    Ok(SelectableStack {
-        selectables: output,
-    })
+    Ok(all_columns)
 }
 
 pub fn exists_clause(

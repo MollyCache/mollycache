@@ -55,9 +55,9 @@ mod tests {
         ];
 
         let order_by_clause = OrderByClause {
-            columns: SelectableStack {
+            columns: vec![SelectableStack {
                 selectables: vec![SelectableStackElement::Column("age".to_string())],
-            },
+            }],
             column_names: vec!["age".to_string()],
             directions: vec![OrderByDirection::Asc],
         };
@@ -81,12 +81,14 @@ mod tests {
         ];
 
         let order_by_clause = OrderByClause {
-            columns: SelectableStack {
-                selectables: vec![
-                    SelectableStackElement::Column("age".to_string()),
-                    SelectableStackElement::Column("money".to_string()),
-                ],
-            },
+            columns: vec![
+                SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("age".to_string())],
+                },
+                SelectableStack {
+                    selectables: vec![SelectableStackElement::Column("money".to_string())],
+                },
+            ],
             column_names: vec!["age".to_string(), "money".to_string()],
             directions: vec![OrderByDirection::Desc, OrderByDirection::Asc],
         };
