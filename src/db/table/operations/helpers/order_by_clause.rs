@@ -87,10 +87,7 @@ mod tests {
                     SelectableStackElement::Column("money".to_string()),
                 ],
             },
-            column_names: vec![
-                "age".to_string(),
-                "money".to_string(),
-            ],
+            column_names: vec!["age".to_string(), "money".to_string()],
             directions: vec![OrderByDirection::Desc, OrderByDirection::Asc],
         };
 
