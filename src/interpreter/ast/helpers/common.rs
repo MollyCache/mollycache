@@ -80,12 +80,14 @@ pub fn get_selectables(
             // * (All) is only allowed at certain places, otherwise it's * (Multiply)
             output.push(SelectableStackElement::All);
             current_name += token.value;
+            current_name += " ";
             continue;
         } else if token.token_type == TokenTypes::Comma {
             if depth == 0 {
                 if !allow_multiple {
                     return Err("Unexpected token: COMMA".to_string());
                 } else if let Some(selectable_names_vector) = selectable_names {
+                    current_name = current_name.trim().to_string();
                     selectable_names_vector.push(current_name);
                 }
                 // Default ordering is ASC
@@ -96,6 +98,7 @@ pub fn get_selectables(
                 current_name = "".to_string();
             } else {
                 current_name += token.value;
+                current_name += " ";
             }
 
             // Also push all current operators on the stack inside the current parenthesis
@@ -119,11 +122,13 @@ pub fn get_selectables(
         } else if token.token_type == TokenTypes::LeftParen {
             operators.push(ExtendedSelectableStackElement::LeftParen);
             current_name += token.value;
+            current_name += " ";
             depth += 1;
             continue;
         } else if token.token_type == TokenTypes::RightParen {
             depth -= 1;
             current_name += token.value;
+            current_name += " ";
             while let Some(operator) = operators.pop() {
                 match operator {
                     ExtendedSelectableStackElement::LeftParen => {
@@ -169,6 +174,7 @@ pub fn get_selectables(
         }
 
         current_name += token.value;
+        current_name += " ";
 
         // Operators
         let operator = match token.token_type {
@@ -264,6 +270,7 @@ pub fn get_selectables(
     }
 
     if let Some(selectable_names_vector) = selectable_names {
+        current_name = current_name.trim().to_string();
         selectable_names_vector.push(current_name);
     }
 
