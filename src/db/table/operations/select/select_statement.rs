@@ -78,8 +78,6 @@ mod tests {
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
     use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::SelectMode;
-    use crate::interpreter::ast::SelectStatementColumn;
-    use crate::interpreter::ast::SelectStatementTable;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::{
@@ -91,12 +89,12 @@ mod tests {
     fn select_with_all_tokens_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
             },
-            column_names: vec![SelectStatementColumn::new("*".to_string())],
+            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -136,18 +134,15 @@ mod tests {
     fn select_specific_columns_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
-                    SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
-                    SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
+                    SelectableStackElement::Column("name".to_string()),
+                    SelectableStackElement::Column("age".to_string()),
                 ],
             },
-            column_names: vec![
-                SelectStatementColumn::new("name".to_string()),
-                SelectStatementColumn::new("age".to_string()),
-            ],
+            column_names: vec!["name".to_string(), "age".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -167,12 +162,12 @@ mod tests {
     fn select_with_where_clause_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
             },
-            column_names: vec![SelectStatementColumn::new("*".to_string())],
+            column_names: vec!["*".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("name".to_string()),
                 operator: Operator::Equals,
@@ -196,18 +191,15 @@ mod tests {
     fn select_with_where_clause_using_column_not_included_in_selected_columns() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
-                    SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
-                    SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
+                    SelectableStackElement::Column("name".to_string()),
+                    SelectableStackElement::Column("age".to_string()),
                 ],
             },
-            column_names: vec![
-                SelectStatementColumn::new("name".to_string()),
-                SelectStatementColumn::new("age".to_string()),
-            ],
+            column_names: vec!["name".to_string(), "age".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("money".to_string()),
                 operator: Operator::Equals,
@@ -229,12 +221,12 @@ mod tests {
     fn select_with_limit_clause_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
             },
-            column_names: vec![SelectStatementColumn::new("*".to_string())],
+            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: Some(LimitClause {
@@ -257,12 +249,12 @@ mod tests {
     fn select_with_where_clause_using_column_not_included_in_table_returns_error() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
             },
-            column_names: vec![SelectStatementColumn::new("*".to_string())],
+            column_names: vec!["*".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("column_not_included".to_string()),
                 operator: Operator::Equals,
@@ -283,20 +275,18 @@ mod tests {
     fn select_with_order_by_clause_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![SelectableStackElement::All],
             },
-            column_names: vec![SelectStatementColumn::new("*".to_string())],
+            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
-                        "money".to_string(),
-                    ))],
+                    selectables: vec![SelectableStackElement::Column("money".to_string())],
                 },
-                column_names: vec![SelectStatementColumn::new("money".to_string())],
+                column_names: vec!["money".to_string()],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: None,
@@ -356,13 +346,11 @@ mod tests {
             Row(vec![Value::Integer(4), Value::Null]),
         ]);
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
-            column_names: vec![SelectStatementColumn::new("name".to_string())],
+            table_name: "users".to_string(),
+            column_names: vec!["name".to_string()],
             mode: SelectMode::Distinct,
             columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
-                    "name".to_string(),
-                ))],
+                selectables: vec![SelectableStackElement::Column("name".to_string())],
             },
             where_clause: None,
             order_by_clause: None,
@@ -382,20 +370,20 @@ mod tests {
     fn select_with_math_and_logic_operations_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
-                    SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
-                    SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
-                    SelectableStackElement::Column(SelectStatementColumn::new("money".to_string())),
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Column("age".to_string()),
+                    SelectableStackElement::Column("money".to_string()),
                     SelectableStackElement::MathOperator(MathOperator::Add),
-                    SelectableStackElement::Column(SelectStatementColumn::new("money".to_string())),
-                    SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
+                    SelectableStackElement::Column("money".to_string()),
+                    SelectableStackElement::Column("age".to_string()),
                     SelectableStackElement::MathOperator(MathOperator::Divide),
-                    SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
+                    SelectableStackElement::Column("id".to_string()),
                     SelectableStackElement::MathOperator(MathOperator::Add),
-                    SelectableStackElement::Column(SelectStatementColumn::new("money".to_string())),
+                    SelectableStackElement::Column("money".to_string()),
                     SelectableStackElement::Value(Value::Integer(2000)),
                     SelectableStackElement::Operator(Operator::GreaterEquals),
                     SelectableStackElement::Value(Value::Integer(1)),
@@ -404,30 +392,24 @@ mod tests {
                 ],
             },
             column_names: vec![
-                SelectStatementColumn::new("id".to_string()),
-                SelectStatementColumn::new("age + money".to_string()),
-                SelectStatementColumn::new("money / age + id".to_string()),
-                SelectStatementColumn::new("money >= 2000".to_string()),
-                SelectStatementColumn::new("1 + 1.0".to_string()),
+                "id".to_string(),
+                "age + money".to_string(),
+                "money / age + id".to_string(),
+                "money >= 2000".to_string(),
+                "1 + 1.0".to_string(),
             ],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
                 columns: SelectableStack {
                     selectables: vec![
-                        SelectableStackElement::Column(SelectStatementColumn::new(
-                            "money".to_string(),
-                        )),
-                        SelectableStackElement::Column(SelectStatementColumn::new(
-                            "age".to_string(),
-                        )),
+                        SelectableStackElement::Column("money".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Divide),
-                        SelectableStackElement::Column(SelectStatementColumn::new(
-                            "id".to_string(),
-                        )),
+                        SelectableStackElement::Column("id".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Add),
                     ],
                 },
-                column_names: vec![SelectStatementColumn::new("money / age + id".to_string())],
+                column_names: vec!["money / age + id".to_string()],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: None,
@@ -474,7 +456,7 @@ mod tests {
     fn select_with_operators_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: SelectableStack {
                 selectables: vec![
@@ -493,10 +475,10 @@ mod tests {
                 ],
             },
             column_names: vec![
-                SelectStatementColumn::new("1 >= -1.0".to_string()),
-                SelectStatementColumn::new("3000.0 < 2000.0".to_string()),
-                SelectStatementColumn::new("10 <= -11".to_string()),
-                SelectStatementColumn::new("10 == 10.0".to_string()),
+                "1 >= -1.0".to_string(),
+                "3000.0 < 2000.0".to_string(),
+                "10 <= -11".to_string(),
+                "10 == 10.0".to_string(),
             ],
             where_clause: None,
             order_by_clause: None,

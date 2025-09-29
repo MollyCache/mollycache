@@ -31,7 +31,7 @@ fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     let existence_check = exists_clause(parser, ExistenceCheck::IfNotExists)?;
 
-    let table_name = get_table_name(parser, false)?.table_name;
+    let table_name = get_table_name(parser)?;
 
     let column_definitions = column_definitions(parser)?;
     return Ok(CreateTable(CreateTableStatement {

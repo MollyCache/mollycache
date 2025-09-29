@@ -1,7 +1,6 @@
 use crate::interpreter::{
     ast::{
-        ExistenceCheck, FunctionName, FunctionSignature, LogicalOperator, MathOperator, Operator,
-        OrderByDirection, SelectStatementColumn, SelectStatementTable, SelectableStack,
+        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection, SelectableStack,
         SelectableStackElement, helpers::token::token_to_value, parser::Parser,
     },
     tokenizer::token::TokenTypes,
@@ -17,39 +16,19 @@ pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), 
     Ok(())
 }
 
-pub fn get_table_name(
-    parser: &mut Parser,
-    allow_alias: bool,
-) -> Result<SelectStatementTable, String> {
+pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
+    let token = parser.current_token()?;
     expect_token_type(parser, TokenTypes::Identifier)?;
-    let table_name = parser.current_token()?.value.to_string();
+    let result = token.value.to_string();
     parser.advance()?;
-    if allow_alias && parser.current_token()?.token_type == TokenTypes::As {
-        parser.advance()?;
-        expect_token_type(parser, TokenTypes::Identifier)?;
-        let alias = parser.current_token()?.value.to_string();
-        parser.advance()?;
-        return Ok(SelectStatementTable {
-            table_name: table_name,
-            alias: Some(alias),
-        });
-    }
-    Ok(SelectStatementTable::new(table_name))
+    Ok(result)
 }
-
-pub const TOKENS_NEEDING_SPECIAL_HANDLING: [TokenTypes; 5] = [
-    TokenTypes::From,
-    TokenTypes::SemiColon,
-    TokenTypes::Where,
-    TokenTypes::Order,
-    TokenTypes::Limit,
-];
 
 pub fn get_selectables(
     parser: &mut Parser,
     allow_multiple: bool,
     order_by_directions: &mut Option<&mut Vec<OrderByDirection>>,
-    selectable_names: &mut Option<&mut Vec<SelectStatementColumn>>,
+    selectable_names: &mut Option<&mut Vec<String>>,
 ) -> Result<SelectableStack, String> {
     #[derive(PartialEq)]
     enum ExtendedSelectableStackElement {
@@ -60,8 +39,6 @@ pub fn get_selectables(
     let mut operators: Vec<ExtendedSelectableStackElement> = vec![];
     let mut depth = 0;
     let mut current_name = "".to_string();
-    let mut current_alias: Option<String> = None;
-    let mut current_table_name: Option<String> = None;
 
     let mut first = true;
     let mut expect_new_value = false; // Will be set after a valid ASC or DESC to ensure proper syntax
@@ -78,7 +55,15 @@ pub fn get_selectables(
 
         // Tokens needing special handling
         // TODO: more tokens should be added here (e.g. Group for GROUP BY)
-        if TOKENS_NEEDING_SPECIAL_HANDLING.contains(&token.token_type) {
+        if [
+            TokenTypes::From,
+            TokenTypes::SemiColon,
+            TokenTypes::Where,
+            TokenTypes::Order,
+            TokenTypes::Limit,
+        ]
+        .contains(&token.token_type)
+        {
             // Default ordering is ASC
             if !expect_new_value && let Some(order_by_directions_vector) = order_by_directions {
                 order_by_directions_vector.push(OrderByDirection::Asc);
@@ -94,16 +79,15 @@ pub fn get_selectables(
             // * (All) is only allowed at certain places, otherwise it's * (Multiply)
             output.push(SelectableStackElement::All);
             current_name += token.value;
+            current_name += " ";
             continue;
         } else if token.token_type == TokenTypes::Comma {
             if depth == 0 {
                 if !allow_multiple {
                     return Err("Unexpected token: COMMA".to_string());
                 } else if let Some(selectable_names_vector) = selectable_names {
-                    let mut column = SelectStatementColumn::new(current_name.clone());
-                    column.alias = current_alias.clone();
-                    column.table_name = current_table_name.clone();
-                    selectable_names_vector.push(column);
+                    current_name = current_name.trim().to_string();
+                    selectable_names_vector.push(current_name);
                 }
                 // Default ordering is ASC
                 if !expect_new_value && let Some(order_by_directions_vector) = order_by_directions {
@@ -111,9 +95,9 @@ pub fn get_selectables(
                 }
                 expect_new_value = false;
                 current_name = "".to_string();
-                current_alias = None;
             } else {
                 current_name += token.value;
+                current_name += " ";
             }
 
             // Also push all current operators on the stack inside the current parenthesis
@@ -134,20 +118,16 @@ pub fn get_selectables(
                 }
             }
             continue;
-        } else if token.token_type == TokenTypes::As {
-            parser.advance()?;
-            if parser.current_token()?.token_type == TokenTypes::Identifier {
-                current_alias = Some(parser.current_token()?.value.to_string());
-            }
-            continue;
         } else if token.token_type == TokenTypes::LeftParen {
             operators.push(ExtendedSelectableStackElement::LeftParen);
             current_name += token.value;
+            current_name += " ";
             depth += 1;
             continue;
         } else if token.token_type == TokenTypes::RightParen {
             depth -= 1;
             current_name += token.value;
+            current_name += " ";
             while let Some(operator) = operators.pop() {
                 match operator {
                     ExtendedSelectableStackElement::LeftParen => {
@@ -193,6 +173,7 @@ pub fn get_selectables(
         }
 
         current_name += token.value;
+        current_name += " ";
 
         // Operators
         let operator = match token.token_type {
@@ -269,42 +250,7 @@ pub fn get_selectables(
             TokenTypes::HexLiteral => SelectableStackElement::Value(token_to_value(parser)?),
             TokenTypes::Null => SelectableStackElement::Value(token_to_value(parser)?),
             // TODO: handle ValueList (arrays)
-            TokenTypes::Identifier => {
-                let column = get_select_statement_column(parser)?;
-                current_alias = column.alias.clone();
-                current_table_name = column.table_name.clone();
-                current_name = column.column_name.clone();
-                SelectableStackElement::Column(column)
-            }
-            TokenTypes::Count => {
-                // TODO: GENERALIZE THIS FOR ALL FUNCTIONS
-                let mut function_name = token.value.to_string();
-                let has_parentheses = if let Ok(peek_token) = parser.peek_token() {
-                    peek_token.token_type == TokenTypes::LeftParen
-                } else {
-                    false
-                };
-
-                if has_parentheses {
-                    parser.advance()?;
-                    function_name += parser.current_token()?.value;
-
-                    parser.advance()?;
-                    while parser.current_token()?.token_type != TokenTypes::RightParen {
-                        function_name += parser.current_token()?.value;
-                        parser.advance()?;
-                    }
-
-                    function_name += parser.current_token()?.value;
-                }
-
-                current_name = function_name;
-                SelectableStackElement::Function(FunctionSignature {
-                    name: FunctionName::CountFunction,
-                    input_count: 0,
-                    has_parentheses,
-                })
-            }
+            TokenTypes::Identifier => SelectableStackElement::Column(token.value.to_string()), // TODO: verify it's a column, AND handle multi-tokens columns with AS (table_name.column_name)
             _ => return Err(parser.format_error()), // TODO: better error handling
         };
         output.push(element);
@@ -323,10 +269,8 @@ pub fn get_selectables(
     }
 
     if let Some(selectable_names_vector) = selectable_names {
-        let mut column = SelectStatementColumn::new(current_name);
-        column.alias = current_alias;
-        column.table_name = current_table_name;
-        selectable_names_vector.push(column);
+        current_name = current_name.trim().to_string();
+        selectable_names_vector.push(current_name);
     }
 
     Ok(SelectableStack {
@@ -369,40 +313,6 @@ pub fn compare_precedence(
     } else {
         Ok(Ordering::Greater)
     };
-}
-
-pub fn get_select_statement_column<'a>(
-    parser: &mut Parser<'a>,
-) -> Result<SelectStatementColumn, String> {
-    let mut current_token = parser.current_token()?;
-    let table_name = if parser.peek_token()?.token_type == TokenTypes::Dot {
-        let table_name = current_token.value.to_string();
-        parser.advance()?;
-        parser.advance()?;
-        current_token = parser.current_token()?;
-        Some(table_name)
-    } else {
-        None
-    };
-
-    let column_name = current_token.value.to_string();
-    let alias = if let Ok(peek_token) = parser.peek_token()
-        && peek_token.token_type == TokenTypes::As
-    {
-        parser.advance()?;
-        parser.advance()?;
-        expect_token_type(parser, TokenTypes::Identifier)?;
-        let alias = Some(parser.current_token()?.value.to_string());
-        alias
-    } else {
-        None
-    };
-    let column = SelectStatementColumn {
-        column_name: column_name,
-        alias: alias,
-        table_name: table_name,
-    };
-    Ok(column)
 }
 
 fn get_precedence(operator: &SelectableStackElement) -> Result<i32, String> {

@@ -10,7 +10,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     expect_token_type(parser, TokenTypes::Table)?;
     parser.advance()?;
-    let table_name = get_table_name(parser, false)?.table_name;
+    let table_name = get_table_name(parser)?;
     let action = get_action(parser)?;
     parser.advance()?;
     expect_token_type(parser, TokenTypes::SemiColon)?;
