@@ -41,8 +41,8 @@ impl TransactionLog {
         let table_name = match &sql_statement {
             SqlStatement::CreateTable(statement) => statement.table_name.clone(),
             SqlStatement::InsertInto(statement) => statement.table_name.clone(),
-            SqlStatement::UpdateStatement(statement) => statement.table_name.table_name.clone(),
-            SqlStatement::DeleteStatement(statement) => statement.table_name.table_name.clone(),
+            SqlStatement::UpdateStatement(statement) => statement.table_name.clone(),
+            SqlStatement::DeleteStatement(statement) => statement.table_name.clone(),
             SqlStatement::DropTable(statement) => statement.table_name.clone(),
             SqlStatement::AlterTable(statement) => statement.table_name.clone(),
             SqlStatement::Savepoint(statement) => {

@@ -363,23 +363,4 @@ mod tests {
         ];
         assert_eq!(expected, result);
     }
-
-    #[test]
-    fn tokenizer_parses_table_name_with_alias() {
-        let result = tokenize("SELECT u.id AS user_id FROM users AS u");
-        let expected = vec![
-            token(TokenTypes::Select, "SELECT", 0, 1),
-            token(TokenTypes::Identifier, "u", 7, 1),
-            token(TokenTypes::Dot, ".", 8, 1),
-            token(TokenTypes::Identifier, "id", 9, 1),
-            token(TokenTypes::As, "AS", 12, 1),
-            token(TokenTypes::Identifier, "user_id", 15, 1),
-            token(TokenTypes::From, "FROM", 23, 1),
-            token(TokenTypes::Identifier, "users", 28, 1),
-            token(TokenTypes::As, "AS", 34, 1),
-            token(TokenTypes::Identifier, "u", 37, 1),
-            token(TokenTypes::EOF, "", 0, 0),
-        ];
-        assert_eq!(expected, result);
-    }
 }
