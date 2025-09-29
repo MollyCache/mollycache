@@ -353,9 +353,9 @@ mod tests {
             },
             column_names: vec![
                 "id".to_string(),
-                "money".to_string(),
-                "money)))".to_string(),
-                "money>=100.5".to_string(),
+                "age + money".to_string(),
+                "2 * ( ( age - ( id % age - id / money ) ) )".to_string(),
+                "money >= 300.0 OR NOT age > 20 AND money >= 100.5".to_string(),
             ],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
@@ -366,7 +366,7 @@ mod tests {
                         SelectableStackElement::MathOperator(MathOperator::Multiply),
                     ],
                 },
-                column_names: vec!["age".to_string()],
+                column_names: vec!["id * age".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: None,
