@@ -34,9 +34,17 @@ pub fn get_columns(
     row: &Row,
     selected_columns: &Vec<SelectableStack>,
 ) -> Result<Row, String> {
-    let columns = selected_columns.iter().map(|col|
-            get_column(table, row, col)
-        ).collect::<Result<Vec<Value>, String>>()?;
+    let mut columns = vec![];
+    for col in selected_columns {
+        if col.selectables.first().is_some_and(|elem| elem == &SelectableStackElement::All) {
+            for val in row.iter() {
+                // TODO: can we do this?
+                columns.push(val.clone());
+            }
+        } else {
+            columns.push(get_column(table, row, col)?);
+        }
+    }
     return Ok(Row(columns));
 }
 
@@ -45,6 +53,7 @@ pub fn get_column(
     row: &Row,
     selected_column: &SelectableStack,
 ) -> Result<Value, String> {
+    // Does NOT handle SelectableStackElement::All, since only returns one Value
     let mut row_values: Row = Row(vec![]);
 
     let mut column_values = HashMap::new();
