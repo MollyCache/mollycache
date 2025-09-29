@@ -194,9 +194,9 @@ mod tests {
         SelectStatementStackElement::SelectStatement(SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectableStack {
+            columns: vec![SelectableStack {
                 selectables: vec![SelectableStackElement::All],
-            },
+            }],
             column_names: vec!["*".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("id".to_string()),
@@ -358,9 +358,9 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::Column("name".to_string())],
-                    },
+                    }],
                     column_names: vec!["name".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
@@ -373,9 +373,9 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::Column("name".to_string())],
-                    },
+                    }],
                     column_names: vec!["name".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("name".to_string()),
@@ -388,9 +388,9 @@ mod tests {
                 SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
             ],
             order_by_clause: Some(OrderByClause {
-                columns: SelectableStack {
+                columns: vec![SelectableStack {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
-                },
+                }],
                 column_names: vec!["name".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),
@@ -430,9 +430,9 @@ mod tests {
                 SelectStatementStackElement::SetOperator(SetOperator::UnionAll),
             ],
             order_by_clause: Some(OrderByClause {
-                columns: SelectableStack {
+                columns: vec![SelectableStack {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
-                },
+                }],
                 column_names: vec!["name".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),

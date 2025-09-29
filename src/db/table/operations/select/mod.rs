@@ -156,9 +156,9 @@ mod tests {
                 SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::All],
-                    },
+                    }],
                     column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,
@@ -207,9 +207,9 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::All],
-                    },
+                    }],
                     column_names: vec!["*".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("id".to_string()),
@@ -222,9 +222,9 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::All],
-                    },
+                    }],
                     column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,
@@ -254,9 +254,9 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::All],
-                    },
+                    }],
                     column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,
@@ -265,9 +265,9 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::All],
-                    },
+                    }],
                     column_names: vec!["*".to_string()],
                     where_clause: Some(vec![
                         WhereStackElement::Condition(WhereCondition {
@@ -289,9 +289,9 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: SelectableStack {
+                    columns: vec![SelectableStack {
                         selectables: vec![SelectableStackElement::All],
-                    },
+                    }],
                     column_names: vec!["*".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("id".to_string()),

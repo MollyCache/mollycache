@@ -29,11 +29,22 @@ pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
     return Ok(row_values);
 }
 
-pub fn get_columns_from_row(
+pub fn get_columns(
     table: &Table,
     row: &Row,
-    selected_columns: &SelectableStack,
+    selected_columns: &Vec<SelectableStack>,
 ) -> Result<Row, String> {
+    let columns = selected_columns.iter().map(|col|
+            get_column(table, row, col)
+        ).collect::<Result<Vec<Value>, String>>()?;
+    return Ok(Row(columns));
+}
+
+pub fn get_column(
+    table: &Table,
+    row: &Row,
+    selected_column: &SelectableStack,
+) -> Result<Value, String> {
     let mut row_values: Row = Row(vec![]);
 
     let mut column_values = HashMap::new();
@@ -51,7 +62,7 @@ pub fn get_columns_from_row(
 
     let column_values = column_values;
 
-    for selectable in &selected_columns.selectables {
+    for selectable in &selected_column.selectables {
         match selectable {
             SelectableStackElement::All => {
                 for val in row.iter() {
@@ -241,7 +252,12 @@ pub fn get_columns_from_row(
         }
     }
 
-    return Ok(row_values);
+    if row_values.len() != 1 {
+        return Err("Selected column does not result in exactly one value".to_string());
+    }
+
+    // TODO: pretty inefficient cloning. This function is called a LOT. Maybe, since now we know its length is 1, we can pop to take ownership?
+    return Ok(row_values[0].clone());
 }
 
 // Used for UPDATE and DELETE. Notget_row_indicies_matching_clauses used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
@@ -270,7 +286,7 @@ pub fn get_row_indicies_matching_clauses(
         )? {
             indices.push(i);
             if let Some(stmt) = order_by_clause {
-                order_by_columns_precomputed.push(get_columns_from_row(table, row, &stmt.columns)?);
+                order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
             }
         }
     }
