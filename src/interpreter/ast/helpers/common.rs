@@ -41,7 +41,8 @@ pub fn get_selectables(
     let mut depth = 0;
 
     let mut first = true;
-    let mut expect_new_value = false; // Will be set after a valid ASC or DESC to ensure proper syntax
+    let mut expect_new_value = false; // Will be set after a valid ASC or DESC (if ORDER BY) or after a valid AS <identifier> (if SELECT) to ensure proper syntax
+    let mut expect_alias = false; // Will be set after a valid AS to ensure proper syntax
     loop {
         let last_token_type = parser.current_token()?.token_type.clone();
 
@@ -53,9 +54,16 @@ pub fn get_selectables(
 
         let token = parser.current_token()?;
 
-        // Tokens needing special handling
-        // TODO: more tokens should be added here (e.g. Group for GROUP BY)
-        if [
+        if expect_alias {
+            if token.token_type == TokenTypes::Identifier {
+                expect_new_value = true;
+                expect_alias = false;
+                current_name = token.value.to_string();
+                continue;
+            } else {
+                return Err(parser.format_error());
+            }
+        } else if [
             TokenTypes::From,
             TokenTypes::SemiColon,
             TokenTypes::Where,
@@ -68,6 +76,8 @@ pub fn get_selectables(
         ]
         .contains(&token.token_type)
         {
+            // Tokens needing special handling
+            // TODO: more tokens should be added here (e.g. Group for GROUP BY)
             // Default ordering is ASC
             if !expect_new_value && let Some(order_by_directions_vector) = order_by_directions {
                 order_by_directions_vector.push(OrderByDirection::Asc);
@@ -169,6 +179,12 @@ pub fn get_selectables(
                 }
             };
             continue;
+        } else if token.token_type == TokenTypes::As {
+            if depth == 0 {
+                expect_alias = true;
+            } else {
+                return Err("Unexpected token: AS".to_string());
+            }
         }
 
         // Handle ASC and DESC if order_by_directions is set
