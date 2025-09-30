@@ -5,7 +5,9 @@ use crate::db::{
     database::Database,
     table::core::{row::Row, table::Table},
 };
-use crate::interpreter::ast::{SelectStatementStack, SelectStatementStackElement, SelectableColumn, SetOperator};
+use crate::interpreter::ast::{
+    SelectStatementStack, SelectStatementStackElement, SelectableColumn, SetOperator,
+};
 
 pub fn select_statement_stack(
     database: &Database,

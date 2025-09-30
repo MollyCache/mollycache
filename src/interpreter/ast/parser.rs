@@ -131,7 +131,8 @@ mod tests {
     use crate::interpreter::ast::test_utils::{token, token_with_location};
     use crate::interpreter::ast::{
         CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement,
-        SelectStatementStack, SelectStatementStackElement, SelectableColumn, SelectableStackElement,
+        SelectStatementStack, SelectStatementStackElement, SelectableColumn,
+        SelectableStackElement,
     };
 
     #[test]

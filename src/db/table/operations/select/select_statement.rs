@@ -85,7 +85,7 @@ mod tests {
             mode: SelectMode::All,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
-                column_name:"*".to_string(),
+                column_name: "*".to_string(),
             }],
             where_clause: None,
             order_by_clause: None,
@@ -131,7 +131,7 @@ mod tests {
             columns: vec![
                 SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
-                    column_name:"name".to_string(),
+                    column_name: "name".to_string(),
                 },
                 SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("age".to_string())],
@@ -161,7 +161,7 @@ mod tests {
             mode: SelectMode::All,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
-                column_name:"*".to_string(),
+                column_name: "*".to_string(),
             }],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("name".to_string()),
@@ -191,7 +191,7 @@ mod tests {
             columns: vec![
                 SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
-                    column_name:"name".to_string(),
+                    column_name: "name".to_string(),
                 },
                 SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("age".to_string())],
@@ -223,7 +223,7 @@ mod tests {
             mode: SelectMode::All,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
-                column_name:"*".to_string(),
+                column_name: "*".to_string(),
             }],
             where_clause: None,
             order_by_clause: None,
@@ -251,7 +251,7 @@ mod tests {
             mode: SelectMode::All,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
-                column_name:"*".to_string(),
+                column_name: "*".to_string(),
             }],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("column_not_included".to_string()),
@@ -277,13 +277,13 @@ mod tests {
             mode: SelectMode::All,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
-                column_name:"*".to_string(),
+                column_name: "*".to_string(),
             }],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
                 columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("money".to_string())],
-                    column_name:"money".to_string(),
+                    column_name: "money".to_string(),
                 }],
                 directions: vec![OrderByDirection::Desc],
             }),
@@ -348,7 +348,7 @@ mod tests {
             mode: SelectMode::Distinct,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::Column("name".to_string())],
-                column_name:"name".to_string(),
+                column_name: "name".to_string(),
             }],
             where_clause: None,
             order_by_clause: None,

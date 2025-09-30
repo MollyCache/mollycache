@@ -1,7 +1,7 @@
 use crate::interpreter::{
     ast::{
-        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection, SelectableColumn,
-        SelectableStackElement, helpers::token::token_to_value, parser::Parser,
+        ExistenceCheck, LogicalOperator, MathOperator, Operator, OrderByDirection,
+        SelectableColumn, SelectableStackElement, helpers::token::token_to_value, parser::Parser,
     },
     tokenizer::token::TokenTypes,
 };

@@ -14,11 +14,7 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
     parser.advance()?;
 
     let mut directions = vec![];
-    let columns = get_selectables(
-        parser,
-        true,
-        &mut Some(&mut directions),
-    )?;
+    let columns = get_selectables(parser, true, &mut Some(&mut directions))?;
 
     return Ok(Some(OrderByClause {
         columns: columns,
