@@ -5,7 +5,7 @@ use crate::interpreter::{
     },
     tokenizer::token::TokenTypes,
 };
-use std::{cmp::Ordering, thread::current};
+use std::cmp::Ordering;
 
 // Returns an error if the current token does not match the given token type
 pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), String> {
