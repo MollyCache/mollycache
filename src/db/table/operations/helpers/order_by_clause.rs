@@ -40,7 +40,7 @@ mod tests {
     use crate::db::table::core::{row::Row, value::Value};
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
-    use crate::interpreter::ast::SelectableStack;
+    use crate::interpreter::ast::SelectableColumn;
     use crate::interpreter::ast::SelectableStackElement;
 
     #[test]
@@ -55,10 +55,10 @@ mod tests {
         ];
 
         let order_by_clause = OrderByClause {
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::Column("age".to_string())],
+                column_name: "age".to_string(),
             }],
-            column_names: vec!["age".to_string()],
             directions: vec![OrderByDirection::Asc],
         };
 
@@ -82,14 +82,15 @@ mod tests {
 
         let order_by_clause = OrderByClause {
             columns: vec![
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("age".to_string())],
+                    column_name: "age".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("money".to_string())],
+                    column_name: "money".to_string(),
                 },
             ],
-            column_names: vec!["age".to_string(), "money".to_string()],
             directions: vec![OrderByDirection::Desc, OrderByDirection::Asc],
         };
 

@@ -73,7 +73,7 @@ mod tests {
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::{
-        LimitClause, MathOperator, Operator, OrderByClause, OrderByDirection, SelectableStack,
+        LimitClause, MathOperator, Operator, OrderByClause, OrderByDirection, SelectableColumn,
         SelectableStackElement,
     };
 
@@ -83,10 +83,10 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
+                column_name:"*".to_string(),
             }],
-            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -129,14 +129,15 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: vec![
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name:"name".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("age".to_string())],
+                    column_name: "age".to_string(),
                 },
             ],
-            column_names: vec!["name".to_string(), "age".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -158,10 +159,10 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
+                column_name:"*".to_string(),
             }],
-            column_names: vec!["*".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("name".to_string()),
                 operator: Operator::Equals,
@@ -188,14 +189,15 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: vec![
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name:"name".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("age".to_string())],
+                    column_name: "age".to_string(),
                 },
             ],
-            column_names: vec!["name".to_string(), "age".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("money".to_string()),
                 operator: Operator::Equals,
@@ -219,10 +221,10 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
+                column_name:"*".to_string(),
             }],
-            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: None,
             limit_clause: Some(LimitClause {
@@ -247,10 +249,10 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
+                column_name:"*".to_string(),
             }],
-            column_names: vec!["*".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("column_not_included".to_string()),
                 operator: Operator::Equals,
@@ -273,16 +275,16 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
+                column_name:"*".to_string(),
             }],
-            column_names: vec!["*".to_string()],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("money".to_string())],
+                    column_name:"money".to_string(),
                 }],
-                column_names: vec!["money".to_string()],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: None,
@@ -343,10 +345,10 @@ mod tests {
         ]);
         let statement = SelectStatement {
             table_name: "users".to_string(),
-            column_names: vec!["name".to_string()],
             mode: SelectMode::Distinct,
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::Column("name".to_string())],
+                column_name:"name".to_string(),
             }],
             where_clause: None,
             order_by_clause: None,
@@ -369,17 +371,19 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: vec![
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Column("age".to_string()),
                         SelectableStackElement::Column("money".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Add),
                     ],
+                    column_name: "age + money".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Column("money".to_string()),
                         SelectableStackElement::Column("age".to_string()),
@@ -387,32 +391,28 @@ mod tests {
                         SelectableStackElement::Column("id".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Add),
                     ],
+                    column_name: "money / age + id".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Column("money".to_string()),
                         SelectableStackElement::Value(Value::Integer(2000)),
                         SelectableStackElement::Operator(Operator::GreaterEquals),
                     ],
+                    column_name: "money >= 2000".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Value(Value::Integer(1)),
                         SelectableStackElement::Value(Value::Real(1.0)),
                         SelectableStackElement::MathOperator(MathOperator::Add),
                     ],
+                    column_name: "1 + 1.0".to_string(),
                 },
-            ],
-            column_names: vec![
-                "id".to_string(),
-                "age + money".to_string(),
-                "money / age + id".to_string(),
-                "money >= 2000".to_string(),
-                "1 + 1.0".to_string(),
             ],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Column("money".to_string()),
                         SelectableStackElement::Column("age".to_string()),
@@ -420,8 +420,8 @@ mod tests {
                         SelectableStackElement::Column("id".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Add),
                     ],
+                    column_name: "money / age + id".to_string(),
                 }],
-                column_names: vec!["money / age + id".to_string()],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: None,
@@ -471,40 +471,38 @@ mod tests {
             table_name: "users".to_string(),
             mode: SelectMode::All,
             columns: vec![
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Value(Value::Integer(1)),
                         SelectableStackElement::Value(Value::Real(1.0)),
                         SelectableStackElement::Operator(Operator::GreaterEquals),
                     ],
+                    column_name: "1 >= -1.0".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Value(Value::Real(3000.0)),
                         SelectableStackElement::Value(Value::Real(2000.0)),
                         SelectableStackElement::Operator(Operator::LessThan),
                     ],
+                    column_name: "3000.0 < 2000.0".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Value(Value::Integer(10)),
                         SelectableStackElement::Value(Value::Integer(-11)),
                         SelectableStackElement::Operator(Operator::LessEquals),
                     ],
+                    column_name: "10 <= -11".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Value(Value::Integer(10)),
                         SelectableStackElement::Value(Value::Real(10.0)),
                         SelectableStackElement::Operator(Operator::Equals),
                     ],
+                    column_name: "10 == 10.0".to_string(),
                 },
-            ],
-            column_names: vec![
-                "1 >= -1.0".to_string(),
-                "3000.0 < 2000.0".to_string(),
-                "10 <= -11".to_string(),
-                "10 == 10.0".to_string(),
             ],
             where_clause: None,
             order_by_clause: None,

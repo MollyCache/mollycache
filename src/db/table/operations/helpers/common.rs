@@ -5,7 +5,7 @@ use crate::db::table::core::{row::Row, table::Table, value::DataType, value::Val
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
 use crate::db::table::operations::helpers::where_clause::row_matches_where_stack;
 use crate::interpreter::ast::{
-    LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause, SelectableStack,
+    LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause, SelectableColumn,
     SelectableStackElement, WhereStackElement,
 };
 
@@ -32,7 +32,7 @@ pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
 pub fn get_columns(
     table: &Table,
     row: &Row,
-    selected_columns: &Vec<SelectableStack>,
+    selected_columns: &Vec<SelectableColumn>,
 ) -> Result<Row, String> {
     let mut columns = vec![];
     for col in selected_columns {
@@ -55,7 +55,7 @@ pub fn get_columns(
 pub fn get_column(
     table: &Table,
     row: &Row,
-    selected_column: &SelectableStack,
+    selected_column: &SelectableColumn,
 ) -> Result<Value, String> {
     // Does NOT handle SelectableStackElement::All, since only returns one Value
     let mut row_values: Row = Row(vec![]);

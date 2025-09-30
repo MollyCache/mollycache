@@ -105,9 +105,8 @@ impl SetOperator {
 #[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatement {
     pub table_name: String,
-    pub column_names: Vec<String>,
     pub mode: SelectMode,
-    pub columns: Vec<SelectableStack>,
+    pub columns: Vec<SelectableColumn>,
     pub where_clause: Option<Vec<WhereStackElement>>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
@@ -209,8 +208,9 @@ pub enum MathOperator {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct SelectableStack {
+pub struct SelectableColumn {
     pub selectables: Vec<SelectableStackElement>,
+    pub column_name: String,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -315,8 +315,7 @@ pub enum OrderByDirection {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct OrderByClause {
-    pub columns: Vec<SelectableStack>,
-    pub column_names: Vec<String>,
+    pub columns: Vec<SelectableColumn>,
     pub directions: Vec<OrderByDirection>,
 }
 
@@ -480,10 +479,10 @@ mod tests {
                         SelectStatement {
                             table_name: "users".to_string(),
                             mode: SelectMode::All,
-                            columns: vec![SelectableStack {
+                            columns: vec![SelectableColumn {
                                 selectables: vec![SelectableStackElement::All],
+                                column_name: "*".to_string(),
                             }],
-                            column_names: vec!["*".to_string()],
                             where_clause: None,
                             order_by_clause: None,
                             limit_clause: None,
@@ -574,10 +573,10 @@ mod tests {
                         SelectStatement {
                             table_name: "users".to_string(),
                             mode: SelectMode::All,
-                            columns: vec![SelectableStack {
+                            columns: vec![SelectableColumn {
                                 selectables: vec![SelectableStackElement::All],
+                                column_name: "*".to_string(),
                             }],
-                            column_names: vec!["*".to_string()],
                             where_clause: None,
                             order_by_clause: None,
                             limit_clause: None,
