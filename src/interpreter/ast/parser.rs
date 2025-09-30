@@ -131,7 +131,8 @@ mod tests {
     use crate::interpreter::ast::test_utils::{token, token_with_location};
     use crate::interpreter::ast::{
         CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement,
-        SelectStatementStack, SelectStatementStackElement, SelectableStack, SelectableStackElement,
+        SelectStatementStack, SelectStatementStackElement, SelectableColumn,
+        SelectableStackElement,
     };
 
     #[test]
@@ -195,10 +196,10 @@ mod tests {
                 SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: vec![SelectableStack {
+                    columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
+                        column_name: "*".to_string(),
                     }],
-                    column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,

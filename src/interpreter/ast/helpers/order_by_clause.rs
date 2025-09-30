@@ -14,17 +14,10 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
     parser.advance()?;
 
     let mut directions = vec![];
-    let mut column_names = vec![];
-    let columns = get_selectables(
-        parser,
-        true,
-        &mut Some(&mut directions),
-        &mut Some(&mut column_names),
-    )?;
+    let columns = get_selectables(parser, true, &mut Some(&mut directions))?;
 
     return Ok(Some(OrderByClause {
         columns: columns,
-        column_names: column_names,
         directions: directions,
     }));
 }
@@ -33,7 +26,7 @@ pub fn get_order_by(parser: &mut Parser) -> Result<Option<OrderByClause>, String
 mod tests {
     use super::*;
     use crate::interpreter::ast::test_utils::token;
-    use crate::interpreter::ast::{OrderByDirection, SelectableStack, SelectableStackElement};
+    use crate::interpreter::ast::{OrderByDirection, SelectableColumn, SelectableStackElement};
 
     #[test]
     fn order_by_clause_is_generated_correctly() {
@@ -50,10 +43,10 @@ mod tests {
         assert!(result.is_ok());
         let order_by_clause = result.unwrap();
         let expected = Some(OrderByClause {
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::Column("id".to_string())],
+                column_name: "id".to_string(),
             }],
-            column_names: vec!["id".to_string()],
             directions: vec![OrderByDirection::Asc],
         });
         assert_eq!(expected, order_by_clause);
@@ -95,14 +88,15 @@ mod tests {
         let order_by_clause = result.unwrap();
         let expected = Some(OrderByClause {
             columns: vec![
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
                 },
             ],
-            column_names: vec!["id".to_string(), "name".to_string()],
             directions: vec![OrderByDirection::Asc, OrderByDirection::Desc],
         });
         assert_eq!(expected, order_by_clause);

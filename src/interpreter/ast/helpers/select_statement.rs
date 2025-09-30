@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        SelectMode, SelectStatement, SelectableStack, WhereStackElement,
+        SelectMode, SelectStatement, SelectableColumn, WhereStackElement,
         helpers::{
             common::{get_selectables, get_table_name},
             limit_clause::get_limit,
@@ -22,7 +22,7 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
         }
         _ => SelectMode::All,
     };
-    let (columns, column_names) = get_columns_and_names(parser)?;
+    let columns = get_columns_and_names(parser)?;
     expect_token_type(parser, TokenTypes::From)?; // TODO: this is not true, you can do SELECT 1;
     parser.advance()?;
     let table_name = get_table_name(parser)?;
@@ -34,21 +34,14 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
         table_name: table_name,
         mode: mode,
         columns: columns,
-        column_names: column_names,
         where_clause: where_clause,
         order_by_clause: order_by_clause,
         limit_clause: limit_clause,
     });
 }
 
-fn get_columns_and_names(
-    parser: &mut Parser,
-) -> Result<(Vec<SelectableStack>, Vec<String>), String> {
-    let mut column_names: Vec<String> = vec![];
-    Ok((
-        get_selectables(parser, true, &mut None, &mut Some(&mut column_names))?,
-        column_names,
-    ))
+fn get_columns_and_names(parser: &mut Parser) -> Result<Vec<SelectableColumn>, String> {
+    Ok(get_selectables(parser, true, &mut None)?)
 }
 
 #[cfg(test)]
@@ -86,10 +79,10 @@ mod tests {
             SelectStatement {
                 table_name: "users".to_string(),
                 mode: SelectMode::All,
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::All],
+                    column_name: "*".to_string(),
                 }],
-                column_names: vec!["*".to_string()],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
@@ -116,10 +109,10 @@ mod tests {
             SelectStatement {
                 table_name: "guests".to_string(),
                 mode: SelectMode::All,
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
                 }],
-                column_names: vec!["id".to_string()],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
@@ -149,14 +142,15 @@ mod tests {
                 table_name: "users".to_string(),
                 mode: SelectMode::All,
                 columns: vec![
-                    SelectableStack {
-                        selectables: vec![SelectableStackElement::Column("id".to_string()),]
+                    SelectableColumn {
+                        selectables: vec![SelectableStackElement::Column("id".to_string())],
+                        column_name: "id".to_string(),
                     },
-                    SelectableStack {
-                        selectables: vec![SelectableStackElement::Column("name".to_string()),]
+                    SelectableColumn {
+                        selectables: vec![SelectableStackElement::Column("name".to_string())],
+                        column_name: "name".to_string(),
                     },
                 ],
-                column_names: vec!["id".to_string(), "name".to_string()],
                 where_clause: None,
                 order_by_clause: None,
                 limit_clause: None,
@@ -198,10 +192,10 @@ mod tests {
         let expected = SelectStatement {
             table_name: "guests".to_string(),
             mode: SelectMode::All,
-            columns: vec![SelectableStack {
+            columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::Column("id".to_string())],
+                column_name: "id".to_string(),
             }],
-            column_names: vec!["id".to_string()],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("id".to_string()),
                 operator: Operator::Equals,
@@ -209,17 +203,19 @@ mod tests {
             })]),
             order_by_clause: Some(OrderByClause {
                 columns: vec![
-                    SelectableStack {
+                    SelectableColumn {
                         selectables: vec![SelectableStackElement::Column("id".to_string())],
+                        column_name: "id".to_string(),
                     },
-                    SelectableStack {
+                    SelectableColumn {
                         selectables: vec![SelectableStackElement::Column("name".to_string())],
+                        column_name: "name".to_string(),
                     },
-                    SelectableStack {
+                    SelectableColumn {
                         selectables: vec![SelectableStackElement::Column("age".to_string())],
+                        column_name: "age".to_string(),
                     },
                 ],
-                column_names: vec!["id".to_string(), "name".to_string(), "age".to_string()],
                 directions: vec![
                     OrderByDirection::Asc,
                     OrderByDirection::Desc,
@@ -253,10 +249,10 @@ mod tests {
             statement,
             SelectStatement {
                 table_name: "guests".to_string(),
-                column_names: vec!["id".to_string()],
                 mode: SelectMode::Distinct,
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
                 }],
                 where_clause: None,
                 order_by_clause: None,
@@ -321,74 +317,66 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
 
-        let select_statement_column_id = "id".to_string();
-        let select_statement_column_age = "age".to_string();
-        let select_statement_column_money = "money".to_string();
-
         let expected = SelectStatement {
             table_name: "people".to_string(),
             mode: SelectMode::Distinct,
             columns: vec![
-                SelectableStack {
-                    selectables: vec![SelectableStackElement::Column(
-                        select_statement_column_id.clone(),
-                    )],
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
-                        SelectableStackElement::Column(select_statement_column_age.clone()),
-                        SelectableStackElement::Column(select_statement_column_money.clone()),
+                        SelectableStackElement::Column("age".to_string()),
+                        SelectableStackElement::Column("money".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Add),
                     ],
+                    column_name: "age + money".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
                         SelectableStackElement::Value(Value::Integer(2)),
-                        SelectableStackElement::Column(select_statement_column_age.clone()),
-                        SelectableStackElement::Column(select_statement_column_id.clone()),
-                        SelectableStackElement::Column(select_statement_column_age.clone()),
+                        SelectableStackElement::Column("age".to_string()),
+                        SelectableStackElement::Column("id".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Modulo),
-                        SelectableStackElement::Column(select_statement_column_id.clone()),
-                        SelectableStackElement::Column(select_statement_column_money.clone()),
+                        SelectableStackElement::Column("id".to_string()),
+                        SelectableStackElement::Column("money".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Divide),
                         SelectableStackElement::MathOperator(MathOperator::Subtract),
                         SelectableStackElement::MathOperator(MathOperator::Subtract),
                         SelectableStackElement::MathOperator(MathOperator::Multiply),
                     ],
+                    column_name: "2 * ( ( age - ( id % age - id / money ) ) )".to_string(),
                 },
-                SelectableStack {
+                SelectableColumn {
                     selectables: vec![
-                        SelectableStackElement::Column(select_statement_column_money.clone()),
+                        SelectableStackElement::Column("money".to_string()),
                         SelectableStackElement::Value(Value::Real(300.0)),
                         SelectableStackElement::Operator(Operator::GreaterEquals),
-                        SelectableStackElement::Column(select_statement_column_age.clone()),
+                        SelectableStackElement::Column("age".to_string()),
                         SelectableStackElement::Value(Value::Integer(20)),
                         SelectableStackElement::Operator(Operator::GreaterThan),
                         SelectableStackElement::LogicalOperator(LogicalOperator::Not),
-                        SelectableStackElement::Column(select_statement_column_money.clone()),
+                        SelectableStackElement::Column("money".to_string()),
                         SelectableStackElement::Value(Value::Real(100.5)),
                         SelectableStackElement::Operator(Operator::GreaterEquals),
                         SelectableStackElement::LogicalOperator(LogicalOperator::And),
                         SelectableStackElement::LogicalOperator(LogicalOperator::Or),
                     ],
+                    column_name: "money >= 300.0 OR NOT age > 20 AND money >= 100.5".to_string(),
                 },
-            ],
-            column_names: vec![
-                "id".to_string(),
-                "age + money".to_string(),
-                "2 * ( ( age - ( id % age - id / money ) ) )".to_string(),
-                "money >= 300.0 OR NOT age > 20 AND money >= 100.5".to_string(),
             ],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![
-                        SelectableStackElement::Column(select_statement_column_id.clone()),
-                        SelectableStackElement::Column(select_statement_column_age.clone()),
+                        SelectableStackElement::Column("id".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
                         SelectableStackElement::MathOperator(MathOperator::Multiply),
                     ],
+                    column_name: "id * age".to_string(),
                 }],
-                column_names: vec!["id * age".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: None,

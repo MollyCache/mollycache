@@ -70,7 +70,7 @@ mod tests {
     use crate::interpreter::ast::Operator;
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
-    use crate::interpreter::ast::SelectableStack;
+    use crate::interpreter::ast::SelectableColumn;
     use crate::interpreter::ast::SelectableStackElement;
     use crate::interpreter::ast::WhereCondition;
     use crate::interpreter::ast::WhereStackElement;
@@ -229,10 +229,10 @@ mod tests {
                 r_side: Operand::Value(Value::Integer(1)),
             })]),
             order_by_clause: Some(OrderByClause {
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
                 }],
-                column_names: vec!["id".to_string()],
                 directions: vec![OrderByDirection::Asc],
             }),
             limit_clause: Some(LimitClause {

@@ -5,7 +5,9 @@ use crate::db::{
     database::Database,
     table::core::{row::Row, table::Table},
 };
-use crate::interpreter::ast::{SelectStatementStack, SelectStatementStackElement, SetOperator};
+use crate::interpreter::ast::{
+    SelectStatementStack, SelectStatementStackElement, SelectableColumn, SetOperator,
+};
 
 pub fn select_statement_stack(
     database: &Database,
@@ -22,7 +24,7 @@ pub fn select_statement_stack(
             SelectStatementStackElement::SelectStatement(select_statement) => {
                 let table = database.get_table(&select_statement.table_name)?;
                 let expanded_column_names =
-                    expand_all_column_names(table, &select_statement.column_names)?;
+                    expand_all_column_names(table, &select_statement.columns)?;
                 match &column_names {
                     Some(column_names) => {
                         if expanded_column_names.len() != column_names.len() {
@@ -76,13 +78,13 @@ pub fn select_statement_stack(
             // When using ORDER BY at the end of set operations on SELECTs, the ordering columns are guaranteed (?) to be present in the selected columns
             // TODO: this ^ is not quite accurate
             let mut result_indices = vec![];
-            for order_by_column_name in &order_by_clause.column_names {
+            for order_by_column in &order_by_clause.columns {
                 result_indices.push(
                     column_names
                         .as_ref()
                         .ok_or_else(|| "No column names found".to_string())?
                         .iter()
-                        .position(|column_name| column_name == order_by_column_name)
+                        .position(|column_name| column_name == &order_by_column.column_name)
                         .ok_or_else(|| {
                             "Ordering column name not found in selected columns".to_string()
                         })?,
@@ -122,18 +124,18 @@ pub fn select_statement_stack(
 // TODO: add this logic in evaluation too
 fn expand_all_column_names(
     table: &Table,
-    column_names: &Vec<String>,
+    columns: &Vec<SelectableColumn>,
 ) -> Result<Vec<String>, String> {
     let mut new = vec![];
-    for column in column_names {
-        if *column == "*".to_string() {
+    for column in columns {
+        if *column.column_name == "*".to_string() {
             for name in table.get_column_names()? {
-                if !column_names.contains(name) {
+                if !new.contains(name) {
                     new.push(name.clone());
                 }
             }
         } else {
-            new.push(column.clone());
+            new.push(column.column_name.clone());
         }
     }
     Ok(new)
@@ -144,7 +146,7 @@ mod tests {
     use crate::db::table::core::value::Value;
     use crate::db::table::test_utils::default_database;
     use crate::interpreter::ast::{
-        LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectableStack,
+        LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectableColumn,
         SelectableStackElement, WhereCondition, WhereStackElement,
     };
 
@@ -156,10 +158,10 @@ mod tests {
                 SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: vec![SelectableStack {
+                    columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
+                        column_name: "*".to_string(),
                     }],
-                    column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -207,10 +209,10 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: vec![SelectableStack {
+                    columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
+                        column_name: "*".to_string(),
                     }],
-                    column_names: vec!["*".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("id".to_string()),
                         operator: Operator::Equals,
@@ -222,10 +224,10 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: vec![SelectableStack {
+                    columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
+                        column_name: "*".to_string(),
                     }],
-                    column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -254,10 +256,10 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: vec![SelectableStack {
+                    columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
+                        column_name: "*".to_string(),
                     }],
-                    column_names: vec!["*".to_string()],
                     where_clause: None,
                     order_by_clause: None,
                     limit_clause: None,
@@ -265,10 +267,10 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: vec![SelectableStack {
+                    columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
+                        column_name: "*".to_string(),
                     }],
-                    column_names: vec!["*".to_string()],
                     where_clause: Some(vec![
                         WhereStackElement::Condition(WhereCondition {
                             l_side: Operand::Identifier("id".to_string()),
@@ -289,10 +291,10 @@ mod tests {
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
                     mode: SelectMode::All,
-                    columns: vec![SelectableStack {
+                    columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
+                        column_name: "*".to_string(),
                     }],
-                    column_names: vec!["*".to_string()],
                     where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                         l_side: Operand::Identifier("id".to_string()),
                         operator: Operator::Equals,

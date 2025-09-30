@@ -67,7 +67,7 @@ mod tests {
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::{
-        Operand, Operator, OrderByClause, OrderByDirection, SelectableStack,
+        Operand, Operator, OrderByClause, OrderByDirection, SelectableColumn,
         SelectableStackElement, WhereCondition, WhereStackElement,
     };
 
@@ -164,10 +164,10 @@ mod tests {
                 r_side: Operand::Value(Value::Text("John".to_string())),
             })]),
             order_by_clause: Some(OrderByClause {
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
                 }],
-                column_names: vec!["id".to_string()],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: Some(LimitClause {
@@ -316,10 +316,10 @@ mod tests {
                 r_side: Operand::Value(Value::Integer(30)),
             })]),
             order_by_clause: Some(OrderByClause {
-                columns: vec![SelectableStack {
+                columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
                 }],
-                column_names: vec!["id".to_string()],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: Some(LimitClause {
