@@ -2,7 +2,7 @@ use crate::db::table::core::{row::Row, table::Table, value::Value};
 use crate::db::table::operations::helpers::common::{get_column, get_columns};
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
 use crate::interpreter::ast::{SelectMode, SelectStatement};
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Vec<Row>, String> {
     let mut rows = vec![];
@@ -17,9 +17,12 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
         SelectMode::Distinct => Some(HashSet::new()),
     };
 
-    let alias_to_computed_index = statement.columns.iter().enumerate().map(|(i, column)|
-        (column.column_name.clone(), i)
-    ).collect::<HashMap<String, usize>>();
+    let alias_to_computed_index = statement
+        .columns
+        .iter()
+        .enumerate()
+        .map(|(i, column)| (column.column_name.clone(), i))
+        .collect::<HashMap<String, usize>>();
 
     for row in table.iter().skip(if statement.order_by_clause.is_none() {
         offset
@@ -28,8 +31,10 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
     }) {
         if limit != -1 && rows.len() as i64 >= limit && statement.order_by_clause.is_none() {
             break;
-        } else if let Some(stmt) = &statement.where_clause {
-            if let Value::Integer(val) = get_column(table, row, stmt, None, None)? {
+        }
+        let columns = get_columns(table, row, &statement.columns, None, None)?;
+        if let Some(stmt) = &statement.where_clause {
+            if let Value::Integer(val) = get_column(table, row, stmt, Some(&columns), Some(&alias_to_computed_index))? {
                 if val == 0 {
                     continue;
                 }
@@ -37,18 +42,17 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
                 return Err("WHERE condition did not return a boolean".to_string());
             }
         }
-
-        let columns = get_columns(table, row, &statement.columns, None, None)?;
+        
         if let Some(map) = &mut distinct_map {
             if map.insert(columns.clone()) {
                 if let Some(stmt) = &statement.order_by_clause {
-                    order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, None, None)?);
+                    order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, Some(&columns), Some(&alias_to_computed_index))?);
                 }
                 rows.push(columns);
             }
         } else {
             if let Some(stmt) = &statement.order_by_clause {
-                order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, None, None)?);
+                order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, Some(&columns), Some(&alias_to_computed_index))?);
             }
             rows.push(columns);
         }

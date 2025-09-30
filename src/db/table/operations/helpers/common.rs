@@ -47,7 +47,13 @@ pub fn get_columns(
                 columns.push(val.clone());
             }
         } else {
-            columns.push(get_column(table, row, col, computed_columns, aliases_to_indexes)?);
+            columns.push(get_column(
+                table,
+                row,
+                col,
+                computed_columns,
+                aliases_to_indexes,
+            )?);
         }
     }
     return Ok(Row(columns));
@@ -87,7 +93,10 @@ pub fn get_column(
                 }
             }
             SelectableStackElement::Column(value) => {
-                if let Some(computed) = computed_columns && let Some(map) = aliases_to_indexes && let Some(index) = map.get(value) {
+                if let Some(computed) = computed_columns
+                    && let Some(map) = aliases_to_indexes
+                    && let Some(index) = map.get(value)
+                {
                     if let Some(val) = computed.get(*index) {
                         row_values.push((*val).clone());
                     } else {
@@ -342,7 +351,13 @@ pub fn get_row_indicies_matching_clauses(
         indices.push(i);
         if let Some(stmt) = order_by_clause {
                 // UPDATE and DELETE only, so not reading from any alias table
-            order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, None, None)?);
+            order_by_columns_precomputed.push(get_columns(
+                    table,
+                    row,
+                    &stmt.columns,
+                    None,
+                    None,
+                )?);
         }
     }
 
