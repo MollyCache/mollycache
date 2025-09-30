@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        SelectMode, SelectStatement, SelectableColumn, WhereStackElement,
+        SelectMode, SelectStatement, SelectableColumn,
         helpers::{
             common::{get_selectables, get_table_name},
             limit_clause::get_limit,
@@ -26,7 +26,7 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     expect_token_type(parser, TokenTypes::From)?; // TODO: this is not true, you can do SELECT 1;
     parser.advance()?;
     let table_name = get_table_name(parser)?;
-    let where_clause: Option<Vec<WhereStackElement>> = get_where_clause(parser)?;
+    let where_clause = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
 
@@ -51,13 +51,10 @@ mod tests {
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::LogicalOperator;
     use crate::interpreter::ast::MathOperator;
-    use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::Operator;
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
     use crate::interpreter::ast::SelectableStackElement;
-    use crate::interpreter::ast::WhereCondition;
-    use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::test_utils::token;
 
     #[test]
@@ -196,11 +193,14 @@ mod tests {
                 selectables: vec![SelectableStackElement::Column("id".to_string())],
                 column_name: "id".to_string(),
             }],
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(1)),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Value(Value::Integer(1)),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "id = 1".to_string(),
+            }),
             order_by_clause: Some(OrderByClause {
                 columns: vec![
                     SelectableColumn {

@@ -58,8 +58,8 @@ mod tests {
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
     use crate::interpreter::ast::ColumnValue;
     use crate::interpreter::ast::{
-        LimitClause, Operand, Operator, OrderByClause, OrderByDirection, SelectableColumn,
-        SelectableStackElement, WhereCondition, WhereStackElement,
+        LimitClause, Operator, OrderByClause, OrderByDirection, SelectableColumn,
+        SelectableStackElement
     };
 
     #[test]
@@ -159,11 +159,14 @@ mod tests {
                 column: "name".to_string(),
                 value: Value::Text("Fletcher".to_string()),
             }],
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("name".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("name".to_string()),
+                    SelectableStackElement::Value(Value::Text("John".to_string())),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "name = 'John'".to_string(),
+            }),
             order_by_clause: Some(OrderByClause {
                 columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
@@ -240,11 +243,14 @@ mod tests {
                     value: Value::Integer(50),
                 },
             ],
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::GreaterThan,
-                r_side: Operand::Value(Value::Integer(1)),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Value(Value::Integer(1)),
+                    SelectableStackElement::Operator(Operator::GreaterThan),
+                ],
+                column_name: "id = 1".to_string(),
+            }),
             order_by_clause: None,
             limit_clause: None,
         };

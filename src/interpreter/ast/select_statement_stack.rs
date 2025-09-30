@@ -162,7 +162,6 @@ mod tests {
     use super::*;
     use crate::db::table::core::value::Value;
     use crate::interpreter::ast::LimitClause;
-    use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::Operator;
     use crate::interpreter::ast::OrderByClause;
     use crate::interpreter::ast::OrderByDirection;
@@ -171,8 +170,6 @@ mod tests {
     use crate::interpreter::ast::SelectableColumn;
     use crate::interpreter::ast::SelectableStackElement;
     use crate::interpreter::ast::SetOperator;
-    use crate::interpreter::ast::WhereCondition;
-    use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::tokenizer::scanner::Token;
     use crate::interpreter::tokenizer::token::TokenTypes;
@@ -198,11 +195,14 @@ mod tests {
                 selectables: vec![SelectableStackElement::All],
                 column_name: "*".to_string(),
             }],
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(id)),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Value(Value::Integer(id)),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: format!("id = {}", id).to_string(),
+            }),
             order_by_clause: None,
             limit_clause: None,
         })
@@ -362,11 +362,14 @@ mod tests {
                         selectables: vec![SelectableStackElement::Column("name".to_string())],
                         column_name: "name".to_string(),
                     }],
-                    where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                        l_side: Operand::Identifier("name".to_string()),
-                        operator: Operator::Equals,
-                        r_side: Operand::Value(Value::Text("Henry".to_string())),
-                    })]),
+                    where_clause: Some(SelectableColumn {
+                        selectables: vec![
+                            SelectableStackElement::Column("name".to_string()),
+                            SelectableStackElement::Value(Value::Text("Henry".to_string())),
+                            SelectableStackElement::Operator(Operator::Equals),
+                        ],
+                        column_name: "name = 'Henry'".to_string(),
+                    }),
                     order_by_clause: None,
                     limit_clause: None,
                 }),
@@ -377,11 +380,14 @@ mod tests {
                         selectables: vec![SelectableStackElement::Column("name".to_string())],
                         column_name: "name".to_string(),
                     }],
-                    where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                        l_side: Operand::Identifier("name".to_string()),
-                        operator: Operator::Equals,
-                        r_side: Operand::Value(Value::Text("John".to_string())),
-                    })]),
+                    where_clause: Some(SelectableColumn {
+                        selectables: vec![
+                            SelectableStackElement::Column("name".to_string()),
+                            SelectableStackElement::Value(Value::Text("John".to_string())),
+                            SelectableStackElement::Operator(Operator::Equals),
+                        ],
+                        column_name: "name = 'John".to_string(),
+                    }),
                     order_by_clause: None,
                     limit_clause: None,
                 }),

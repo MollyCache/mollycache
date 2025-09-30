@@ -146,8 +146,8 @@ mod tests {
     use crate::db::table::core::value::Value;
     use crate::db::table::test_utils::default_database;
     use crate::interpreter::ast::{
-        LogicalOperator, Operand, Operator, SelectMode, SelectStatement, SelectableColumn,
-        SelectableStackElement, WhereCondition, WhereStackElement,
+        LogicalOperator, Operator, SelectMode, SelectStatement, SelectableColumn,
+        SelectableStackElement
     };
 
     #[test]
@@ -213,11 +213,14 @@ mod tests {
                         selectables: vec![SelectableStackElement::All],
                         column_name: "*".to_string(),
                     }],
-                    where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                        l_side: Operand::Identifier("id".to_string()),
-                        operator: Operator::Equals,
-                        r_side: Operand::Value(Value::Integer(1)),
-                    })]),
+                    where_clause: Some(SelectableColumn {
+                        selectables: vec![
+                            SelectableStackElement::Column("id".to_string()),
+                            SelectableStackElement::Value(Value::Integer(1)),
+                            SelectableStackElement::Operator(Operator::Equals),
+                        ],
+                        column_name: "id = 1".to_string(),
+                    }),
                     order_by_clause: None,
                     limit_clause: None,
                 }),
@@ -271,19 +274,18 @@ mod tests {
                         selectables: vec![SelectableStackElement::All],
                         column_name: "*".to_string(),
                     }],
-                    where_clause: Some(vec![
-                        WhereStackElement::Condition(WhereCondition {
-                            l_side: Operand::Identifier("id".to_string()),
-                            operator: Operator::Equals,
-                            r_side: Operand::Value(Value::Integer(1)),
-                        }),
-                        WhereStackElement::Condition(WhereCondition {
-                            l_side: Operand::Identifier("id".to_string()),
-                            operator: Operator::Equals,
-                            r_side: Operand::Value(Value::Integer(2)),
-                        }),
-                        WhereStackElement::LogicalOperator(LogicalOperator::Or),
-                    ]),
+                    where_clause: Some(SelectableColumn {
+                        selectables: vec![
+                            SelectableStackElement::Column("id".to_string()),
+                            SelectableStackElement::Value(Value::Integer(2)),
+                            SelectableStackElement::Operator(Operator::Equals),
+                            SelectableStackElement::Column("id".to_string()),
+                            SelectableStackElement::Value(Value::Integer(2)),
+                            SelectableStackElement::Operator(Operator::Equals),
+                            SelectableStackElement::LogicalOperator(LogicalOperator::Or),
+                        ],
+                        column_name: "id = 1 OR id = 2".to_string(),
+                    }),
                     order_by_clause: None,
                     limit_clause: None,
                 }),
@@ -295,11 +297,14 @@ mod tests {
                         selectables: vec![SelectableStackElement::All],
                         column_name: "*".to_string(),
                     }],
-                    where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                        l_side: Operand::Identifier("id".to_string()),
-                        operator: Operator::Equals,
-                        r_side: Operand::Value(Value::Integer(1)),
-                    })]),
+                    where_clause: Some(SelectableColumn {
+                        selectables: vec![
+                            SelectableStackElement::Column("id".to_string()),
+                            SelectableStackElement::Value(Value::Integer(1)),
+                            SelectableStackElement::Operator(Operator::Equals),
+                        ],
+                        column_name: "id = 1".to_string(),
+                    }),
                     order_by_clause: None,
                     limit_clause: None,
                 }),

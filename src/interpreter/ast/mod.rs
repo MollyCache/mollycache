@@ -107,7 +107,7 @@ pub struct SelectStatement {
     pub table_name: String,
     pub mode: SelectMode,
     pub columns: Vec<SelectableColumn>,
-    pub where_clause: Option<Vec<WhereStackElement>>,
+    pub where_clause: Option<SelectableColumn>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
@@ -115,7 +115,7 @@ pub struct SelectStatement {
 #[derive(Debug, PartialEq, Clone)]
 pub struct DeleteStatement {
     pub table_name: String,
-    pub where_clause: Option<Vec<WhereStackElement>>,
+    pub where_clause: Option<SelectableColumn>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
@@ -124,7 +124,7 @@ pub struct DeleteStatement {
 pub struct UpdateStatement {
     pub table_name: String,
     pub update_values: Vec<ColumnValue>,
-    pub where_clause: Option<Vec<WhereStackElement>>,
+    pub where_clause: Option<SelectableColumn>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
 }
@@ -237,46 +237,6 @@ pub enum Operator {
     NotIn,
     Is,
     IsNot,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct WhereCondition {
-    pub l_side: Operand,
-    pub operator: Operator,
-    pub r_side: Operand,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Operand {
-    Value(Value),
-    ValueList(Vec<Value>),
-    Identifier(String),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum WhereStackElement {
-    Condition(WhereCondition),
-    LogicalOperator(LogicalOperator),
-    Parentheses(Parentheses),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum WhereStackOperators {
-    LogicalOperator(LogicalOperator),
-    Parentheses(Parentheses),
-}
-
-impl WhereStackOperators {
-    pub fn into_where_stack_element(self) -> WhereStackElement {
-        match self {
-            WhereStackOperators::LogicalOperator(logical_operator) => {
-                WhereStackElement::LogicalOperator(logical_operator)
-            }
-            WhereStackOperators::Parentheses(parentheses) => {
-                WhereStackElement::Parentheses(parentheses)
-            }
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

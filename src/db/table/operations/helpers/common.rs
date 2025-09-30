@@ -3,10 +3,9 @@ use std::collections::HashSet;
 
 use crate::db::table::core::{row::Row, table::Table, value::DataType, value::Value};
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
-use crate::db::table::operations::helpers::where_clause::row_matches_where_stack;
 use crate::interpreter::ast::{
     LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause, SelectableColumn,
-    SelectableStackElement, WhereStackElement,
+    SelectableStackElement,
 };
 
 pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
@@ -276,7 +275,7 @@ pub fn get_column(
 // Used for UPDATE and DELETE. Notget_row_indicies_matching_clauses used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
 pub fn get_row_indicies_matching_clauses(
     table: &Table,
-    where_clause: &Option<Vec<WhereStackElement>>,
+    where_clause: &Option<SelectableColumn>,
     order_by_clause: &Option<OrderByClause>,
     limit_clause: &Option<LimitClause>,
 ) -> Result<Vec<usize>, String> {
@@ -294,9 +293,9 @@ pub fn get_row_indicies_matching_clauses(
         if limit != -1 && indices.len() as i64 >= limit && order_by_clause.is_none() {
             break;
         } else if where_clause.as_ref().map_or_else(
-            || Ok(true),
-            |stmt| row_matches_where_stack(table, row, &stmt),
-        )? {
+            || true,
+            |stmt| if let Ok(Value::Integer(val)) = get_column(table, row, stmt) && val != 0 { true } else { false }
+        ) {
             indices.push(i);
             if let Some(stmt) = order_by_clause {
                 order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
