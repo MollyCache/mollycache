@@ -148,7 +148,25 @@ pub fn get_column(
                         &mut row_values,
                         None,
                     )?,
-                    // TODO: In, NotIn, Is, IsNot
+                    Operator::Is => pop_two_and_operate(
+                        |a, b| match (a, b) {
+                            (Value::Null, Value::Null) => Ok(true),
+                            (Value::Null, _) | (_, Value::Null) => Ok(false),
+                            (first, second) => Ok(first == second)
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::IsNot => pop_two_and_operate(
+                        |a, b| match (a, b) {
+                            (Value::Null, Value::Null) => Ok(false),
+                            (Value::Null, _) | (_, Value::Null) => Ok(true),
+                            (first, second) => Ok(first != second)
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    // TODO: In, NotIn
                     _ => false,
                 };
                 // TODO: add Bool type
@@ -292,19 +310,31 @@ pub fn get_row_indicies_matching_clauses(
     {
         if limit != -1 && indices.len() as i64 >= limit && order_by_clause.is_none() {
             break;
-        } else if where_clause.as_ref().map_or_else(
-            || true,
-            |stmt| if let Ok(Value::Integer(val)) = get_column(table, row, stmt) && val != 0 { true } else { false }
-        ) {
-            indices.push(i);
-            if let Some(stmt) = order_by_clause {
-                order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
+        } else if let Some(stmt) = where_clause {
+            if let Value::Integer(val) = get_column(table, row, stmt)? {
+                if val == 0 { continue; }
+            } else {
+                return Err("WHERE condition did not return a boolean".to_string());
             }
+        }
+
+        println!("adding {}", i);
+        indices.push(i);
+        if let Some(stmt) = order_by_clause {
+            order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
         }
     }
 
     if let Some(stmt) = order_by_clause {
+        println!("before order:");
+        for i in &indices {
+            println!("{}", i);
+        }
         apply_order_by_from_precomputed(&mut indices, order_by_columns_precomputed, 0, stmt);
+        println!("before order:");
+        for i in &indices {
+            println!("{}", i);
+        }
         if limit != -1 || offset != 0 {
             let end = if limit == -1 {
                 indices.len()
