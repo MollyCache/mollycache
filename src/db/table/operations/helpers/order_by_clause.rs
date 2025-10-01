@@ -22,8 +22,6 @@ pub fn apply_order_by_from_precomputed<T: Clone>(
 }
 
 fn perform_comparisons(row1: &Row, row2: &Row, order_by_clause: &OrderByClause) -> Ordering {
-    // TODO: small optimization: only compute subsequent selectables if the previous ordering resulted in equality
-    // Fletcher - I think this is done here? Can this comment be removed?
     for (i, direction) in order_by_clause.directions.iter().enumerate() {
         let ordering = row1[i].compare(&row2[i], direction);
         if ordering != Ordering::Equal {

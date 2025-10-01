@@ -61,6 +61,9 @@ pub fn get_selectables(
             TokenTypes::Where,
             TokenTypes::Order,
             TokenTypes::Limit,
+            TokenTypes::Union,
+            TokenTypes::Intersect,
+            TokenTypes::Except,
             TokenTypes::EOF,
         ]
         .contains(&token.token_type)
@@ -72,6 +75,9 @@ pub fn get_selectables(
             break;
         } else if expect_new_value && token.token_type != TokenTypes::Comma {
             return Err("Unexpected token after ordering direction".to_string());
+        } else if token.token_type == TokenTypes::RightParen && depth == 0 {
+            // When deadling with set operators, a SELECT statement may end with ) (so a WHERE statement may too)
+            break;
         }
 
         if token.token_type == TokenTypes::Asterisk
@@ -181,7 +187,11 @@ pub fn get_selectables(
             }
         }
 
-        current_name += token.value;
+        // Update current_name
+        match token.token_type {
+            TokenTypes::StringLiteral => { current_name.push_str(&format!("'{}'", token.value)) }
+            _ => { current_name += token.value }
+        };
         current_name += " ";
 
         // Operators

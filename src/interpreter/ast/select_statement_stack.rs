@@ -386,7 +386,7 @@ mod tests {
                             SelectableStackElement::Value(Value::Text("John".to_string())),
                             SelectableStackElement::Operator(Operator::Equals),
                         ],
-                        column_name: "name = 'John".to_string(),
+                        column_name: "name = 'John'".to_string(),
                     }),
                     order_by_clause: None,
                     limit_clause: None,

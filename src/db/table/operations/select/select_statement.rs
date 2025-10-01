@@ -24,23 +24,26 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
     }) {
         if limit != -1 && rows.len() as i64 >= limit && statement.order_by_clause.is_none() {
             break;
-        } else if statement.where_clause.as_ref().map_or_else(
-            || true,
-            |stmt| if let Ok(Value::Integer(val)) = get_column(table, row, stmt) && val != 0 { true } else { false }
-        ) {
-            let columns = get_columns(table, row, &statement.columns)?;
-            if let Some(map) = &mut distinct_map {
-                if map.insert(columns.clone()) {
-                    rows.push(columns);
-                    if let Some(stmt) = &statement.order_by_clause {
-                        order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
-                    }
-                }
+        } else if let Some(stmt) = &statement.where_clause {
+            if let Value::Integer(val) = get_column(table, row, stmt)? {
+                if val == 0 { continue; }
             } else {
+                return Err("WHERE condition did not return a boolean".to_string());
+            }
+        }
+
+        let columns = get_columns(table, row, &statement.columns)?;
+        if let Some(map) = &mut distinct_map {
+            if map.insert(columns.clone()) {
                 rows.push(columns);
                 if let Some(stmt) = &statement.order_by_clause {
                     order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
                 }
+            }
+        } else {
+            rows.push(columns);
+            if let Some(stmt) = &statement.order_by_clause {
+                order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
             }
         }
     }
@@ -270,7 +273,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
-            "Column column_not_included does not exist in table users"
+            "Invalid column name: column_not_included"
         );
     }
 

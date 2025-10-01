@@ -232,7 +232,7 @@ mod tests {
                     SelectableStackElement::Value(Value::Integer(1)),
                     SelectableStackElement::Operator(Operator::Equals),
                 ],
-                column_name: "id = 2".to_string(),
+                column_name: "id = 1".to_string(),
             }),
             order_by_clause: Some(OrderByClause {
                 columns: vec![SelectableColumn {
