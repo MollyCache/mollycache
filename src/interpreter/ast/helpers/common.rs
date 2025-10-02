@@ -180,12 +180,11 @@ pub fn get_selectables(
             };
             continue;
         } else if token.token_type == TokenTypes::As {
-            if depth == 0 {
-                expect_alias = true;
-                continue;
-            } else {
+            if depth != 0 {
                 return Err("Unexpected token: AS".to_string());
             }
+            expect_alias = true;
+            continue;
         }
 
         // Handle ASC and DESC if order_by_directions is set
