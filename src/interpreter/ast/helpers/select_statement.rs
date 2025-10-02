@@ -403,17 +403,17 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectableStack {
-                selectables: vec![
-                    SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
-                    SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
-                ],
-            },
-            column_names: vec![
-                SelectStatementColumn::new("id".to_string()),
-                SelectStatementColumn::new("name".to_string()),
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
+                },
             ],
             where_clause: None,
             order_by_clause: None,
@@ -444,14 +444,12 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectableStack {
-                selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
-                    "name".to_string(),
-                ))],
-            },
-            column_names: vec![SelectStatementColumn::new("name".to_string())],
+            columns: vec![SelectableColumn {
+                selectables: vec![SelectableStackElement::Column("name".to_string())],
+                column_name: "name".to_string(),
+            }],
             where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
                 l_side: Operand::Identifier("name".to_string()),
                 operator: Operator::Equals,
@@ -481,17 +479,17 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::Distinct,
-            columns: SelectableStack {
-                selectables: vec![
-                    SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
-                    SelectableStackElement::Column(SelectStatementColumn::new("age".to_string())),
-                ],
-            },
-            column_names: vec![
-                SelectStatementColumn::new("name".to_string()),
-                SelectStatementColumn::new("age".to_string()),
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("age".to_string())],
+                    column_name: "age".to_string(),
+                },
             ],
             where_clause: None,
             order_by_clause: None,
@@ -521,26 +519,24 @@ mod tests {
         assert!(result.is_ok());
         let statement = result.unwrap();
         let expected = SelectStatement {
-            table_name: SelectStatementTable::new("users".to_string()),
+            table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: SelectableStack {
-                selectables: vec![
-                    SelectableStackElement::Column(SelectStatementColumn::new("id".to_string())),
-                    SelectableStackElement::Column(SelectStatementColumn::new("name".to_string())),
-                ],
-            },
-            column_names: vec![
-                SelectStatementColumn::new("id".to_string()),
-                SelectStatementColumn::new("name".to_string()),
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
+                },
             ],
             where_clause: None,
             order_by_clause: Some(OrderByClause {
-                columns: SelectableStack {
-                    selectables: vec![SelectableStackElement::Column(SelectStatementColumn::new(
-                        "name".to_string(),
-                    ))],
-                },
-                column_names: vec![SelectStatementColumn::new("name".to_string())],
+                columns: vec![SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
+                }],
                 directions: vec![OrderByDirection::Desc],
             }),
             limit_clause: None,
