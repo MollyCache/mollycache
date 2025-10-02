@@ -152,7 +152,7 @@ pub fn get_column(
                         |a, b| match (a, b) {
                             (Value::Null, Value::Null) => Ok(true),
                             (Value::Null, _) | (_, Value::Null) => Ok(false),
-                            (first, second) => Ok(first == second)
+                            (first, second) => Ok(first == second),
                         },
                         &mut row_values,
                         None,
@@ -161,7 +161,7 @@ pub fn get_column(
                         |a, b| match (a, b) {
                             (Value::Null, Value::Null) => Ok(false),
                             (Value::Null, _) | (_, Value::Null) => Ok(true),
-                            (first, second) => Ok(first != second)
+                            (first, second) => Ok(first != second),
                         },
                         &mut row_values,
                         None,
@@ -312,7 +312,9 @@ pub fn get_row_indicies_matching_clauses(
             break;
         } else if let Some(stmt) = where_clause {
             if let Value::Integer(val) = get_column(table, row, stmt)? {
-                if val == 0 { continue; }
+                if val == 0 {
+                    continue;
+                }
             } else {
                 return Err("WHERE condition did not return a boolean".to_string());
             }
