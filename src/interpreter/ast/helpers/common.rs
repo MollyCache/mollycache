@@ -27,6 +27,7 @@ pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
 pub fn get_selectables(
     parser: &mut Parser,
     allow_multiple: bool,
+    allow_aliases: bool,
     order_by_directions: &mut Option<&mut Vec<OrderByDirection>>,
 ) -> Result<Vec<SelectableColumn>, String> {
     #[derive(PartialEq)]
@@ -180,7 +181,7 @@ pub fn get_selectables(
             };
             continue;
         } else if token.token_type == TokenTypes::As {
-            if depth != 0 {
+            if depth != 0 || !allow_aliases {
                 return Err("Unexpected token: AS".to_string());
             }
             expect_alias = true;

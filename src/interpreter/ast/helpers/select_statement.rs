@@ -41,7 +41,7 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
 }
 
 fn get_columns_and_names(parser: &mut Parser) -> Result<Vec<SelectableColumn>, String> {
-    Ok(get_selectables(parser, true, &mut None)?)
+    Ok(get_selectables(parser, true, true, &mut None)?)
 }
 
 #[cfg(test)]
