@@ -383,4 +383,164 @@ mod tests {
         };
         assert_eq!(expected, statement);
     }
+
+    #[test]
+    fn select_statement_with_limit_but_no_offset_is_generated_correctly() {
+        // SELECT id, name FROM users LIMIT 5;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Limit, "LIMIT"),
+            token(TokenTypes::IntLiteral, "5"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SelectStatement {
+            table_name: "users".to_string(),
+            mode: SelectMode::All,
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
+                },
+            ],
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: Some(LimitClause {
+                limit: 5,
+                offset: None,
+            }),
+        };
+        assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_where_clause_only_is_generated_correctly() {
+        // SELECT name FROM users WHERE name = 'John';
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Where, "WHERE"),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Equals, "="),
+            token(TokenTypes::StringLiteral, "John"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SelectStatement {
+            table_name: "users".to_string(),
+            mode: SelectMode::All,
+            columns: vec![SelectableColumn {
+                selectables: vec![SelectableStackElement::Column("name".to_string())],
+                column_name: "name".to_string(),
+            }],
+            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
+                l_side: Operand::Identifier("name".to_string()),
+                operator: Operator::Equals,
+                r_side: Operand::Value(Value::Text("John".to_string())),
+            })]),
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_distinct_and_multiple_columns_is_generated_correctly() {
+        // SELECT DISTINCT name, age FROM users;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Distinct, "DISTINCT"),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "age"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SelectStatement {
+            table_name: "users".to_string(),
+            mode: SelectMode::Distinct,
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("age".to_string())],
+                    column_name: "age".to_string(),
+                },
+            ],
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None,
+        };
+        assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_order_by_only_is_generated_correctly() {
+        // SELECT id, name FROM users ORDER BY name DESC;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Identifier, "id"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Order, "ORDER"),
+            token(TokenTypes::By, "BY"),
+            token(TokenTypes::Identifier, "name"),
+            token(TokenTypes::Desc, "DESC"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SelectStatement {
+            table_name: "users".to_string(),
+            mode: SelectMode::All,
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("id".to_string())],
+                    column_name: "id".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
+                },
+            ],
+            where_clause: None,
+            order_by_clause: Some(OrderByClause {
+                columns: vec![SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("name".to_string())],
+                    column_name: "name".to_string(),
+                }],
+                directions: vec![OrderByDirection::Desc],
+            }),
+            limit_clause: None,
+        };
+        assert_eq!(expected, statement);
+    }
 }
