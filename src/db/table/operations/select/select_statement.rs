@@ -1,5 +1,5 @@
 use crate::db::table::core::{row::Row, table::Table, value::Value};
-use crate::db::table::operations::helpers::common::{get_columns, get_column};
+use crate::db::table::operations::helpers::common::{get_column, get_columns};
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
 use crate::interpreter::ast::{SelectMode, SelectStatement};
 use std::collections::HashSet;
@@ -26,7 +26,9 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
             break;
         } else if let Some(stmt) = &statement.where_clause {
             if let Value::Integer(val) = get_column(table, row, stmt)? {
-                if val == 0 { continue; }
+                if val == 0 {
+                    continue;
+                }
             } else {
                 return Err("WHERE condition did not return a boolean".to_string());
             }

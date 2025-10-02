@@ -189,8 +189,8 @@ pub fn get_selectables(
 
         // Update current_name
         match token.token_type {
-            TokenTypes::StringLiteral => { current_name.push_str(&format!("'{}'", token.value)) }
-            _ => { current_name += token.value }
+            TokenTypes::StringLiteral => current_name.push_str(&format!("'{}'", token.value)),
+            _ => current_name += token.value,
         };
         current_name += " ";
 

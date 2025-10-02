@@ -15,7 +15,11 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<SelectableColumn>,
         return Err("Invalid WHERE condition".to_string());
     }
 
-    return Ok(Some(condition.pop().ok_or("Invalid WHERE condition".to_string())?));
+    return Ok(Some(
+        condition
+            .pop()
+            .ok_or("Invalid WHERE condition".to_string())?,
+    ));
 }
 
 #[cfg(test)]
