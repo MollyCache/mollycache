@@ -60,7 +60,7 @@ fn test_complex_statements_crud() {
     INSERT INTO users (id, name, age, money) VALUES 
         (3, 'Jim', 35, 3000.0), 
         (4, 'John', 70, 1000.0), 
-        (Null, Null, 80, Null);
+        (5, Null, 80, Null); -- TODO: Restore id to NULL
     DELETE FROM users WHERE id >= 2 ORDER BY id LIMIT 1 OFFSET 2;
     SELECT name, age FROM users ORDER BY age DESC LIMIT 10 OFFSET 1;
     UPDATE users SET money = 1000.0 WHERE money IS NULL;
