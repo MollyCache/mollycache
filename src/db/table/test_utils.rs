@@ -75,6 +75,11 @@ pub fn default_database() -> Database {
 }
 
 #[cfg(test)]
+pub fn assert_table_rows_eq(expected: Vec<Row>, actual: Vec<Row>) {
+    assert!(expected.into_iter().zip(actual.into_iter()).all(|(e, a)| e.exactly_equal(&a)));
+}
+
+#[cfg(test)]
 pub fn assert_table_rows_eq_unordered(mut expected: Vec<Row>, mut actual: Vec<Row>) {
     assert!(expected.len() == actual.len());
     expected.sort_by(|a, b| {
@@ -97,5 +102,5 @@ pub fn assert_table_rows_eq_unordered(mut expected: Vec<Row>, mut actual: Vec<Ro
         }
         Ordering::Equal
     });
-    assert_eq!(expected, actual);
+    assert_table_rows_eq(expected, actual);
 }
