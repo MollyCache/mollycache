@@ -3,10 +3,9 @@ use std::collections::HashSet;
 
 use crate::db::table::core::{row::Row, table::Table, value::DataType, value::Value};
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
-use crate::db::table::operations::helpers::where_clause::row_matches_where_stack;
 use crate::interpreter::ast::{
     LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause, SelectableColumn,
-    SelectableStackElement, WhereStackElement,
+    SelectableStackElement,
 };
 
 pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
@@ -149,7 +148,25 @@ pub fn get_column(
                         &mut row_values,
                         None,
                     )?,
-                    // TODO: In, NotIn, Is, IsNot
+                    Operator::Is => pop_two_and_operate(
+                        |a, b| match (a, b) {
+                            (Value::Null, Value::Null) => Ok(true),
+                            (Value::Null, _) | (_, Value::Null) => Ok(false),
+                            (first, second) => Ok(first == second),
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    Operator::IsNot => pop_two_and_operate(
+                        |a, b| match (a, b) {
+                            (Value::Null, Value::Null) => Ok(false),
+                            (Value::Null, _) | (_, Value::Null) => Ok(true),
+                            (first, second) => Ok(first != second),
+                        },
+                        &mut row_values,
+                        None,
+                    )?,
+                    // TODO: In, NotIn
                     _ => false,
                 };
                 // TODO: add Bool type
@@ -276,7 +293,7 @@ pub fn get_column(
 // Used for UPDATE and DELETE. Notget_row_indicies_matching_clauses used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
 pub fn get_row_indicies_matching_clauses(
     table: &Table,
-    where_clause: &Option<Vec<WhereStackElement>>,
+    where_clause: &Option<SelectableColumn>,
     order_by_clause: &Option<OrderByClause>,
     limit_clause: &Option<LimitClause>,
 ) -> Result<Vec<usize>, String> {
@@ -293,19 +310,33 @@ pub fn get_row_indicies_matching_clauses(
     {
         if limit != -1 && indices.len() as i64 >= limit && order_by_clause.is_none() {
             break;
-        } else if where_clause.as_ref().map_or_else(
-            || Ok(true),
-            |stmt| row_matches_where_stack(table, row, &stmt),
-        )? {
-            indices.push(i);
-            if let Some(stmt) = order_by_clause {
-                order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
+        } else if let Some(stmt) = where_clause {
+            if let Value::Integer(val) = get_column(table, row, stmt)? {
+                if val == 0 {
+                    continue;
+                }
+            } else {
+                return Err("WHERE condition did not return a boolean".to_string());
             }
+        }
+
+        println!("adding {}", i);
+        indices.push(i);
+        if let Some(stmt) = order_by_clause {
+            order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
         }
     }
 
     if let Some(stmt) = order_by_clause {
+        println!("before order:");
+        for i in &indices {
+            println!("{}", i);
+        }
         apply_order_by_from_precomputed(&mut indices, order_by_columns_precomputed, 0, stmt);
+        println!("before order:");
+        for i in &indices {
+            println!("{}", i);
+        }
         if limit != -1 || offset != 0 {
             let end = if limit == -1 {
                 indices.len()

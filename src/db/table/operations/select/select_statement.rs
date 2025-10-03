@@ -1,7 +1,6 @@
-use crate::db::table::core::{row::Row, table::Table};
-use crate::db::table::operations::helpers::common::get_columns;
+use crate::db::table::core::{row::Row, table::Table, value::Value};
+use crate::db::table::operations::helpers::common::{get_column, get_columns};
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
-use crate::db::table::operations::helpers::where_clause::row_matches_where_stack;
 use crate::interpreter::ast::{SelectMode, SelectStatement};
 use std::collections::HashSet;
 
@@ -25,23 +24,28 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
     }) {
         if limit != -1 && rows.len() as i64 >= limit && statement.order_by_clause.is_none() {
             break;
-        } else if statement.where_clause.as_ref().map_or_else(
-            || Ok(true),
-            |stmt| row_matches_where_stack(table, row, &stmt),
-        )? {
-            let columns = get_columns(table, row, &statement.columns)?;
-            if let Some(map) = &mut distinct_map {
-                if map.insert(columns.clone()) {
-                    rows.push(columns);
-                    if let Some(stmt) = &statement.order_by_clause {
-                        order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
-                    }
+        } else if let Some(stmt) = &statement.where_clause {
+            if let Value::Integer(val) = get_column(table, row, stmt)? {
+                if val == 0 {
+                    continue;
                 }
             } else {
+                return Err("WHERE condition did not return a boolean".to_string());
+            }
+        }
+
+        let columns = get_columns(table, row, &statement.columns)?;
+        if let Some(map) = &mut distinct_map {
+            if map.insert(columns.clone()) {
                 rows.push(columns);
                 if let Some(stmt) = &statement.order_by_clause {
                     order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
                 }
+            }
+        } else {
+            rows.push(columns);
+            if let Some(stmt) = &statement.order_by_clause {
+                order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
             }
         }
     }
@@ -68,10 +72,7 @@ mod tests {
     use crate::db::table::core::value::DataType;
     use crate::db::table::core::{row::Row, value::Value};
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
-    use crate::interpreter::ast::Operand;
     use crate::interpreter::ast::SelectMode;
-    use crate::interpreter::ast::WhereCondition;
-    use crate::interpreter::ast::WhereStackElement;
     use crate::interpreter::ast::{
         LimitClause, MathOperator, Operator, OrderByClause, OrderByDirection, SelectableColumn,
         SelectableStackElement,
@@ -163,11 +164,14 @@ mod tests {
                 selectables: vec![SelectableStackElement::All],
                 column_name: "*".to_string(),
             }],
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("name".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("name".to_string()),
+                    SelectableStackElement::Value(Value::Text("John".to_string())),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "name = 'John'".to_string(),
+            }),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -198,11 +202,14 @@ mod tests {
                     column_name: "age".to_string(),
                 },
             ],
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("money".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Real(1000.0)),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("money".to_string()),
+                    SelectableStackElement::Value(Value::Real(1000.0)),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "money = 1000.0".to_string(),
+            }),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -253,11 +260,14 @@ mod tests {
                 selectables: vec![SelectableStackElement::All],
                 column_name: "*".to_string(),
             }],
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("column_not_included".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("column_not_included".to_string()),
+                    SelectableStackElement::Value(Value::Text("John".to_string())),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "column_not_included = 'John'".to_string(),
+            }),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -265,7 +275,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
-            "Column column_not_included does not exist in table users"
+            "Invalid column name: column_not_included"
         );
     }
 

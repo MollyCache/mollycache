@@ -67,8 +67,7 @@ mod tests {
     use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::{
-        Operand, Operator, OrderByClause, OrderByDirection, SelectableColumn,
-        SelectableStackElement, WhereCondition, WhereStackElement,
+        Operator, OrderByClause, OrderByDirection, SelectableColumn, SelectableStackElement,
     };
 
     #[test]
@@ -76,11 +75,14 @@ mod tests {
         let mut table = default_table();
         let statement = DeleteStatement {
             table_name: "users".to_string(),
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(2)),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Value(Value::Integer(2)),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "id = 2".to_string(),
+            }),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -158,11 +160,14 @@ mod tests {
         ]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("name".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Text("John".to_string())),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("name".to_string()),
+                    SelectableStackElement::Value(Value::Text("John".to_string())),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "name = 'John'".to_string(),
+            }),
             order_by_clause: Some(OrderByClause {
                 columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
@@ -223,11 +228,14 @@ mod tests {
         let mut table = default_table();
         let statement = DeleteStatement {
             table_name: "users".to_string(),
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::GreaterThan,
-                r_side: Operand::Value(Value::Integer(1)),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Value(Value::Integer(1)),
+                    SelectableStackElement::Operator(Operator::GreaterThan),
+                ],
+                column_name: "id = 2".to_string(),
+            }),
             order_by_clause: None,
             limit_clause: None,
         };
@@ -310,11 +318,14 @@ mod tests {
         ]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("age".to_string()),
-                operator: Operator::GreaterEquals,
-                r_side: Operand::Value(Value::Integer(30)),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("age".to_string()),
+                    SelectableStackElement::Value(Value::Integer(30)),
+                    SelectableStackElement::Operator(Operator::GreaterEquals),
+                ],
+                column_name: "id = 2".to_string(),
+            }),
             order_by_clause: Some(OrderByClause {
                 columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
@@ -365,11 +376,14 @@ mod tests {
         ])]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
-            where_clause: Some(vec![WhereStackElement::Condition(WhereCondition {
-                l_side: Operand::Identifier("id".to_string()),
-                operator: Operator::Equals,
-                r_side: Operand::Value(Value::Integer(42)),
-            })]),
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Value(Value::Integer(42)),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "id = 42".to_string(),
+            }),
             order_by_clause: None,
             limit_clause: None,
         };
