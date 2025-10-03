@@ -161,6 +161,17 @@ impl Value {
             Value::Text(val) => val.parse::<i64>().ok(),
         }
     }
+
+    pub fn exactly_equal(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Null, Value::Null) => true,
+            (Value::Blob(first), Value::Blob(second)) => first == second,
+            (Value::Text(first), Value::Text(second)) => first == second,
+            (Value::Integer(first), Value::Integer(second)) => first == second,
+            (Value::Real(first), Value::Real(second)) => first == second,
+            _ => false
+        }
+    }
 }
 
 impl PartialOrd for Value {
