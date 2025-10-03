@@ -144,7 +144,7 @@ fn expand_all_column_names(
 mod tests {
     use super::*;
     use crate::db::table::core::value::Value;
-    use crate::db::table::test_utils::default_database;
+    use crate::db::table::test_utils::{assert_table_rows_eq, default_database};
     use crate::interpreter::ast::{
         LogicalOperator, Operator, SelectMode, SelectStatement, SelectableColumn,
         SelectableStackElement,
@@ -198,7 +198,7 @@ mod tests {
                 Value::Real(4000.0),
             ]),
         ];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -248,7 +248,7 @@ mod tests {
             Value::Integer(25),
             Value::Real(1000.0),
         ])];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -321,6 +321,6 @@ mod tests {
             Value::Integer(30),
             Value::Real(2000.0),
         ])];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 }

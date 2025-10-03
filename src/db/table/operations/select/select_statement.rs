@@ -71,7 +71,7 @@ mod tests {
     use crate::db::table::core::column::ColumnDefinition;
     use crate::db::table::core::value::DataType;
     use crate::db::table::core::{row::Row, value::Value};
-    use crate::db::table::test_utils::{assert_table_rows_eq_unordered, default_table};
+    use crate::db::table::test_utils::{assert_table_rows_eq, assert_table_rows_eq_unordered, default_table};
     use crate::interpreter::ast::SelectMode;
     use crate::interpreter::ast::{
         LimitClause, MathOperator, Operator, OrderByClause, OrderByDirection, SelectableColumn,
@@ -120,7 +120,7 @@ mod tests {
                 Value::Real(4000.0),
             ]),
         ];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -151,7 +151,7 @@ mod tests {
             Row(vec![Value::Text("Jim".to_string()), Value::Integer(35)]),
             Row(vec![Value::Null, Value::Integer(40)]),
         ];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -183,7 +183,7 @@ mod tests {
             Value::Integer(25),
             Value::Real(1000.0),
         ])];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -219,7 +219,7 @@ mod tests {
             Value::Text("John".to_string()),
             Value::Integer(25),
         ])];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -247,7 +247,7 @@ mod tests {
             Value::Integer(30),
             Value::Real(2000.0),
         ])];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -327,7 +327,7 @@ mod tests {
                 Value::Real(1000.0),
             ]),
         ];
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -471,7 +471,7 @@ mod tests {
             ]),
         ];
 
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 
     #[test]
@@ -549,6 +549,6 @@ mod tests {
             ]),
         ];
 
-        assert_eq!(expected, result.unwrap());
+        assert_table_rows_eq(expected, result.unwrap());
     }
 }
