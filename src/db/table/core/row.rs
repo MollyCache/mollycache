@@ -1,6 +1,6 @@
 use crate::db::table::core::value::Value;
-use std::ops::{Deref, DerefMut};
 use std::cmp::Ordering;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Hash, Clone)]
 #[repr(transparent)]

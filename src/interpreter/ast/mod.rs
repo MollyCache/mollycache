@@ -1,4 +1,4 @@
-use crate::db::table::core::{column::ColumnDefinition, value::Value, row::Row};
+use crate::db::table::core::{column::ColumnDefinition, row::Row, value::Value};
 use crate::interpreter::tokenizer::{scanner::Token, token::TokenTypes};
 
 mod alter_table_statement;
@@ -68,8 +68,12 @@ pub struct InsertIntoStatement {
 impl PartialEq for InsertIntoStatement {
     fn eq(&self, other: &Self) -> bool {
         self.table_name == other.table_name
-        && self.columns == other.columns
-        && self.values.iter().zip(other.values.iter()).all(|(a, b)| Row(a.clone()).exactly_equal(&Row(b.clone())))
+            && self.columns == other.columns
+            && self
+                .values
+                .iter()
+                .zip(other.values.iter())
+                .all(|(a, b)| Row(a.clone()).exactly_equal(&Row(b.clone())))
     }
 }
 
@@ -244,12 +248,22 @@ impl PartialEq for SelectableStackElement {
         match (self, other) {
             (SelectableStackElement::All, SelectableStackElement::All) => true,
             (SelectableStackElement::Column(a), SelectableStackElement::Column(b)) => a == b,
-            (SelectableStackElement::Value(a), SelectableStackElement::Value(b)) => a.exactly_equal(b),
-            (SelectableStackElement::ValueList(a), SelectableStackElement::ValueList(b)) => a.iter().zip(b.iter()).all(|(first, second)| first.exactly_equal(second)),
+            (SelectableStackElement::Value(a), SelectableStackElement::Value(b)) => {
+                a.exactly_equal(b)
+            }
+            (SelectableStackElement::ValueList(a), SelectableStackElement::ValueList(b)) => a
+                .iter()
+                .zip(b.iter())
+                .all(|(first, second)| first.exactly_equal(second)),
             (SelectableStackElement::Function(a), SelectableStackElement::Function(b)) => a == b,
             (SelectableStackElement::Operator(a), SelectableStackElement::Operator(b)) => a == b,
-            (SelectableStackElement::LogicalOperator(a), SelectableStackElement::LogicalOperator(b)) => a == b,
-            (SelectableStackElement::MathOperator(a), SelectableStackElement::MathOperator(b)) => a == b,
+            (
+                SelectableStackElement::LogicalOperator(a),
+                SelectableStackElement::LogicalOperator(b),
+            ) => a == b,
+            (SelectableStackElement::MathOperator(a), SelectableStackElement::MathOperator(b)) => {
+                a == b
+            }
             _ => false,
         }
     }

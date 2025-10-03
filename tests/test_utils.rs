@@ -2,30 +2,41 @@ use mollycache::db::table::core::row::Row;
 use std::cmp::Ordering;
 
 #[allow(dead_code)]
-pub fn assert_eq_run_sql(expected: Vec<Result<Option<Vec<Row>>, String>>, actual: Vec<Result<Option<Vec<Row>>, String>>) {
+pub fn assert_eq_run_sql(
+    expected: Vec<Result<Option<Vec<Row>>, String>>,
+    actual: Vec<Result<Option<Vec<Row>>, String>>,
+) {
     assert!(expected.len() == actual.len());
     for (first, second) in expected.iter().zip(actual.iter()) {
         match (first, second) {
             (Ok(Some(a)), Ok(Some(b))) => assert_eq_table_rows(a.clone(), b.clone()),
-            (a, b) => assert!(a == b)
+            (a, b) => assert!(a == b),
         }
     }
 }
 
 #[allow(dead_code)]
-pub fn assert_eq_run_sql_unordered(expected: Vec<Result<Option<Vec<Row>>, String>>, actual: Vec<Result<Option<Vec<Row>>, String>>) {
+pub fn assert_eq_run_sql_unordered(
+    expected: Vec<Result<Option<Vec<Row>>, String>>,
+    actual: Vec<Result<Option<Vec<Row>>, String>>,
+) {
     assert!(expected.len() == actual.len());
     for (first, second) in expected.iter().zip(actual.iter()) {
         match (first, second) {
             (Ok(Some(a)), Ok(Some(b))) => assert_eq_table_rows_unordered(a.clone(), b.clone()),
-            (a, b) => assert!(a == b)
+            (a, b) => assert!(a == b),
         }
     }
 }
 
 #[allow(dead_code)]
 pub fn assert_eq_table_rows(expected: Vec<Row>, actual: Vec<Row>) {
-    assert!(expected.into_iter().zip(actual.into_iter()).all(|(e, a)| e.exactly_equal(&a)));
+    assert!(
+        expected
+            .into_iter()
+            .zip(actual.into_iter())
+            .all(|(e, a)| e.exactly_equal(&a))
+    );
 }
 
 #[allow(dead_code)]

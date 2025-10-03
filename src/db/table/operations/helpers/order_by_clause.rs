@@ -25,7 +25,11 @@ fn perform_comparisons(row1: &Row, row2: &Row, order_by_clause: &OrderByClause) 
     for (i, direction) in order_by_clause.directions.iter().enumerate() {
         let ordering = row1[i].partial_cmp(&row2[i]).unwrap_or(Ordering::Equal);
         if ordering != Ordering::Equal {
-            return if *direction == OrderByDirection::Desc { ordering.reverse() } else { ordering };
+            return if *direction == OrderByDirection::Desc {
+                ordering.reverse()
+            } else {
+                ordering
+            };
         }
     }
 

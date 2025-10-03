@@ -71,7 +71,9 @@ mod tests {
     use crate::db::table::core::column::ColumnDefinition;
     use crate::db::table::core::value::DataType;
     use crate::db::table::core::{row::Row, value::Value};
-    use crate::db::table::test_utils::{assert_table_rows_eq, assert_table_rows_eq_unordered, default_table};
+    use crate::db::table::test_utils::{
+        assert_table_rows_eq, assert_table_rows_eq_unordered, default_table,
+    };
     use crate::interpreter::ast::SelectMode;
     use crate::interpreter::ast::{
         LimitClause, MathOperator, Operator, OrderByClause, OrderByDirection, SelectableColumn,

@@ -65,9 +65,14 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::{core::{
-        column::ColumnDefinition, table::Table, value::{DataType, Value},
-    }, test_utils::assert_table_rows_eq};
+    use crate::db::table::{
+        core::{
+            column::ColumnDefinition,
+            table::Table,
+            value::{DataType, Value},
+        },
+        test_utils::assert_table_rows_eq,
+    };
 
     fn default_table() -> Table {
         Table::new(

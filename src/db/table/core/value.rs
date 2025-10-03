@@ -169,7 +169,7 @@ impl Value {
             (Value::Text(first), Value::Text(second)) => first == second,
             (Value::Integer(first), Value::Integer(second)) => first == second,
             (Value::Real(first), Value::Real(second)) => first == second,
-            _ => false
+            _ => false,
         }
     }
 }
@@ -196,11 +196,12 @@ impl PartialOrd for Value {
             (Value::Text(a), Value::Text(b)) => a.partial_cmp(b),
             (Value::Blob(a), Value::Blob(b)) => a.partial_cmp(b),
             // Int/Real mixing
-            (Value::Integer(_), Value::Real(b)) => self
-                .cast_to_real()
-                .unwrap_or(0.0)
-                .partial_cmp(b),
-            (Value::Real(a), Value::Integer(_)) => a.partial_cmp(&other.cast_to_real().unwrap_or(0.0)),
+            (Value::Integer(_), Value::Real(b)) => {
+                self.cast_to_real().unwrap_or(0.0).partial_cmp(b)
+            }
+            (Value::Real(a), Value::Integer(_)) => {
+                a.partial_cmp(&other.cast_to_real().unwrap_or(0.0))
+            }
             // Mixing of incompatible data types
             (Value::Integer(_), Value::Text(_))
             | (Value::Integer(_), Value::Blob(_))
