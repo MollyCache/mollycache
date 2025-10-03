@@ -7,8 +7,6 @@ use crate::db::table::core::{
     column::ColumnDefinition, table::Table, value::DataType, value::Value,
 };
 #[cfg(test)]
-use crate::interpreter::ast::OrderByDirection;
-#[cfg(test)]
 use std::cmp::Ordering;
 
 #[cfg(test)]
@@ -78,41 +76,26 @@ pub fn default_database() -> Database {
 
 #[cfg(test)]
 pub fn assert_table_rows_eq_unordered(mut expected: Vec<Row>, mut actual: Vec<Row>) {
+    assert!(expected.len() == actual.len());
     expected.sort_by(|a, b| {
-        let mut i = 0;
-        while i < a.len()
-            && i < b.len()
-            && a[i].compare(&b[i], &OrderByDirection::Asc) == Ordering::Equal
-        {
-            i += 1;
+        for (first, second) in a.iter().zip(b.iter()) {
+            let ordering = first.partial_cmp(second);
+            assert!(ordering.is_some());
+            if ordering.unwrap() != Ordering::Equal {
+                return ordering.unwrap();
+            }
         }
-        if i >= a.len() && i >= b.len() {
-            Ordering::Equal
-        } else if i >= a.len() {
-            Ordering::Less
-        } else if i >= b.len() {
-            Ordering::Greater
-        } else {
-            a[i].compare(&b[i], &OrderByDirection::Asc)
-        }
+        Ordering::Equal
     });
     actual.sort_by(|a, b| {
-        let mut i = 0;
-        while i < a.len()
-            && i < b.len()
-            && a[i].compare(&b[i], &OrderByDirection::Asc) == Ordering::Equal
-        {
-            i += 1;
+        for (first, second) in a.iter().zip(b.iter()) {
+            let ordering = first.partial_cmp(second);
+            assert!(ordering.is_some());
+            if ordering.unwrap() != Ordering::Equal {
+                return ordering.unwrap();
+            }
         }
-        if i >= a.len() && i >= b.len() {
-            Ordering::Equal
-        } else if i >= a.len() {
-            Ordering::Less
-        } else if i >= b.len() {
-            Ordering::Greater
-        } else {
-            a[i].compare(&b[i], &OrderByDirection::Asc)
-        }
+        Ordering::Equal
     });
     assert_eq!(expected, actual);
 }

@@ -1,4 +1,3 @@
-use crate::interpreter::ast::OrderByDirection;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
@@ -11,7 +10,7 @@ pub enum DataType {
     Null,
 }
 
-#[derive(Debug, PartialOrd, Clone)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Integer(i64),
     Real(f64),
@@ -28,55 +27,6 @@ impl Value {
             Value::Text(_) => DataType::Text,
             Value::Blob(_) => DataType::Blob,
             Value::Null => DataType::Null,
-        }
-    }
-
-    pub fn compare(&self, other: &Value, direction: &OrderByDirection) -> Ordering {
-        let result = match (self, other) {
-            // NULL handling
-            (Value::Null, _) => Ordering::Less, // NULL < NULL is also true
-            (_, Value::Null) => Ordering::Greater,
-            // Same data types & int/real mixing
-            (Value::Integer(a), Value::Integer(b)) => a.cmp(b),
-            (Value::Real(a), Value::Real(b)) => {
-                if a.is_nan() && b.is_nan() {
-                    Ordering::Equal
-                } else if a.is_nan() {
-                    Ordering::Less
-                } else if b.is_nan() {
-                    Ordering::Greater
-                } else {
-                    a.partial_cmp(b).unwrap_or(Ordering::Equal)
-                }
-            }
-            (Value::Text(a), Value::Text(b)) => a.cmp(b),
-            (Value::Blob(a), Value::Blob(b)) => a.cmp(b),
-            // Int/Real mixing
-            (Value::Integer(_), Value::Real(b)) => self
-                .cast_to_real()
-                .unwrap_or(0.0)
-                .partial_cmp(b)
-                .unwrap_or(Ordering::Equal),
-            (Value::Real(a), Value::Integer(_)) => a
-                .partial_cmp(&other.cast_to_real().unwrap_or(0.0))
-                .unwrap_or(Ordering::Equal),
-            // Mixing of incompatible data types
-            (Value::Integer(_), Value::Text(_))
-            | (Value::Integer(_), Value::Blob(_))
-            | (Value::Real(_), Value::Text(_))
-            | (Value::Real(_), Value::Blob(_)) => Ordering::Less,
-            (Value::Text(_), Value::Integer(_))
-            | (Value::Blob(_), Value::Integer(_))
-            | (Value::Text(_), Value::Real(_))
-            | (Value::Blob(_), Value::Real(_)) => Ordering::Greater,
-            (Value::Text(_), Value::Blob(_)) => Ordering::Less,
-            (Value::Blob(_), Value::Text(_)) => Ordering::Greater,
-        };
-
-        if direction == &OrderByDirection::Desc {
-            result.reverse()
-        } else {
-            result
         }
     }
 
@@ -213,22 +163,51 @@ impl Value {
     }
 }
 
-impl PartialEq for Value {
-    fn eq(&self, other: &Self) -> bool {
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (Value::Integer(a), Value::Integer(b)) => a == b,
+            // NULL handling
+            (Value::Null, _) => Some(Ordering::Less), // NULL < NULL is also true
+            (_, Value::Null) => Some(Ordering::Greater),
+            // Same data types & int/real mixing
+            (Value::Integer(a), Value::Integer(b)) => a.partial_cmp(b),
             (Value::Real(a), Value::Real(b)) => {
                 if a.is_nan() && b.is_nan() {
-                    true
+                    Some(Ordering::Equal)
+                } else if a.is_nan() {
+                    Some(Ordering::Less)
+                } else if b.is_nan() {
+                    Some(Ordering::Greater)
                 } else {
-                    a == b
+                    a.partial_cmp(b)
                 }
             }
-            (Value::Text(a), Value::Text(b)) => a == b,
-            (Value::Blob(a), Value::Blob(b)) => a == b,
-            (Value::Null, Value::Null) => true, // TODO: Bad - NULL == NULL should be false but this breaks assert_eq!
-            _ => false,
+            (Value::Text(a), Value::Text(b)) => a.partial_cmp(b),
+            (Value::Blob(a), Value::Blob(b)) => a.partial_cmp(b),
+            // Int/Real mixing
+            (Value::Integer(_), Value::Real(b)) => self
+                .cast_to_real()
+                .unwrap_or(0.0)
+                .partial_cmp(b),
+            (Value::Real(a), Value::Integer(_)) => a.partial_cmp(&other.cast_to_real().unwrap_or(0.0)),
+            // Mixing of incompatible data types
+            (Value::Integer(_), Value::Text(_))
+            | (Value::Integer(_), Value::Blob(_))
+            | (Value::Real(_), Value::Text(_))
+            | (Value::Real(_), Value::Blob(_)) => Some(Ordering::Less),
+            (Value::Text(_), Value::Integer(_))
+            | (Value::Blob(_), Value::Integer(_))
+            | (Value::Text(_), Value::Real(_))
+            | (Value::Blob(_), Value::Real(_)) => Some(Ordering::Greater),
+            (Value::Text(_), Value::Blob(_)) => Some(Ordering::Less),
+            (Value::Blob(_), Value::Text(_)) => Some(Ordering::Greater),
         }
+    }
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        self.partial_cmp(other) == Some(Ordering::Equal)
     }
 }
 
