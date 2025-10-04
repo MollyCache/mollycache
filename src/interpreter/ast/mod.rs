@@ -1,4 +1,4 @@
-use crate::db::table::core::{column::ColumnDefinition, value::Value};
+use crate::db::table::core::{column::ColumnDefinition, row::Row, value::Value};
 use crate::interpreter::tokenizer::{scanner::Token, token::TokenTypes};
 
 mod alter_table_statement;
@@ -58,11 +58,23 @@ pub enum ExistenceCheck {
     IfExists,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct InsertIntoStatement {
     pub table_name: String,
     pub columns: Option<Vec<String>>,
     pub values: Vec<Vec<Value>>,
+}
+
+impl PartialEq for InsertIntoStatement {
+    fn eq(&self, other: &Self) -> bool {
+        self.table_name == other.table_name
+            && self.columns == other.columns
+            && self
+                .values
+                .iter()
+                .zip(other.values.iter())
+                .all(|(a, b)| Row(a.clone()).exactly_equal(&Row(b.clone())))
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -174,10 +186,16 @@ pub struct ReleaseStatement {
     pub savepoint_name: String,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct ColumnValue {
     pub column: String,
     pub value: Value,
+}
+
+impl PartialEq for ColumnValue {
+    fn eq(&self, other: &Self) -> bool {
+        self.column == other.column && self.value.exactly_equal(&other.value)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -213,7 +231,7 @@ pub struct SelectableColumn {
     pub column_name: String,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum SelectableStackElement {
     All,
     Column(String),
@@ -223,6 +241,32 @@ pub enum SelectableStackElement {
     Operator(Operator),
     LogicalOperator(LogicalOperator),
     MathOperator(MathOperator),
+}
+
+impl PartialEq for SelectableStackElement {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (SelectableStackElement::All, SelectableStackElement::All) => true,
+            (SelectableStackElement::Column(a), SelectableStackElement::Column(b)) => a == b,
+            (SelectableStackElement::Value(a), SelectableStackElement::Value(b)) => {
+                a.exactly_equal(b)
+            }
+            (SelectableStackElement::ValueList(a), SelectableStackElement::ValueList(b)) => a
+                .iter()
+                .zip(b.iter())
+                .all(|(first, second)| first.exactly_equal(second)),
+            (SelectableStackElement::Function(a), SelectableStackElement::Function(b)) => a == b,
+            (SelectableStackElement::Operator(a), SelectableStackElement::Operator(b)) => a == b,
+            (
+                SelectableStackElement::LogicalOperator(a),
+                SelectableStackElement::LogicalOperator(b),
+            ) => a == b,
+            (SelectableStackElement::MathOperator(a), SelectableStackElement::MathOperator(b)) => {
+                a == b
+            }
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

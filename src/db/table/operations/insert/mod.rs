@@ -65,8 +65,13 @@ pub fn insert(table: &mut Table, statement: InsertIntoStatement) -> Result<Vec<u
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::core::{
-        column::ColumnDefinition, table::Table, value::DataType, value::Value,
+    use crate::db::table::{
+        core::{
+            column::ColumnDefinition,
+            table::Table,
+            value::{DataType, Value},
+        },
+        test_utils::assert_table_rows_eq,
     };
 
     fn default_table() -> Table {
@@ -117,7 +122,7 @@ mod tests {
             Value::Integer(25),
             Value::Real(1000.0),
         ])];
-        assert_eq!(table.get_rows_clone(), expected);
+        assert_table_rows_eq(table.get_rows_clone(), expected);
     }
 
     #[test]
@@ -175,6 +180,6 @@ mod tests {
                 Value::Null,
             ]),
         ];
-        assert_eq!(expected, table.get_rows_clone());
+        assert_table_rows_eq(expected, table.get_rows_clone());
     }
 }

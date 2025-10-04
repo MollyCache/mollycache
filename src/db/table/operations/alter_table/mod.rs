@@ -90,12 +90,15 @@ pub fn alter_table(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::table::core::{
-        column::ColumnDefinition,
-        row::{Row, RowStack},
-        value::DataType,
-    };
     use crate::db::table::test_utils::default_database;
+    use crate::db::table::{
+        core::{
+            column::ColumnDefinition,
+            row::{Row, RowStack},
+            value::DataType,
+        },
+        test_utils::assert_table_rows_eq,
+    };
 
     #[test]
     fn alter_table_rename_table_works_correctly() {
@@ -157,7 +160,7 @@ mod tests {
             table
                 .get_rows()
                 .iter()
-                .all(|row| row.last().unwrap() == &Value::Null)
+                .all(|row| row.last().unwrap().exactly_equal(&Value::Null))
         );
     }
 
@@ -218,7 +221,7 @@ mod tests {
             ]),
             Row(vec![Value::Integer(4), Value::Null, Value::Real(4000.0)]),
         ];
-        assert_eq!(expected_rows, table.get_rows_clone());
+        assert_table_rows_eq(expected_rows, table.get_rows_clone());
     }
 
     #[test]
@@ -333,7 +336,16 @@ mod tests {
                 Row(vec![Value::Integer(4), Value::Null, Value::Real(4000.0)]),
             ]),
         ];
-        assert_eq!(expected_row_stacks, table.get_row_stacks_clone());
+        assert_eq!(
+            expected_row_stacks.len(),
+            table.get_row_stacks_clone().len()
+        );
+        assert!(
+            expected_row_stacks
+                .iter()
+                .zip(table.get_row_stacks_clone())
+                .all(|(expected, actual)| expected.exactly_equal(&actual))
+        );
     }
 
     #[test]
@@ -447,7 +459,16 @@ mod tests {
                 ]),
             ]),
         ];
-        assert_eq!(expected_row_stacks, table.get_row_stacks_clone());
+        assert_eq!(
+            expected_row_stacks.len(),
+            table.get_row_stacks_clone().len()
+        );
+        assert!(
+            expected_row_stacks
+                .iter()
+                .zip(table.get_row_stacks_clone())
+                .all(|(expected, actual)| expected.exactly_equal(&actual))
+        );
     }
 
     #[test]

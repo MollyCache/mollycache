@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use crate::db::table::core::row::Row;
-use crate::interpreter::ast::OrderByClause;
+use crate::interpreter::ast::{OrderByClause, OrderByDirection};
 
 pub fn apply_order_by_from_precomputed<T: Clone>(
     to_order: &mut Vec<T>,
@@ -23,9 +23,13 @@ pub fn apply_order_by_from_precomputed<T: Clone>(
 
 fn perform_comparisons(row1: &Row, row2: &Row, order_by_clause: &OrderByClause) -> Ordering {
     for (i, direction) in order_by_clause.directions.iter().enumerate() {
-        let ordering = row1[i].compare(&row2[i], direction);
+        let ordering = row1[i].partial_cmp(&row2[i]).unwrap_or(Ordering::Equal);
         if ordering != Ordering::Equal {
-            return ordering;
+            return if *direction == OrderByDirection::Desc {
+                ordering.reverse()
+            } else {
+                ordering
+            };
         }
     }
 

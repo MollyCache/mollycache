@@ -4,6 +4,8 @@ use mollycache::db::database::Database;
 use mollycache::db::table::core::{row::Row, value::Value};
 use mollycache::interpreter::run_sql;
 
+use crate::test_utils::assert_eq_table_rows;
+
 #[test]
 fn test_set_operators() {
     let mut database = Database::new();
@@ -54,8 +56,8 @@ fn test_set_operators_order_by_clauses_and_parentheses() {
         Value::Integer(2),
         Value::Text("zane".to_string()),
     ])];
-    assert_eq!(expected_first, result.pop().unwrap().unwrap().unwrap());
-    assert_eq!(expected_second, result.pop().unwrap().unwrap().unwrap());
+    assert_eq_table_rows(expected_first, result.pop().unwrap().unwrap().unwrap());
+    assert_eq_table_rows(expected_second, result.pop().unwrap().unwrap().unwrap());
     assert!(
         result
             .into_iter()

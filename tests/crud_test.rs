@@ -4,6 +4,8 @@ use mollycache::db::database::Database;
 use mollycache::db::table::core::{row::Row, value::Value};
 use mollycache::interpreter::run_sql;
 
+use crate::test_utils::{assert_eq_run_sql, assert_eq_table_rows, assert_eq_table_rows_unordered};
+
 #[test]
 fn test_basic_statements_crud() {
     let mut database = Database::new();
@@ -37,7 +39,7 @@ fn test_basic_statements_crud() {
             Value::Real(3000.0),
         ]),
     ];
-    assert_eq!(result.pop().unwrap().unwrap().unwrap(), expected);
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
     assert!(
         result
             .into_iter()
@@ -79,7 +81,7 @@ fn test_complex_statements_crud() {
         result.pop().unwrap().unwrap().unwrap(),
     );
     assert!(result.pop().unwrap().unwrap().is_none());
-    assert_eq!(expected_first, result.pop().unwrap().unwrap().unwrap());
+    assert_eq_table_rows_unordered(expected_first, result.pop().unwrap().unwrap().unwrap());
     assert!(
         result
             .into_iter()
@@ -107,7 +109,7 @@ fn test_parsing_errors() {
         Err("Parsing Error: Error at line 8, column 24: Unexpected value: wherea".to_string()),
         Err("Parsing Error: Error at line 9, column 18: Unexpected value: ;".to_string()),
     ];
-    assert_eq!(expected, result);
+    assert_eq_run_sql(expected, result);
 }
 
 #[test]
@@ -122,7 +124,7 @@ fn test_execution_errors() {
         "Execution Error with statement starting on line 2 \n Error: Table `users` does not exist"
             .to_string(),
     )];
-    assert_eq!(expected, result);
+    assert_eq_run_sql(expected, result);
 }
 
 #[test]
@@ -185,7 +187,7 @@ fn test_alter_table() {
 
     let expected = vec![Row(vec![Value::Text("John".to_string()), Value::Null])];
     let row = result[6].as_ref().unwrap().as_ref().unwrap();
-    assert_eq!(expected, *row);
+    assert_eq_table_rows(expected, row.clone());
 
     let expected_errors = vec![
         "Execution Error with statement starting on line 14 \n Error: Table `users` does not exist",
@@ -226,7 +228,7 @@ fn test_distinct_mode() {
         Row(vec![Value::Text("John".to_string())]),
     ];
     let row = result[5].as_ref().unwrap().as_ref().unwrap();
-    assert_eq!(expected, *row);
+    assert_eq_table_rows(expected, row.clone());
 }
 
 #[test]
@@ -247,7 +249,7 @@ fn test_distinct_with_limit_and_offset() {
     assert!(result.iter().all(|result| result.is_ok()));
     let expected = vec![Row(vec![Value::Text("Jim".to_string())])];
     let row = result[5].as_ref().unwrap().as_ref().unwrap();
-    assert_eq!(expected, *row);
+    assert_eq_table_rows(expected, row.clone());
 }
 
 #[test]
@@ -278,5 +280,5 @@ fn test_select_clauses_with_literals() {
             Row(vec![Value::Blob(vec![18, 52]), Value::Integer(2), Value::Null]),
         ])),
     ];
-    assert_eq!(expected, result);
+    assert_eq_run_sql(expected, result);
 }

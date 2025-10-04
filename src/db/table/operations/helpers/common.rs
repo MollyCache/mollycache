@@ -101,7 +101,7 @@ pub fn get_column(
             SelectableStackElement::Operator(op) => {
                 let res = match op {
                     Operator::Equals => pop_two_and_operate(
-                        |a, b| match (a.as_f64(), b.as_f64()) {
+                        |a, b| match (a.numeric_to_f64(), b.numeric_to_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 == val2),
                             _ => Ok(a == b),
                         },
@@ -109,7 +109,7 @@ pub fn get_column(
                         None,
                     )?,
                     Operator::NotEquals => pop_two_and_operate(
-                        |a, b| match (a.as_f64(), b.as_f64()) {
+                        |a, b| match (a.numeric_to_f64(), b.numeric_to_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 != val2),
                             _ => Ok(a != b),
                         },
@@ -117,7 +117,7 @@ pub fn get_column(
                         None,
                     )?,
                     Operator::LessThan => pop_two_and_operate(
-                        |a, b| match (a.as_f64(), b.as_f64()) {
+                        |a, b| match (a.numeric_to_f64(), b.numeric_to_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 < val2),
                             _ => Ok(a < b),
                         },
@@ -125,7 +125,7 @@ pub fn get_column(
                         None,
                     )?,
                     Operator::GreaterThan => pop_two_and_operate(
-                        |a, b| match (a.as_f64(), b.as_f64()) {
+                        |a, b| match (a.numeric_to_f64(), b.numeric_to_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 > val2),
                             _ => Ok(a > b),
                         },
@@ -133,7 +133,7 @@ pub fn get_column(
                         None,
                     )?,
                     Operator::LessEquals => pop_two_and_operate(
-                        |a, b| match (a.as_f64(), b.as_f64()) {
+                        |a, b| match (a.numeric_to_f64(), b.numeric_to_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 <= val2),
                             _ => Ok(a <= b),
                         },
@@ -141,7 +141,7 @@ pub fn get_column(
                         None,
                     )?,
                     Operator::GreaterEquals => pop_two_and_operate(
-                        |a, b| match (a.as_f64(), b.as_f64()) {
+                        |a, b| match (a.numeric_to_f64(), b.numeric_to_f64()) {
                             (Some(val1), Some(val2)) => Ok(val1 >= val2),
                             _ => Ok(a >= b),
                         },
@@ -217,7 +217,9 @@ pub fn get_column(
                         |a, b| {
                             if let (Value::Integer(a_i), Value::Integer(b_i)) = (&a, &b) {
                                 Ok(Value::Integer(a_i + b_i))
-                            } else if let (Some(a_f), Some(b_f)) = (a.as_f64(), b.as_f64()) {
+                            } else if let (Some(a_f), Some(b_f)) =
+                                (a.numeric_to_f64(), b.numeric_to_f64())
+                            {
                                 Ok(Value::Real(a_f + b_f))
                             } else {
                                 Err("Unexpected type(s) for ADD".to_string())
@@ -230,7 +232,9 @@ pub fn get_column(
                         |a, b| {
                             if let (Value::Integer(a_i), Value::Integer(b_i)) = (&a, &b) {
                                 Ok(Value::Integer(a_i - b_i))
-                            } else if let (Some(a_f), Some(b_f)) = (a.as_f64(), b.as_f64()) {
+                            } else if let (Some(a_f), Some(b_f)) =
+                                (a.numeric_to_f64(), b.numeric_to_f64())
+                            {
                                 Ok(Value::Real(a_f - b_f))
                             } else {
                                 Err("Unexpected type(s) for SUBTRACT".to_string())
@@ -243,7 +247,9 @@ pub fn get_column(
                         |a, b| {
                             if let (Value::Integer(a_i), Value::Integer(b_i)) = (&a, &b) {
                                 Ok(Value::Integer(a_i * b_i))
-                            } else if let (Some(a_f), Some(b_f)) = (a.as_f64(), b.as_f64()) {
+                            } else if let (Some(a_f), Some(b_f)) =
+                                (a.numeric_to_f64(), b.numeric_to_f64())
+                            {
                                 Ok(Value::Real(a_f * b_f))
                             } else {
                                 Err("Unexpected type(s) for MULTIPLY".to_string())
@@ -256,7 +262,9 @@ pub fn get_column(
                         |a, b| {
                             if let (Value::Integer(a_i), Value::Integer(b_i)) = (&a, &b) {
                                 Ok(Value::Integer(a_i / b_i))
-                            } else if let (Some(a_f), Some(b_f)) = (a.as_f64(), b.as_f64()) {
+                            } else if let (Some(a_f), Some(b_f)) =
+                                (a.numeric_to_f64(), b.numeric_to_f64())
+                            {
                                 Ok(Value::Real(a_f / b_f))
                             } else {
                                 Err("Unexpected type(s) for DIVIDE".to_string())

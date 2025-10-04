@@ -4,27 +4,7 @@ use mollycache::db::database::Database;
 use mollycache::db::table::core::{row::Row, value::Value};
 use mollycache::interpreter::run_sql;
 
-fn assert_result_unordered_eq(
-    expected: Vec<Result<Option<Vec<Row>>, String>>,
-    result: Vec<Result<Option<Vec<Row>>, String>>,
-) {
-    for (i, result) in result.iter().enumerate() {
-        match (&expected[i], result) {
-            (Ok(None), Ok(None)) => {
-                assert_eq!(expected[i], *result);
-            }
-            (Ok(Some(expected_rows)), Ok(Some(actual_rows))) => {
-                test_utils::assert_eq_table_rows_unordered(
-                    expected_rows.clone(),
-                    actual_rows.clone(),
-                );
-            }
-            (_, _) => {
-                assert_eq!(expected[i], *result);
-            }
-        }
-    }
-}
+use crate::test_utils::assert_eq_run_sql_unordered;
 
 #[test]
 fn test_transaction() {
@@ -79,7 +59,7 @@ fn test_transaction() {
         ])])),
         Err("Execution Error with statement starting on line 20 \n Error: Table `new_users` does not exist".to_string()),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -103,7 +83,7 @@ fn test_transaction_create_table() {
         Ok(None),
         Err("Execution Error with statement starting on line 9 \n Error: Table `users` does not exist".to_string()),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -144,7 +124,7 @@ fn test_transaction_drop_table() {
         Ok(None),
         Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string())])])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -183,7 +163,7 @@ fn test_transaction_insert_into() {
             Value::Text("John".to_string()),
         ])])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -222,7 +202,7 @@ fn test_transaction_update() {
             Value::Text("John".to_string()),
         ])])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -273,7 +253,7 @@ fn test_transaction_delete() {
             Row(vec![Value::Integer(4), Value::Text("Jill".to_string())]),
         ])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -308,7 +288,7 @@ fn test_transaction_savepoint() {
         Ok(None),
         Ok(Some(vec![])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -329,7 +309,7 @@ fn test_transaction_rollback_to_savepoint_that_does_not_exist() {
         Err("Execution Error with statement starting on line 5 \n Error: Savepoint `savepoint_name` does not exist".to_string()),
         Ok(None),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -372,7 +352,7 @@ fn test_transaction_commit_with_savepoint() {
             Value::Text("Jane".to_string()),
         ])])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -416,7 +396,7 @@ fn test_transaction_commit_with_many_changes() {
         Ok(Some(vec![Row(vec![Value::Integer(1), Value::Text("John".to_string()), Value::Null])])), 
     ];
 
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -462,7 +442,7 @@ fn test_transaction_with_multiple_savepoints() {
         Ok(None),
         Ok(Some(vec![])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -479,7 +459,7 @@ fn test_transaction_with_failed_operations() {
         Err("Execution Error with statement starting on line 3 \n Error: Table `users` does not exist".to_string()),
         Ok(None),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -500,7 +480,7 @@ fn test_incorrect_order_of_transaction_statements() {
         Err("Execution Error with statement starting on line 5 \n Error: Nested transactions are not allowed".to_string()),
         Ok(None),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -536,7 +516,7 @@ fn test_multiple_operations_on_the_same_row() {
         Ok(None),
         Ok(Some(vec![])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
 
 #[test]
@@ -585,5 +565,5 @@ fn test_transactions_with_multiple_tables() {
         Ok(Some(vec![])),
         Ok(Some(vec![])),
     ];
-    assert_result_unordered_eq(expected, result);
+    assert_eq_run_sql_unordered(expected, result);
 }
