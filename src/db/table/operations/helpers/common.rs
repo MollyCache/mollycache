@@ -355,11 +355,7 @@ pub fn get_row_indicies_matching_clauses(
     }
 
     if let Some(stmt) = order_by_clause {
-        for i in &indices {
-        }
         apply_order_by_from_precomputed(&mut indices, order_by_columns_precomputed, 0, stmt);
-        for i in &indices {
-        }
         if limit != -1 || offset != 0 {
             let end = if limit == -1 {
                 indices.len()
