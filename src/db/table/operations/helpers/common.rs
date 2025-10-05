@@ -32,6 +32,8 @@ pub fn get_columns(
     table: &Table,
     row: &Row,
     selected_columns: &Vec<SelectableColumn>,
+    computed_columns: Option<&Row>,
+    aliases_to_indexes: Option<&HashMap<String, usize>>,
 ) -> Result<Row, String> {
     let mut columns = vec![];
     for col in selected_columns {
@@ -45,7 +47,13 @@ pub fn get_columns(
                 columns.push(val.clone());
             }
         } else {
-            columns.push(get_column(table, row, col)?);
+            columns.push(get_column(
+                table,
+                row,
+                col,
+                computed_columns,
+                aliases_to_indexes,
+            )?);
         }
     }
     return Ok(Row(columns));
@@ -55,6 +63,8 @@ pub fn get_column(
     table: &Table,
     row: &Row,
     selected_column: &SelectableColumn,
+    computed_columns: Option<&Row>,
+    aliases_to_indexes: Option<&HashMap<String, usize>>,
 ) -> Result<Value, String> {
     // Does NOT handle SelectableStackElement::All, since only returns one Value
     let mut row_values: Row = Row(vec![]);
@@ -83,8 +93,17 @@ pub fn get_column(
                 }
             }
             SelectableStackElement::Column(value) => {
-                if let Some(value) = column_values.get(value) {
-                    row_values.push((*value).clone());
+                if let Some(computed) = computed_columns
+                    && let Some(map) = aliases_to_indexes
+                    && let Some(index) = map.get(value)
+                {
+                    if let Some(val) = computed.get(*index) {
+                        row_values.push((*val).clone());
+                    } else {
+                        return Err(format!("Couldn't resolve alias: {}", value));
+                    }
+                } else if let Some(val) = column_values.get(value) {
+                    row_values.push((*val).clone());
                 } else {
                     return Err(format!("Invalid column name: {}", value));
                 }
@@ -298,7 +317,7 @@ pub fn get_column(
     return Ok(row_values[0].clone());
 }
 
-// Used for UPDATE and DELETE. Notget_row_indicies_matching_clauses used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
+// Used for UPDATE and DELETE. Not get_row_indicies_matching_clauses used for INSERT, since it possibly contains DISTINCT, in which case we need the actual evaluated SELECT values, not just the indices
 pub fn get_row_indicies_matching_clauses(
     table: &Table,
     where_clause: &Option<SelectableColumn>,
@@ -319,7 +338,7 @@ pub fn get_row_indicies_matching_clauses(
         if limit != -1 && indices.len() as i64 >= limit && order_by_clause.is_none() {
             break;
         } else if let Some(stmt) = where_clause {
-            if let Value::Integer(val) = get_column(table, row, stmt)? {
+            if let Value::Integer(val) = get_column(table, row, stmt, None, None)? {
                 if val == 0 {
                     continue;
                 }
@@ -328,23 +347,15 @@ pub fn get_row_indicies_matching_clauses(
             }
         }
 
-        println!("adding {}", i);
         indices.push(i);
         if let Some(stmt) = order_by_clause {
-            order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns)?);
+            // UPDATE and DELETE only, so not reading from any alias table
+            order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, None, None)?);
         }
     }
 
     if let Some(stmt) = order_by_clause {
-        println!("before order:");
-        for i in &indices {
-            println!("{}", i);
-        }
         apply_order_by_from_precomputed(&mut indices, order_by_columns_precomputed, 0, stmt);
-        println!("before order:");
-        for i in &indices {
-            println!("{}", i);
-        }
         if limit != -1 || offset != 0 {
             let end = if limit == -1 {
                 indices.len()
