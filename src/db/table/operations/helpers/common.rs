@@ -347,7 +347,6 @@ pub fn get_row_indicies_matching_clauses(
             }
         }
 
-        println!("adding {}", i);
         indices.push(i);
         if let Some(stmt) = order_by_clause {
             // UPDATE and DELETE only, so not reading from any alias table
@@ -356,14 +355,10 @@ pub fn get_row_indicies_matching_clauses(
     }
 
     if let Some(stmt) = order_by_clause {
-        println!("before order:");
         for i in &indices {
-            println!("{}", i);
         }
         apply_order_by_from_precomputed(&mut indices, order_by_columns_precomputed, 0, stmt);
-        println!("before order:");
         for i in &indices {
-            println!("{}", i);
         }
         if limit != -1 || offset != 0 {
             let end = if limit == -1 {
