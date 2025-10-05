@@ -34,7 +34,13 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
         }
         let columns = get_columns(table, row, &statement.columns, None, None)?;
         if let Some(stmt) = &statement.where_clause {
-            if let Value::Integer(val) = get_column(table, row, stmt, Some(&columns), Some(&alias_to_computed_index))? {
+            if let Value::Integer(val) = get_column(
+                table,
+                row,
+                stmt,
+                Some(&columns),
+                Some(&alias_to_computed_index),
+            )? {
                 if val == 0 {
                     continue;
                 }
@@ -42,17 +48,29 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
                 return Err("WHERE condition did not return a boolean".to_string());
             }
         }
-        
+
         if let Some(map) = &mut distinct_map {
             if map.insert(columns.clone()) {
                 if let Some(stmt) = &statement.order_by_clause {
-                    order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, Some(&columns), Some(&alias_to_computed_index))?);
+                    order_by_columns_precomputed.push(get_columns(
+                        table,
+                        row,
+                        &stmt.columns,
+                        Some(&columns),
+                        Some(&alias_to_computed_index),
+                    )?);
                 }
                 rows.push(columns);
             }
         } else {
             if let Some(stmt) = &statement.order_by_clause {
-                order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, Some(&columns), Some(&alias_to_computed_index))?);
+                order_by_columns_precomputed.push(get_columns(
+                    table,
+                    row,
+                    &stmt.columns,
+                    Some(&columns),
+                    Some(&alias_to_computed_index),
+                )?);
             }
             rows.push(columns);
         }

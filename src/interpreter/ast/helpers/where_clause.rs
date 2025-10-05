@@ -10,7 +10,7 @@ pub fn get_where_clause(parser: &mut Parser) -> Result<Option<SelectableColumn>,
     }
     parser.advance()?;
 
-    let mut condition = get_selectables(parser, false, &mut None)?;
+    let mut condition = get_selectables(parser, false, false, &mut None)?;
     if condition.len() != 1 {
         return Err("Invalid WHERE condition".to_string());
     }

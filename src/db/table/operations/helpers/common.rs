@@ -350,14 +350,8 @@ pub fn get_row_indicies_matching_clauses(
         println!("adding {}", i);
         indices.push(i);
         if let Some(stmt) = order_by_clause {
-                // UPDATE and DELETE only, so not reading from any alias table
-            order_by_columns_precomputed.push(get_columns(
-                    table,
-                    row,
-                    &stmt.columns,
-                    None,
-                    None,
-                )?);
+            // UPDATE and DELETE only, so not reading from any alias table
+            order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, None, None)?);
         }
     }
 
