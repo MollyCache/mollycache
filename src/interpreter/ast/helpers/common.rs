@@ -452,7 +452,7 @@ mod tests {
     #[test]
     fn exists_clause_handles_all_cases() {
         use crate::interpreter::ast::test_utils::token;
-        use crate::interpreter::ast::{parser::Parser, ExistenceCheck};
+        use crate::interpreter::ast::{ExistenceCheck, parser::Parser};
 
         let tokens = vec![
             token(TokenTypes::If, "IF"),
@@ -496,4 +496,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-
