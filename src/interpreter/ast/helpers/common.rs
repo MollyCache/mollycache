@@ -448,5 +448,51 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(Ordering::Greater, result.unwrap());
     }
-    // TODO: add more tests
+
+    #[test]
+    fn exists_clause_handles_all_cases() {
+        use crate::interpreter::ast::test_utils::token;
+        use crate::interpreter::ast::{ExistenceCheck, parser::Parser};
+
+        let tokens = vec![
+            token(TokenTypes::If, "IF"),
+            token(TokenTypes::Not, "NOT"),
+            token(TokenTypes::Exists, "EXISTS"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::EOF, ""),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = exists_clause(&mut parser, ExistenceCheck::IfNotExists);
+        assert!(result.is_ok());
+        assert_eq!(Some(ExistenceCheck::IfNotExists), result.unwrap());
+
+        let tokens = vec![
+            token(TokenTypes::If, "IF"),
+            token(TokenTypes::Exists, "EXISTS"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::EOF, ""),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = exists_clause(&mut parser, ExistenceCheck::IfExists);
+        assert!(result.is_ok());
+        assert_eq!(Some(ExistenceCheck::IfExists), result.unwrap());
+
+        let tokens = vec![
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::EOF, ""),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = exists_clause(&mut parser, ExistenceCheck::IfNotExists);
+        assert!(result.is_ok());
+        assert_eq!(None, result.unwrap());
+
+        let tokens = vec![
+            token(TokenTypes::If, "IF"),
+            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::EOF, ""),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = exists_clause(&mut parser, ExistenceCheck::IfNotExists);
+        assert!(result.is_err());
+    }
 }
