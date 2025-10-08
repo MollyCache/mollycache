@@ -8,32 +8,6 @@ MollyCache is a high-performance, in-memory SQL database with row-based caching 
 ![GitHub last commit](https://img.shields.io/github/last-commit/MollyCache/mollycache)
 ![GitHub stars](https://img.shields.io/github/stars/MollyCache/mollycache?style=social)
 
-## Installation & Usage
-
-### Requirements
-- Rust (latest stable version)
-- Cargo
-
-### Getting Started
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/MollyCache/mollycache.git
-   cd mollycache
-   ```
-
-2. Build and run the CLI:
-   ```bash
-   cargo build && cargo run
-   ```
-
-3. Try some SQL commands:
-   ```sql
-   CREATE TABLE users (id INTEGER, name TEXT, email TEXT);
-   INSERT INTO users VALUES (1, 'Alice', 'alice@example.com');
-   SELECT * FROM users;
-   ```
-
 ## Current Implementation Status
 
 MollyCache is currently in **early development**. Many planned features are not yet implemented.
