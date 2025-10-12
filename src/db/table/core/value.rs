@@ -309,4 +309,103 @@ mod tests {
         assert!(!Value::Integer(1).exactly_equal(&Value::Real(1.0)));
         assert!(Value::Blob(vec![1, 2, 3]).exactly_equal(&Value::Blob(vec![1, 2, 3])));
     }
+
+    #[test]
+    fn cast_to_blob_behaves_as_expected() {
+        assert!(Value::Null.cast_to_text().is_none());
+        assert_eq!(Value::Blob(vec![0x00, 0x01, 0x42]).cast_to_blob(), Some(vec![0x00, 0x01, 0x42]));
+        assert_eq!(Value::Text("abc".to_string()).cast_to_blob(), Some(vec![0x61, 0x62, 0x63]));
+        assert_eq!(Value::Integer(42).cast_to_blob(), Some(vec![0x34, 0x32]));
+        assert_eq!(Value::Real(123.456789000).cast_to_blob(), Some(vec![0x31, 0x32, 0x33, 0x2e, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39]));
+    }
+
+    #[test]
+    fn cast_to_text_behaves_as_expected() {
+        assert!(Value::Null.cast_to_text().is_none());
+        assert_eq!(Value::Text("test".to_string()).cast_to_text(), Some("test".to_string()));
+        assert_eq!(Value::Blob(vec![0x61, 0x62, 0x63]).cast_to_text(), Some("abc".to_string()));
+        assert_eq!(Value::Integer(42).cast_to_text(), Some("42".to_string()));
+        assert_eq!(Value::Real(123.456789000).cast_to_text(), Some("123.456789".to_string()));
+    }
+
+    #[test]
+    fn cast_to_real_behaves_as_expected() {
+        assert!(Value::Null.cast_to_real().is_none());
+        assert_eq!(Value::Real(123.456789).cast_to_real(), Some(123.456789));
+        assert_eq!(Value::Blob(vec![0x61, 0x62, 0x63]).cast_to_real(), Some(0.0));
+        assert_eq!(Value::Blob(vec![0x31, 0x32, 0x33, 0x2e, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61, 0x62, 0x63]).cast_to_real(), Some(123.456789));
+        assert_eq!(Value::Text("".to_string()).cast_to_real(), Some(0.0));
+        assert_eq!(Value::Text("    -.543.21.9.abc".to_string()).cast_to_real(), Some(-0.543));
+        assert_eq!(Value::Text("    1000test".to_string()).cast_to_real(), Some(1000.0));
+        assert_eq!(Value::Text("-1234.567test".to_string()).cast_to_real(), Some(-1234.567));
+        assert_eq!(Value::Text("+0.246".to_string()).cast_to_real(), Some(0.246));
+        assert_eq!(Value::Integer(-42).cast_to_real(), Some(-42.0));
+    }
+
+    #[test]
+    fn cast_to_real_lossless_behaves_as_expected() {
+        assert!(Value::Null.cast_to_real_lossless().is_none());
+        assert!(Value::Blob(vec![0x61, 0x62, 0x63]).cast_to_real_lossless().is_none());
+        assert!(Value::Blob(vec![0x31, 0x32, 0x33, 0x2e, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61, 0x62, 0x63]).cast_to_real_lossless().is_none());
+        assert_eq!(Value::Blob(vec![0x31, 0x32, 0x33, 0x2e, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39]).cast_to_real_lossless(), Some(123.456789));
+        assert!(Value::Text("".to_string()).cast_to_real_lossless().is_none());
+        assert!(Value::Text("-.543.21.9.abc".to_string()).cast_to_real_lossless().is_none());
+        assert_eq!(Value::Text("-.543".to_string()).cast_to_real_lossless(), Some(-0.543));
+        assert!(Value::Text("1000test".to_string()).cast_to_real_lossless().is_none());
+        assert_eq!(Value::Text("1000".to_string()).cast_to_real_lossless(), Some(1000.0));
+        assert!(Value::Text("  1000".to_string()).cast_to_real_lossless().is_none());
+        assert!(Value::Text("-1234.567test".to_string()).cast_to_real_lossless().is_none());
+        assert_eq!(Value::Text("-1234.567".to_string()).cast_to_real_lossless(), Some(-1234.567));
+        assert_eq!(Value::Text("+0.246".to_string()).cast_to_real_lossless(), Some(0.246));
+    }
+
+    #[test]
+    fn cast_to_int_behaves_as_expected() {
+        assert!(Value::Null.cast_to_int().is_none());
+        assert_eq!(Value::Integer(42).cast_to_int(), Some(42));
+        assert_eq!(Value::Blob(vec![0x61, 0x62, 0x63]).cast_to_int(), Some(0));
+        assert_eq!(Value::Blob(vec![0x31, 0x32, 0x33, 0x2e, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61, 0x62, 0x63]).cast_to_int(), Some(123));
+        assert_eq!(Value::Text("".to_string()).cast_to_int(), Some(0));
+        assert_eq!(Value::Text("  1234.567test".to_string()).cast_to_int(), Some(1234));
+        assert_eq!(Value::Text(".43test".to_string()).cast_to_int(), Some(0));
+        assert_eq!(Value::Text("+1.246".to_string()).cast_to_int(), Some(1));
+        assert_eq!(Value::Text("-1234.567test".to_string()).cast_to_int(), Some(-1234));
+        assert_eq!(Value::Text("9223372036854775807".to_string()).cast_to_int(), Some(9223372036854775807));
+        assert_eq!(Value::Text("9223372036854775808".to_string()).cast_to_int(), Some(9223372036854775807));
+        assert_eq!(Value::Text("92233720368547758066543210".to_string()).cast_to_int(), Some(9223372036854775807));
+        assert_eq!(Value::Text("-9223372036854775808".to_string()).cast_to_int(), Some(-9223372036854775808));
+        assert_eq!(Value::Text("-9223372036854775810".to_string()).cast_to_int(), Some(-9223372036854775808));
+        assert_eq!(Value::Text("-922337203685477580001".to_string()).cast_to_int(), Some(-9223372036854775808));
+        assert_eq!(Value::Real(123.4).cast_to_int(), Some(123));
+        assert_eq!(Value::Real(123.9).cast_to_int(), Some(123));
+        assert_eq!(Value::Real(-123.4).cast_to_int(), Some(-123));
+        assert_eq!(Value::Real(-123.9).cast_to_int(), Some(-123));
+        assert_eq!(Value::Real(1e18).cast_to_int(), Some(1000000000000000000));
+        assert_eq!(Value::Real(1e19).cast_to_int(), Some(9223372036854775807));
+        assert_eq!(Value::Real(-1e18).cast_to_int(), Some(-1000000000000000000));
+        assert_eq!(Value::Real(-1e19).cast_to_int(), Some(-9223372036854775808));
+    }
+
+    #[test]
+    fn cast_to_int_lossless_behaves_as_expected() {
+        assert!(Value::Null.cast_to_int_lossless().is_none());
+        assert!(Value::Blob(vec![0x61, 0x62, 0x63]).cast_to_int_lossless().is_none());
+        assert!(Value::Blob(vec![0x31, 0x32, 0x33, 0x2e, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61, 0x62, 0x63]).cast_to_int_lossless().is_none());
+        assert_eq!(Value::Blob(vec![0x31, 0x32, 0x33]).cast_to_int_lossless(), Some(123));
+        assert!(Value::Text("".to_string()).cast_to_int_lossless().is_none());
+        assert!(Value::Text("1234.567test".to_string()).cast_to_int_lossless().is_none());
+        assert!(Value::Text("1234.567".to_string()).cast_to_int_lossless().is_none());
+        assert_eq!(Value::Text("1234".to_string()).cast_to_int_lossless(), Some(1234));
+        assert!(Value::Text("  1234".to_string()).cast_to_int_lossless().is_none()); // TODO: does lossless mode ignore trailing whitespace? Standard doesn't have much info
+        assert!(Value::Text(".43test".to_string()).cast_to_int_lossless().is_none());
+        assert_eq!(Value::Text("+1.246".to_string()).cast_to_int_lossless(), Some(1));
+        assert!(Value::Text("-1234.567test".to_string()).cast_to_int_lossless().is_none());
+        assert_eq!(Value::Text("-1234.567".to_string()).cast_to_int_lossless(), Some(-1234));
+        assert_eq!(Value::Text("9223372036854775807".to_string()).cast_to_int_lossless(), Some(9223372036854775807));
+        assert_eq!(Value::Text("9223372036854775808".to_string()).cast_to_int_lossless(), Some(9223372036854775807));
+        assert_eq!(Value::Text("92233720368547758066543210".to_string()).cast_to_int_lossless(), Some(9223372036854775807));
+        assert_eq!(Value::Text("-9223372036854775808".to_string()).cast_to_int_lossless(), Some(-9223372036854775808));
+        assert_eq!(Value::Text("-9223372036854775810".to_string()).cast_to_int_lossless(), Some(-9223372036854775808));
+        assert_eq!(Value::Text("-922337203685477580001".to_string()).cast_to_int_lossless(), Some(-9223372036854775808));
+    }
 }
