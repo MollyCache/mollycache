@@ -579,4 +579,116 @@ mod tests {
 
         assert_table_rows_eq(expected, result.unwrap());
     }
+    
+    #[test]
+    fn select_with_aliases_is_generated_correctly() {
+        let table = default_table();
+        let statement = SelectStatement {
+            table_name: "users".to_string(),
+            mode: SelectMode::All,
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![
+                        SelectableStackElement::Column("money".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
+                        SelectableStackElement::MathOperator(MathOperator::Divide),
+                    ],
+                    column_name: "some_alias".to_string(),
+                }
+            ],
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("some_alias".to_string()),
+                    SelectableStackElement::Value(Value::Integer(80)),
+                    SelectableStackElement::Operator(Operator::GreaterThan),
+                ],
+                column_name: "some_alias > 80".to_string(),
+            }),
+            order_by_clause: Some(OrderByClause {
+                columns: vec![SelectableColumn {
+                    selectables: vec![SelectableStackElement::Column("some_alias".to_string())],
+                    column_name: "some_alias".to_string(),
+                }],
+                directions: vec![OrderByDirection::Desc],
+            }),
+            limit_clause: None
+        };
+
+        let result = select_statement(&table, &statement);
+        assert!(result.is_ok());
+
+        let expected = vec![
+            Row(vec![Value::Real(100.0)]),
+            Row(vec![Value::Real(85.71428571428571)]),
+        ];
+
+        assert_table_rows_eq(expected, result.unwrap());
+    }
+
+    #[test]
+    fn select_with_nonexisting_aliases_crashes() {
+        let table = default_table();
+        let statement = SelectStatement {
+            table_name: "users".to_string(),
+            mode: SelectMode::All,
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![
+                        SelectableStackElement::Column("money".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
+                        SelectableStackElement::MathOperator(MathOperator::Divide),
+                    ],
+                    column_name: "some_alias".to_string(),
+                }
+            ],
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("nonexisting_alias".to_string()),
+                    SelectableStackElement::Value(Value::Integer(80)),
+                    SelectableStackElement::Operator(Operator::GreaterThan),
+                ],
+                column_name: "nonexisting_alias > 80".to_string(),
+            }),
+            order_by_clause: None,
+            limit_clause: None
+        };
+
+        let result = select_statement(&table, &statement);
+        assert!(result.is_err());
+        assert!(result.err().unwrap() == "Invalid column name: nonexisting_alias");
+    }
+
+    #[test]
+    fn select_using_alias_in_selected_columns_crashes() {
+        let table = default_table();
+        let statement = SelectStatement {
+            table_name: "users".to_string(),
+            mode: SelectMode::All,
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![
+                        SelectableStackElement::Column("money".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
+                        SelectableStackElement::MathOperator(MathOperator::Divide),
+                    ],
+                    column_name: "some_alias".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![
+                        SelectableStackElement::Column("some_alias".to_string()),
+                        SelectableStackElement::Column("age".to_string()),
+                        SelectableStackElement::MathOperator(MathOperator::Multiply),
+                    ],
+                    column_name: "some_alias * age".to_string(),
+                }
+            ],
+            where_clause: None,
+            order_by_clause: None,
+            limit_clause: None
+        };
+
+        let result = select_statement(&table, &statement);
+        assert!(result.is_err());
+        assert!(result.err().unwrap() == "Invalid column name: some_alias");
+    }
 }
