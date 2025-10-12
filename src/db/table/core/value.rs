@@ -79,16 +79,14 @@ impl Value {
             Value::Text(val) => {
                 let mut index: usize = 0;
                 let mut has_period = false;
-                let mut has_negative = false;
                 for c in val.trim().chars() {
                     if c == '-' && index == 0
+                        || c == '+' && index == 0
                         || c.is_ascii_digit()
-                        || c == '.' && index != 0 && !has_period && !(index == 1 && has_negative)
+                        || c == '.' && !has_period
                     {
                         index += 1;
-                        if c == '-' {
-                            has_negative = true;
-                        } else if c == '.' {
+                        if c == '.' {
                             has_period = true;
                         }
                         continue;
@@ -135,8 +133,8 @@ impl Value {
                     .trim()
                     .chars()
                     .enumerate()
-                    .find(|(index, c)| !c.is_ascii_digit() && !(*c == '-' && *index == 0))
-                    .unwrap_or((0, ' '));
+                    .find(|(index, c)| !c.is_ascii_digit() && !(*c == '-' && *index == 0) && !(*c == '+' && *index == 0))
+                    .unwrap_or((val.len(), '\0'));
                 if index == 0 {
                     Some(0)
                 } else {
@@ -398,14 +396,16 @@ mod tests {
         assert_eq!(Value::Text("1234".to_string()).cast_to_int_lossless(), Some(1234));
         assert!(Value::Text("  1234".to_string()).cast_to_int_lossless().is_none()); // TODO: does lossless mode ignore trailing whitespace? Standard doesn't have much info
         assert!(Value::Text(".43test".to_string()).cast_to_int_lossless().is_none());
-        assert_eq!(Value::Text("+1.246".to_string()).cast_to_int_lossless(), Some(1));
+        assert!(Value::Text("+1.246".to_string()).cast_to_int_lossless().is_none());
+        assert_eq!(Value::Text("+1".to_string()).cast_to_int_lossless(), Some(1));
         assert!(Value::Text("-1234.567test".to_string()).cast_to_int_lossless().is_none());
-        assert_eq!(Value::Text("-1234.567".to_string()).cast_to_int_lossless(), Some(-1234));
+        assert!(Value::Text("-1234.567".to_string()).cast_to_int_lossless().is_none());
+        assert_eq!(Value::Text("-1234".to_string()).cast_to_int_lossless(), Some(-1234));
         assert_eq!(Value::Text("9223372036854775807".to_string()).cast_to_int_lossless(), Some(9223372036854775807));
-        assert_eq!(Value::Text("9223372036854775808".to_string()).cast_to_int_lossless(), Some(9223372036854775807));
-        assert_eq!(Value::Text("92233720368547758066543210".to_string()).cast_to_int_lossless(), Some(9223372036854775807));
+        assert!(Value::Text("9223372036854775808".to_string()).cast_to_int_lossless().is_none());
+        assert!(Value::Text("92233720368547758066543210".to_string()).cast_to_int_lossless().is_none());
         assert_eq!(Value::Text("-9223372036854775808".to_string()).cast_to_int_lossless(), Some(-9223372036854775808));
-        assert_eq!(Value::Text("-9223372036854775810".to_string()).cast_to_int_lossless(), Some(-9223372036854775808));
-        assert_eq!(Value::Text("-922337203685477580001".to_string()).cast_to_int_lossless(), Some(-9223372036854775808));
+        assert!(Value::Text("-9223372036854775810".to_string()).cast_to_int_lossless().is_none());
+        assert!(Value::Text("-922337203685477580001".to_string()).cast_to_int_lossless().is_none());
     }
 }
