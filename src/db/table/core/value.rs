@@ -254,3 +254,59 @@ impl Hash for Value {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn value_partialord_behaves_as_expected() {
+        // NULL with anything
+        assert!(Value::Null.partial_cmp(&Value::Null) == Some(Ordering::Less));
+        assert!(Value::Null.partial_cmp(&Value::Integer(0)) == Some(Ordering::Less));
+        assert!(Value::Text("a".to_string()).partial_cmp(&Value::Null) == Some(Ordering::Greater));
+
+        // Integer/Real and Text/Blob
+        assert!(Value::Text("0".to_string()).partial_cmp(&Value::Real(0.0)) == Some(Ordering::Greater));
+        assert!(Value::Integer(999).partial_cmp(&Value::Text("1".to_string())) == Some(Ordering::Less));
+        assert!(Value::Blob(vec![0x01]).partial_cmp(&Value::Real(9.9)) == Some(Ordering::Greater));
+
+        // Integer/Real and Integer/Real
+        assert!(Value::Integer(42).partial_cmp(&Value::Real(42.01)) == Some(Ordering::Less));
+        assert!(Value::Real(42.0).partial_cmp(&Value::Integer(42)) == Some(Ordering::Equal));
+        assert!(Value::Integer(42).partial_cmp(&Value::Real(2.0)) == Some(Ordering::Greater));
+
+        // Text and Blob
+        assert!(Value::Text("abcd".to_string()).partial_cmp(&Value::Blob(vec![b'a', b'b', b'c', b'a'])) == Some(Ordering::Less));
+        assert!(Value::Blob(vec![b'a', b'b', b'c', b'd']).partial_cmp(&Value::Text("abce".to_string())) == Some(Ordering::Greater));
+
+        // Text and Text
+        assert!(Value::Text("abcd".to_string()).partial_cmp(&Value::Text("abce".to_string())) == Some(Ordering::Less));
+        assert!(Value::Text("abcd".to_string()).partial_cmp(&Value::Text("abc".to_string())) == Some(Ordering::Greater));
+        assert!(Value::Text("abcd".to_string()).partial_cmp(&Value::Text("abd".to_string())) == Some(Ordering::Less));
+        assert!(Value::Text("A".to_string()).partial_cmp(&Value::Text("1".to_string())) == Some(Ordering::Greater));
+        assert!(Value::Text("1234xyz".to_string()).partial_cmp(&Value::Text("1234xyz".to_string())) == Some(Ordering::Equal));
+        assert!(Value::Text("".to_string()).partial_cmp(&Value::Text("".to_string())) == Some(Ordering::Equal));
+
+        // Blob and Blob
+        assert!(Value::Blob(vec![1, 2, 3]).partial_cmp(&Value::Blob(vec![1, 2, 3])) == Some(Ordering::Equal));
+        assert!(Value::Blob(vec![1, 2, 3]).partial_cmp(&Value::Blob(vec![1, 2, 3, 4])) == Some(Ordering::Less));
+        assert!(Value::Blob(vec![1, 2, 3]).partial_cmp(&Value::Blob(vec![1, 2, 2, 1])) == Some(Ordering::Greater));
+        assert!(Value::Blob(vec![]).partial_cmp(&Value::Blob(vec![])) == Some(Ordering::Equal));
+        assert!(Value::Blob(vec![]).partial_cmp(&Value::Blob(vec![1])) == Some(Ordering::Less));
+    }
+
+    #[test]
+    fn value_partialeq_behaves_as_expected() {
+        assert!(Value::Null != Value::Null);
+        assert!(Value::Integer(567) == Value::Real(567.0));
+        assert!(Value::Integer(567) != Value::Text("567".to_string()));
+    }
+
+    #[test]
+    fn value_exactlyeq_behaves_as_expected() {
+        assert!(Value::Null.exactly_equal(&Value::Null));
+        assert!(!Value::Integer(1).exactly_equal(&Value::Real(1.0)));
+        assert!(Value::Blob(vec![1, 2, 3]).exactly_equal(&Value::Blob(vec![1, 2, 3])));
+    }
+}
