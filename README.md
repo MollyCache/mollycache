@@ -6,6 +6,33 @@
 
 MollyCache is a high-performance, in-memory SQL database with row-based caching capabilities, designed for SQLite compatibility.
 
+## Requirements
+
+- [Rust](https://rust-lang.org/tools/install/) v1.88.0 or higher
+- Optionally, for testing, the [`tarpaulin`](https://crates.io/crates/cargo-tarpaulin) crate (install with `cargo install tarpaulin`)
+
+## Running
+
+To run the MollyCache interactive CLI:
+
+```sh
+cargo run
+```
+
+## Testing
+
+To run the entire test suite:
+
+```sh
+cargo test
+```
+
+To get estimated test coverage (requires the `tarpaulin` crate):
+
+```sh
+cargo tarpaulin
+```
+
 ## Current Implementation Status
 
 MollyCache is currently in **early development**. Many planned features are not yet implemented.
@@ -64,3 +91,5 @@ The entire database is built to be atomic and thread-safe, allowing for concurre
 ## Contributing
 
 Contributions and ideas are welcome! Current progress is tracked using the [issues tab on GitHub](https://github.com/MollyCache/mollycache/issues).
+
+Code contributions must be properly formatted before being merged. Run the formatter with `cargo fmt --all`.
