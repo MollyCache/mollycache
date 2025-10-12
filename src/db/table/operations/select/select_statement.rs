@@ -579,23 +579,21 @@ mod tests {
 
         assert_table_rows_eq(expected, result.unwrap());
     }
-    
+
     #[test]
     fn select_with_aliases_is_generated_correctly() {
         let table = default_table();
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: vec![
-                SelectableColumn {
-                    selectables: vec![
-                        SelectableStackElement::Column("money".to_string()),
-                        SelectableStackElement::Column("age".to_string()),
-                        SelectableStackElement::MathOperator(MathOperator::Divide),
-                    ],
-                    column_name: "some_alias".to_string(),
-                }
-            ],
+            columns: vec![SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("money".to_string()),
+                    SelectableStackElement::Column("age".to_string()),
+                    SelectableStackElement::MathOperator(MathOperator::Divide),
+                ],
+                column_name: "some_alias".to_string(),
+            }],
             where_clause: Some(SelectableColumn {
                 selectables: vec![
                     SelectableStackElement::Column("some_alias".to_string()),
@@ -611,7 +609,7 @@ mod tests {
                 }],
                 directions: vec![OrderByDirection::Desc],
             }),
-            limit_clause: None
+            limit_clause: None,
         };
 
         let result = select_statement(&table, &statement);
@@ -631,16 +629,14 @@ mod tests {
         let statement = SelectStatement {
             table_name: "users".to_string(),
             mode: SelectMode::All,
-            columns: vec![
-                SelectableColumn {
-                    selectables: vec![
-                        SelectableStackElement::Column("money".to_string()),
-                        SelectableStackElement::Column("age".to_string()),
-                        SelectableStackElement::MathOperator(MathOperator::Divide),
-                    ],
-                    column_name: "some_alias".to_string(),
-                }
-            ],
+            columns: vec![SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("money".to_string()),
+                    SelectableStackElement::Column("age".to_string()),
+                    SelectableStackElement::MathOperator(MathOperator::Divide),
+                ],
+                column_name: "some_alias".to_string(),
+            }],
             where_clause: Some(SelectableColumn {
                 selectables: vec![
                     SelectableStackElement::Column("nonexisting_alias".to_string()),
@@ -650,7 +646,7 @@ mod tests {
                 column_name: "nonexisting_alias > 80".to_string(),
             }),
             order_by_clause: None,
-            limit_clause: None
+            limit_clause: None,
         };
 
         let result = select_statement(&table, &statement);
@@ -680,11 +676,11 @@ mod tests {
                         SelectableStackElement::MathOperator(MathOperator::Multiply),
                     ],
                     column_name: "some_alias * age".to_string(),
-                }
+                },
             ],
             where_clause: None,
             order_by_clause: None,
-            limit_clause: None
+            limit_clause: None,
         };
 
         let result = select_statement(&table, &statement);
