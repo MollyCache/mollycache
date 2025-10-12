@@ -37,24 +37,7 @@ cargo tarpaulin
 
 MollyCache is currently in **early development**. Many planned features are not yet implemented.
 
-### Implemented Features
-
-- SQL Tokenizer & Parser
-- Full CRUD operations (CREATE, SELECT, UPDATE, DELETE, ALTER)
-- Transaction statements (BEGIN, COMMIT, ROLLBACK)
-- Basic table operations
-
-### Under Current Developement
-
-- Full functionality for table joins
-- Comprehensive parity testing with SQLite
-- Performance benchmarking suite
-
-### Roadmap
-
-- Row-based caching and eviction policies
-- Snapshotting and persistence
-- Concurrent read operations
+Implemented and planned features are tracked through GitHub Issues.
 
 ## Core Design Philosophy
 
