@@ -31,7 +31,10 @@ fn table_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     let existence_check = exists_clause(parser, ExistenceCheck::IfNotExists)?;
 
-    let table_name = get_table_name(parser)?;
+    let (table_name, table_alias) = get_table_name(parser)?;
+    if table_alias != "" {
+        return Err("Table aliases in CREATE TABLE statement not allowed".to_string());
+    }
 
     let column_definitions = column_definitions(parser)?;
     return Ok(CreateTable(CreateTableStatement {

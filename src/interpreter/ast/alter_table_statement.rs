@@ -10,7 +10,10 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     expect_token_type(parser, TokenTypes::Table)?;
     parser.advance()?;
-    let table_name = get_table_name(parser)?;
+    let (table_name, table_alias) = get_table_name(parser)?;
+    if table_alias != "" {
+        return Err("Table aliases in CREATE TABLE statement not allowed".to_string());
+    }
     let action = get_action(parser)?;
     parser.advance()?;
     expect_token_type(parser, TokenTypes::SemiColon)?;

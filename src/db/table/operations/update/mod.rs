@@ -59,14 +59,16 @@ mod tests {
     use crate::interpreter::ast::ColumnValue;
     use crate::interpreter::ast::{
         LimitClause, Operator, OrderByClause, OrderByDirection, SelectableColumn,
-        SelectableStackElement,
+        SelectableStackElement, TableAliases
     };
+    use std::collections::HashMap;
 
     #[test]
     fn update_works_correctly() {
         let mut table = default_table();
         let statement = UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Text("John".to_string()),
@@ -155,6 +157,7 @@ mod tests {
         ]);
         let statement = UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Text("Fletcher".to_string()),
@@ -233,6 +236,7 @@ mod tests {
         let mut table = default_table();
         let statement = UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![
                 ColumnValue {
                     column: "name".to_string(),
@@ -300,6 +304,7 @@ mod tests {
         table.set_rows(vec![]);
         let statement = UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Text("Fletcher".to_string()),
@@ -320,6 +325,7 @@ mod tests {
         let mut table = default_table();
         let statement = UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "invalid".to_string(),
                 value: Value::Text("Fletcher".to_string()),
@@ -341,6 +347,7 @@ mod tests {
         let mut table = default_table();
         let statement = UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Integer(1),
@@ -362,6 +369,7 @@ mod tests {
         let mut table = default_table();
         let statement = UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "money".to_string(),
                 value: Value::Null,
@@ -407,6 +415,7 @@ mod tests {
         let mut table = default_table();
         let statement = UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "name".to_string(),
                 value: Value::Text("Fletcher".to_string()),

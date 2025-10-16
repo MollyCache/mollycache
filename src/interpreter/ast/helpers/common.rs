@@ -16,11 +16,20 @@ pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), 
     Ok(())
 }
 
-pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
+// Returns Ok(actual_table_name, alias defaulted to "") or an error
+pub fn get_table_name(parser: &mut Parser) -> Result<(String, String), String> {
     let token = parser.current_token()?;
     expect_token_type(parser, TokenTypes::Identifier)?;
-    let result = token.value.to_string();
+    let mut result = (token.value.to_string(), "".to_string());
     parser.advance()?;
+
+    if let Ok(next_token) = parser.peek_token() && next_token.token_type == TokenTypes::As {
+        parser.advance()?;
+        expect_token_type(parser, TokenTypes::Identifier)?;
+        result.1 = parser.current_token()?.value.to_string();
+        parser.advance()?;
+    }
+
     Ok(result)
 }
 
