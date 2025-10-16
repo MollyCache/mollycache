@@ -4,7 +4,7 @@ use crate::db::table::operations::{
 };
 use crate::db::transactions::TransactionLog;
 use crate::db::transactions::{commit::commit_transaction, rollback::rollback_statement};
-use crate::interpreter::ast::SqlStatement;
+use crate::interpreter::ast::{SqlStatement, TableAliases};
 use std::collections::HashMap;
 
 pub struct Database {
@@ -41,7 +41,7 @@ impl Database {
             }
             SqlStatement::UpdateStatement(statement) => {
                 let is_transaction = self.transaction.in_transaction();
-                let table = self.get_table_mut(&statement.table_name)?;
+                let table = self.get_table_with_aliases_mut(&statement.table_name, &statement.table_aliases)?;
                 let rows_updated = update::update(table, statement, is_transaction)?;
                 self.transaction
                     .append_entry(sql_statement_clone, rows_updated)?;
@@ -49,7 +49,7 @@ impl Database {
             }
             SqlStatement::DeleteStatement(statement) => {
                 let is_transaction = self.transaction.in_transaction();
-                let table = self.get_table_mut(&statement.table_name)?;
+                let table = self.get_table_with_aliases_mut(&statement.table_name, &statement.table_aliases)?;
                 let rows_deleted = delete::delete(table, statement, is_transaction)?;
                 self.transaction
                     .append_entry(sql_statement_clone, rows_deleted)?;
@@ -122,6 +122,14 @@ impl Database {
             Some(table) => Ok(table),
             _ => Err(format!("Table `{}` does not exist", table_name)),
         }
+    }
+
+    pub fn get_table_with_aliases(&self, table_name: &str, aliases_map: &TableAliases) -> Result<&Table, String> {
+        self.get_table(aliases_map.get(table_name).unwrap_or(&table_name.to_string()))
+    }
+
+    pub fn get_table_with_aliases_mut(&mut self, table_name: &str, aliases_map: &TableAliases) -> Result<&mut Table, String> {
+        self.get_table_mut(aliases_map.get(table_name).unwrap_or(&table_name.to_string()))
     }
 
     pub fn push_table_change(&mut self, table_name: &str, table: Table) {

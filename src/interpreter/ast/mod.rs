@@ -2,6 +2,7 @@ use crate::db::table::core::{column::ColumnDefinition, row::Row, value::Value};
 use crate::interpreter::tokenizer::{scanner::Token, token::TokenTypes};
 
 use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 
 mod alter_table_statement;
 mod create_statement;
@@ -194,6 +195,19 @@ pub struct ReleaseStatement {
 #[derive(Debug, PartialEq, Clone)]
 #[repr(transparent)]
 pub struct TableAliases(pub HashMap<String, String>);
+
+impl Deref for TableAliases {
+    type Target = HashMap<String, String>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for TableAliases {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct ColumnValue {

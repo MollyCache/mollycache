@@ -22,7 +22,7 @@ pub fn select_statement_stack(
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
-                let table = database.get_table(&select_statement.table_name)?;
+                let table = database.get_table_with_aliases(&select_statement.table_name, &select_statement.table_aliases)?;
                 let expanded_column_names =
                     expand_all_column_names(table, &select_statement.columns)?;
                 match &column_names {
