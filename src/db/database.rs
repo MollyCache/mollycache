@@ -200,6 +200,10 @@ mod tests {
     #[test]
     fn get_table_funcs_returns_proper_table() {
         let mut database = default_database();
+        let aliases = TableAliases(HashMap::from([
+            ("users_alias".to_string(), "users".to_string()),
+            ("not_users_alias".to_string(), "not_users".to_string()),
+        ]));
         let table = database.get_table("users");
         assert!(table.is_ok());
         assert_eq!("users", table.unwrap().name().unwrap());
@@ -210,6 +214,16 @@ mod tests {
         assert!(table.is_ok());
         assert_eq!("users", table.unwrap().name().unwrap());
         let table = database.get_table_mut("not_users");
+        assert!(table.is_err());
+        assert_eq!("Table `not_users` does not exist", table.unwrap_err());
+    
+        let table = database.get_table_with_aliases("users", &aliases);
+        assert!(table.is_ok());
+        assert_eq!("users", table.unwrap().name().unwrap());
+        let table = database.get_table_with_aliases_mut("users_alias", &aliases);
+        assert!(table.is_ok());
+        assert_eq!("users", table.unwrap().name().unwrap());
+        let table = database.get_table_with_aliases("not_users_alias", &aliases);
         assert!(table.is_err());
         assert_eq!("Table `not_users` does not exist", table.unwrap_err());
     }
