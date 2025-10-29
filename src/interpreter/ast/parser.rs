@@ -132,7 +132,7 @@ mod tests {
     use crate::interpreter::ast::{
         CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement,
         SelectStatementStack, SelectStatementStackElement, SelectableColumn,
-        SelectableStackElement, TableAliases
+        SelectableStackElement, TableAliases,
     };
     use std::collections::HashMap;
 

@@ -170,8 +170,8 @@ mod tests {
     use crate::interpreter::ast::SelectableColumn;
     use crate::interpreter::ast::SelectableStackElement;
     use crate::interpreter::ast::SetOperator;
-    use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::ast::TableAliases;
+    use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::tokenizer::scanner::Token;
     use crate::interpreter::tokenizer::token::TokenTypes;
     use std::collections::HashMap;

@@ -41,7 +41,8 @@ impl Database {
             }
             SqlStatement::UpdateStatement(statement) => {
                 let is_transaction = self.transaction.in_transaction();
-                let table = self.get_table_with_aliases_mut(&statement.table_name, &statement.table_aliases)?;
+                let table = self
+                    .get_table_with_aliases_mut(&statement.table_name, &statement.table_aliases)?;
                 let rows_updated = update::update(table, statement, is_transaction)?;
                 self.transaction
                     .append_entry(sql_statement_clone, rows_updated)?;
@@ -49,7 +50,8 @@ impl Database {
             }
             SqlStatement::DeleteStatement(statement) => {
                 let is_transaction = self.transaction.in_transaction();
-                let table = self.get_table_with_aliases_mut(&statement.table_name, &statement.table_aliases)?;
+                let table = self
+                    .get_table_with_aliases_mut(&statement.table_name, &statement.table_aliases)?;
                 let rows_deleted = delete::delete(table, statement, is_transaction)?;
                 self.transaction
                     .append_entry(sql_statement_clone, rows_deleted)?;
@@ -124,12 +126,28 @@ impl Database {
         }
     }
 
-    pub fn get_table_with_aliases(&self, table_name: &str, aliases_map: &TableAliases) -> Result<&Table, String> {
-        self.get_table(aliases_map.get(table_name).unwrap_or(&table_name.to_string()))
+    pub fn get_table_with_aliases(
+        &self,
+        table_name: &str,
+        aliases_map: &TableAliases,
+    ) -> Result<&Table, String> {
+        self.get_table(
+            aliases_map
+                .get(table_name)
+                .unwrap_or(&table_name.to_string()),
+        )
     }
 
-    pub fn get_table_with_aliases_mut(&mut self, table_name: &str, aliases_map: &TableAliases) -> Result<&mut Table, String> {
-        self.get_table_mut(aliases_map.get(table_name).unwrap_or(&table_name.to_string()))
+    pub fn get_table_with_aliases_mut(
+        &mut self,
+        table_name: &str,
+        aliases_map: &TableAliases,
+    ) -> Result<&mut Table, String> {
+        self.get_table_mut(
+            aliases_map
+                .get(table_name)
+                .unwrap_or(&table_name.to_string()),
+        )
     }
 
     pub fn push_table_change(&mut self, table_name: &str, table: Table) {
@@ -216,7 +234,7 @@ mod tests {
         let table = database.get_table_mut("not_users");
         assert!(table.is_err());
         assert_eq!("Table `not_users` does not exist", table.unwrap_err());
-    
+
         let table = database.get_table_with_aliases("users", &aliases);
         assert!(table.is_ok());
         assert_eq!("users", table.unwrap().name().unwrap());

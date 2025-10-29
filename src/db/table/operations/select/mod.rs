@@ -22,7 +22,10 @@ pub fn select_statement_stack(
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
-                let table = database.get_table_with_aliases(&select_statement.table_name, &select_statement.table_aliases)?;
+                let table = database.get_table_with_aliases(
+                    &select_statement.table_name,
+                    &select_statement.table_aliases,
+                )?;
                 let expanded_column_names =
                     expand_all_column_names(table, &select_statement.columns)?;
                 match &column_names {
@@ -147,7 +150,7 @@ mod tests {
     use crate::db::table::test_utils::{assert_table_rows_eq, default_database};
     use crate::interpreter::ast::{
         LogicalOperator, Operator, SelectMode, SelectStatement, SelectableColumn,
-        SelectableStackElement, TableAliases
+        SelectableStackElement, TableAliases,
     };
     use std::collections::HashMap;
 

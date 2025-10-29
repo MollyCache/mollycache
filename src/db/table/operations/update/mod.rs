@@ -59,7 +59,7 @@ mod tests {
     use crate::interpreter::ast::ColumnValue;
     use crate::interpreter::ast::{
         LimitClause, Operator, OrderByClause, OrderByDirection, SelectableColumn,
-        SelectableStackElement, TableAliases
+        SelectableStackElement, TableAliases,
     };
     use std::collections::HashMap;
 

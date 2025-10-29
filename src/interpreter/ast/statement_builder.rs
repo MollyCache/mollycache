@@ -77,7 +77,7 @@ pub struct MockStatementBuilder;
 #[cfg(test)]
 use crate::interpreter::ast::{
     CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement, SelectStatementStack,
-    SelectStatementStackElement, SelectableColumn, SelectableStackElement, TableAliases
+    SelectStatementStackElement, SelectableColumn, SelectableStackElement, TableAliases,
 };
 #[cfg(test)]
 use std::collections::HashMap;

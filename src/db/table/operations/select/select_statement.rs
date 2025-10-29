@@ -103,7 +103,7 @@ mod tests {
     use crate::interpreter::ast::SelectMode;
     use crate::interpreter::ast::{
         LimitClause, MathOperator, Operator, OrderByClause, OrderByDirection, SelectableColumn,
-        SelectableStackElement, TableAliases
+        SelectableStackElement, TableAliases,
     };
     use std::collections::HashMap;
 
