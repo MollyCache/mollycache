@@ -22,7 +22,10 @@ pub fn select_statement_stack(
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
-                let table = database.get_table(&select_statement.table_name)?;
+                let table = database.get_table_with_aliases(
+                    &select_statement.table_name,
+                    &select_statement.table_aliases,
+                )?;
                 let expanded_column_names =
                     expand_all_column_names(table, &select_statement.columns)?;
                 match &column_names {
@@ -147,8 +150,9 @@ mod tests {
     use crate::db::table::test_utils::{assert_table_rows_eq, default_database};
     use crate::interpreter::ast::{
         LogicalOperator, Operator, SelectMode, SelectStatement, SelectableColumn,
-        SelectableStackElement,
+        SelectableStackElement, TableAliases,
     };
+    use std::collections::HashMap;
 
     #[test]
     fn select_statement_stack_with_multiple_set_operators_works_correctly() {
@@ -157,6 +161,7 @@ mod tests {
             elements: vec![SelectStatementStackElement::SelectStatement(
                 SelectStatement {
                     table_name: "users".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
@@ -208,6 +213,7 @@ mod tests {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
@@ -226,6 +232,7 @@ mod tests {
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
@@ -258,6 +265,7 @@ mod tests {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
@@ -269,6 +277,7 @@ mod tests {
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],
@@ -292,6 +301,7 @@ mod tests {
                 SelectStatementStackElement::SetOperator(SetOperator::Intersect),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "users".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],

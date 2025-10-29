@@ -170,9 +170,11 @@ mod tests {
     use crate::interpreter::ast::SelectableColumn;
     use crate::interpreter::ast::SelectableStackElement;
     use crate::interpreter::ast::SetOperator;
+    use crate::interpreter::ast::TableAliases;
     use crate::interpreter::ast::test_utils::token;
     use crate::interpreter::tokenizer::scanner::Token;
     use crate::interpreter::tokenizer::token::TokenTypes;
+    use std::collections::HashMap;
 
     fn simple_select_statement_tokens(id: &'static str) -> Vec<Token<'static>> {
         vec![
@@ -190,6 +192,7 @@ mod tests {
     fn expected_simple_select_statement(id: i64) -> SelectStatementStackElement {
         SelectStatementStackElement::SelectStatement(SelectStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             mode: SelectMode::All,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::All],
@@ -357,6 +360,7 @@ mod tests {
             elements: vec![
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::Column("name".to_string())],
@@ -375,6 +379,7 @@ mod tests {
                 }),
                 SelectStatementStackElement::SelectStatement(SelectStatement {
                     table_name: "employees".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::Column("name".to_string())],

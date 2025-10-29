@@ -1,6 +1,9 @@
 use crate::db::table::core::{column::ColumnDefinition, row::Row, value::Value};
 use crate::interpreter::tokenizer::{scanner::Token, token::TokenTypes};
 
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
+
 mod alter_table_statement;
 mod create_statement;
 mod delete_statement;
@@ -117,6 +120,7 @@ impl SetOperator {
 #[derive(Debug, PartialEq, Clone)]
 pub struct SelectStatement {
     pub table_name: String,
+    pub table_aliases: TableAliases,
     pub mode: SelectMode,
     pub columns: Vec<SelectableColumn>,
     pub where_clause: Option<SelectableColumn>,
@@ -127,6 +131,7 @@ pub struct SelectStatement {
 #[derive(Debug, PartialEq, Clone)]
 pub struct DeleteStatement {
     pub table_name: String,
+    pub table_aliases: TableAliases,
     pub where_clause: Option<SelectableColumn>,
     pub order_by_clause: Option<OrderByClause>,
     pub limit_clause: Option<LimitClause>,
@@ -135,6 +140,7 @@ pub struct DeleteStatement {
 #[derive(Debug, PartialEq, Clone)]
 pub struct UpdateStatement {
     pub table_name: String,
+    pub table_aliases: TableAliases,
     pub update_values: Vec<ColumnValue>,
     pub where_clause: Option<SelectableColumn>,
     pub order_by_clause: Option<OrderByClause>,
@@ -184,6 +190,23 @@ pub struct SavepointStatement {
 #[derive(Debug, PartialEq, Clone)]
 pub struct ReleaseStatement {
     pub savepoint_name: String,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+#[repr(transparent)]
+pub struct TableAliases(pub HashMap<String, String>);
+
+impl Deref for TableAliases {
+    type Target = HashMap<String, String>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for TableAliases {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -482,6 +505,7 @@ mod tests {
                     elements: vec![SelectStatementStackElement::SelectStatement(
                         SelectStatement {
                             table_name: "users".to_string(),
+                            table_aliases: TableAliases(HashMap::new()),
                             mode: SelectMode::All,
                             columns: vec![SelectableColumn {
                                 selectables: vec![SelectableStackElement::All],
@@ -576,6 +600,7 @@ mod tests {
                     elements: vec![SelectStatementStackElement::SelectStatement(
                         SelectStatement {
                             table_name: "users".to_string(),
+                            table_aliases: TableAliases(HashMap::new()),
                             mode: SelectMode::All,
                             columns: vec![SelectableColumn {
                                 selectables: vec![SelectableStackElement::All],

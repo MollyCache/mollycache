@@ -77,8 +77,10 @@ pub struct MockStatementBuilder;
 #[cfg(test)]
 use crate::interpreter::ast::{
     CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement, SelectStatementStack,
-    SelectStatementStackElement, SelectableColumn, SelectableStackElement,
+    SelectStatementStackElement, SelectableColumn, SelectableStackElement, TableAliases,
 };
+#[cfg(test)]
+use std::collections::HashMap;
 
 #[cfg(test)]
 impl StatementBuilder for MockStatementBuilder {
@@ -109,6 +111,7 @@ impl StatementBuilder for MockStatementBuilder {
             elements: vec![SelectStatementStackElement::SelectStatement(
                 SelectStatement {
                     table_name: "users".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],

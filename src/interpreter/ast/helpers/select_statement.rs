@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        SelectMode, SelectStatement, SelectableColumn,
+        SelectMode, SelectStatement, SelectableColumn, TableAliases,
         helpers::{
             common::{get_selectables, get_table_name},
             limit_clause::get_limit,
@@ -12,6 +12,7 @@ use crate::interpreter::{
     },
     tokenizer::token::TokenTypes,
 };
+use std::collections::HashMap;
 
 pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     parser.advance()?;
@@ -25,13 +26,18 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
     let columns = get_columns_and_names(parser)?;
     expect_token_type(parser, TokenTypes::From)?; // TODO: this is not true, you can do SELECT 1;
     parser.advance()?;
-    let table_name = get_table_name(parser)?;
+    let (table_name, table_alias) = get_table_name(parser)?;
+    let mut aliases = HashMap::new();
+    if table_alias != "" {
+        aliases.insert(table_alias, table_name.clone());
+    }
     let where_clause = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
 
     return Ok(SelectStatement {
         table_name: table_name,
+        table_aliases: TableAliases(aliases),
         mode: mode,
         columns: columns,
         where_clause: where_clause,
@@ -75,6 +81,7 @@ mod tests {
             statement,
             SelectStatement {
                 table_name: "users".to_string(),
+                table_aliases: TableAliases(HashMap::new()),
                 mode: SelectMode::All,
                 columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::All],
@@ -105,6 +112,7 @@ mod tests {
             statement,
             SelectStatement {
                 table_name: "guests".to_string(),
+                table_aliases: TableAliases(HashMap::new()),
                 mode: SelectMode::All,
                 columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
@@ -137,6 +145,7 @@ mod tests {
             statement,
             SelectStatement {
                 table_name: "users".to_string(),
+                table_aliases: TableAliases(HashMap::new()),
                 mode: SelectMode::All,
                 columns: vec![
                     SelectableColumn {
@@ -188,6 +197,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "guests".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             mode: SelectMode::All,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::Column("id".to_string())],
@@ -249,6 +259,7 @@ mod tests {
             statement,
             SelectStatement {
                 table_name: "guests".to_string(),
+                table_aliases: TableAliases(HashMap::new()),
                 mode: SelectMode::Distinct,
                 columns: vec![SelectableColumn {
                     selectables: vec![SelectableStackElement::Column("id".to_string())],
@@ -319,6 +330,7 @@ mod tests {
 
         let expected = SelectStatement {
             table_name: "people".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             mode: SelectMode::Distinct,
             columns: vec![
                 SelectableColumn {
@@ -404,6 +416,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             mode: SelectMode::All,
             columns: vec![
                 SelectableColumn {
@@ -445,6 +458,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             mode: SelectMode::All,
             columns: vec![SelectableColumn {
                 selectables: vec![SelectableStackElement::Column("name".to_string())],
@@ -483,6 +497,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             mode: SelectMode::Distinct,
             columns: vec![
                 SelectableColumn {
@@ -523,6 +538,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SelectStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             mode: SelectMode::All,
             columns: vec![
                 SelectableColumn {

@@ -68,13 +68,16 @@ mod tests {
     use crate::interpreter::ast::LimitClause;
     use crate::interpreter::ast::{
         Operator, OrderByClause, OrderByDirection, SelectableColumn, SelectableStackElement,
+        TableAliases,
     };
+    use std::collections::HashMap;
 
     #[test]
     fn delete_from_table_works_correctly() {
         let mut table = default_table();
         let statement = DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: Some(SelectableColumn {
                 selectables: vec![
                     SelectableStackElement::Column("id".to_string()),
@@ -160,6 +163,7 @@ mod tests {
         ]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: Some(SelectableColumn {
                 selectables: vec![
                     SelectableStackElement::Column("name".to_string()),
@@ -228,6 +232,7 @@ mod tests {
         let mut table = default_table();
         let statement = DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: Some(SelectableColumn {
                 selectables: vec![
                     SelectableStackElement::Column("id".to_string()),
@@ -257,6 +262,7 @@ mod tests {
         let mut table = default_table();
         let statement = DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -273,6 +279,7 @@ mod tests {
         table.set_rows(vec![]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -318,6 +325,7 @@ mod tests {
         ]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: Some(SelectableColumn {
                 selectables: vec![
                     SelectableStackElement::Column("age".to_string()),
@@ -376,6 +384,7 @@ mod tests {
         ])]);
         let statement = DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: Some(SelectableColumn {
                 selectables: vec![
                     SelectableStackElement::Column("id".to_string()),

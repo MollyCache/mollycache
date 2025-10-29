@@ -1,6 +1,6 @@
 use crate::interpreter::{
     ast::{
-        DeleteStatement, SqlStatement,
+        DeleteStatement, SqlStatement, TableAliases,
         helpers::{
             common::get_table_name, limit_clause::get_limit, order_by_clause::get_order_by,
             token::expect_token_type, where_clause::get_where_clause,
@@ -9,18 +9,24 @@ use crate::interpreter::{
     },
     tokenizer::token::TokenTypes,
 };
+use std::collections::HashMap;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
     expect_token_type(parser, TokenTypes::From)?;
     parser.advance()?;
-    let table_name = get_table_name(parser)?;
+    let (table_name, table_alias) = get_table_name(parser)?;
+    let mut aliases = HashMap::new();
+    if table_alias != "" {
+        aliases.insert(table_alias, table_name.clone());
+    }
     let where_clause = get_where_clause(parser)?;
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
 
     return Ok(SqlStatement::DeleteStatement(DeleteStatement {
         table_name: table_name,
+        table_aliases: TableAliases(aliases),
         where_clause: where_clause,
         order_by_clause: order_by_clause,
         limit_clause: limit_clause,
@@ -54,6 +60,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::DeleteStatement(DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
@@ -88,6 +95,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::DeleteStatement(DeleteStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             where_clause: Some(SelectableColumn {
                 selectables: vec![
                     SelectableStackElement::Column("id".to_string()),

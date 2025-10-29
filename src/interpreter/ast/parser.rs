@@ -132,8 +132,9 @@ mod tests {
     use crate::interpreter::ast::{
         CreateTableStatement, InsertIntoStatement, SelectMode, SelectStatement,
         SelectStatementStack, SelectStatementStackElement, SelectableColumn,
-        SelectableStackElement,
+        SelectableStackElement, TableAliases,
     };
+    use std::collections::HashMap;
 
     #[test]
     fn parser_formats_error_when_at_end_of_input() {
@@ -195,6 +196,7 @@ mod tests {
             elements: vec![SelectStatementStackElement::SelectStatement(
                 SelectStatement {
                     table_name: "users".to_string(),
+                    table_aliases: TableAliases(HashMap::new()),
                     mode: SelectMode::All,
                     columns: vec![SelectableColumn {
                         selectables: vec![SelectableStackElement::All],

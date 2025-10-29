@@ -14,7 +14,10 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
 
     let existence_check = exists_clause(parser, ExistenceCheck::IfExists)?;
-    let table_name = get_table_name(parser)?;
+    let (table_name, table_alias) = get_table_name(parser)?;
+    if table_alias != "" {
+        return Err("Table aliases in DROP TABLE statement not allowed".to_string());
+    }
     return Ok(SqlStatement::DropTable(DropTableStatement {
         table_name: table_name,
         existence_check: existence_check,

@@ -1,16 +1,22 @@
 use crate::interpreter::ast::helpers::where_clause::get_where_clause;
 use crate::interpreter::ast::{
-    ColumnValue, SqlStatement, UpdateStatement,
+    ColumnValue, SqlStatement, TableAliases, UpdateStatement,
     helpers::common::get_table_name,
     helpers::token::{expect_token_type, token_to_value},
     helpers::{limit_clause::get_limit, order_by_clause::get_order_by},
     parser::Parser,
 };
 use crate::interpreter::tokenizer::token::TokenTypes;
+use std::collections::HashMap;
 
 pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
-    let table_name = get_table_name(parser)?;
+    let (table_name, table_alias) = get_table_name(parser)?;
+    let mut aliases = HashMap::new();
+    if table_alias != "" {
+        aliases.insert(table_alias, table_name.clone());
+    }
+
     // Ensure Set
     expect_token_type(parser, TokenTypes::Set)?;
     let update_values = get_update_values(parser)?;
@@ -22,6 +28,7 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
     expect_token_type(parser, TokenTypes::SemiColon)?;
     return Ok(SqlStatement::UpdateStatement(UpdateStatement {
         table_name: table_name,
+        table_aliases: TableAliases(aliases),
         update_values: update_values,
         where_clause: where_clause,
         order_by_clause: order_by_clause,
@@ -91,6 +98,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::UpdateStatement(UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "column".to_string(),
                 value: Value::Text("value".to_string()),
@@ -124,6 +132,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::UpdateStatement(UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "column".to_string(),
                 value: Value::Integer(1),
@@ -168,6 +177,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::UpdateStatement(UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![
                 ColumnValue {
                     column: "column".to_string(),
@@ -222,6 +232,7 @@ mod tests {
         let statement = result.unwrap();
         let expected = SqlStatement::UpdateStatement(UpdateStatement {
             table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
             update_values: vec![ColumnValue {
                 column: "column".to_string(),
                 value: Value::Integer(1),

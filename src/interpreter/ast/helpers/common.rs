@@ -16,11 +16,22 @@ pub fn expect_token_type(parser: &Parser, token_type: TokenTypes) -> Result<(), 
     Ok(())
 }
 
-pub fn get_table_name(parser: &mut Parser) -> Result<String, String> {
+// Returns Ok(actual_table_name, alias defaulted to "") or an error
+pub fn get_table_name(parser: &mut Parser) -> Result<(String, String), String> {
     let token = parser.current_token()?;
     expect_token_type(parser, TokenTypes::Identifier)?;
-    let result = token.value.to_string();
+    let mut result = (token.value.to_string(), "".to_string());
     parser.advance()?;
+
+    if let Ok(next_token) = parser.current_token()
+        && next_token.token_type == TokenTypes::As
+    {
+        parser.advance()?;
+        expect_token_type(parser, TokenTypes::Identifier)?;
+        result.1 = parser.current_token()?.value.to_string();
+        parser.advance()?;
+    }
+
     Ok(result)
 }
 
@@ -494,5 +505,37 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let result = exists_clause(&mut parser, ExistenceCheck::IfNotExists);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn get_table_name_handles_aliases() {
+        use crate::interpreter::ast::parser::Parser;
+        use crate::interpreter::ast::test_utils::token;
+
+        let tokens = vec![
+            token(TokenTypes::Identifier, "some_table_name"),
+            token(TokenTypes::As, "AS"),
+            token(TokenTypes::Identifier, "some_alias"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result_with_alias = get_table_name(&mut parser);
+        assert_eq!(
+            result_with_alias,
+            Ok(("some_table_name".to_string(), "some_alias".to_string()))
+        );
+    }
+
+    #[test]
+    fn get_table_name_handles_no_aliases() {
+        use crate::interpreter::ast::parser::Parser;
+        use crate::interpreter::ast::test_utils::token;
+
+        let tokens = vec![token(TokenTypes::Identifier, "some_table_name")];
+        let mut parser = Parser::new(tokens);
+        let result_with_alias = get_table_name(&mut parser);
+        assert_eq!(
+            result_with_alias,
+            Ok(("some_table_name".to_string(), "".to_string()))
+        );
     }
 }

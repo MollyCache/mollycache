@@ -32,7 +32,10 @@ pub fn build(parser: &mut Parser) -> Result<SqlStatement, String> {
 
 fn into_statement(parser: &mut Parser) -> Result<SqlStatement, String> {
     parser.advance()?;
-    let table_name = get_table_name(parser)?;
+    let (table_name, table_alias) = get_table_name(parser)?;
+    if table_alias != "" {
+        return Err("Table aliases in INSERT INTO statement not allowed".to_string());
+    }
 
     let token = parser.current_token()?;
     let columns = match token.token_type {
