@@ -7,6 +7,75 @@ use mollycache::interpreter::run_sql;
 use crate::test_utils::{assert_eq_run_sql, assert_eq_table_rows, assert_eq_table_rows_unordered};
 
 #[test]
+fn test_select_with_order_by_and_offset_exceeding_result_size() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'Alice');
+    INSERT INTO users (id, name) VALUES (2, 'Bob');
+    INSERT INTO users (id, name) VALUES (3, 'Charlie');
+    INSERT INTO users (id, name) VALUES (4, 'David');
+    SELECT * FROM users ORDER BY id LIMIT 10 OFFSET 10;
+    ";
+    let mut result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+
+    // When offset exceeds the number of rows, should return empty result set
+    // This is SQLite-compatible behavior
+    let expected = vec![];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
+}
+
+#[test]
+fn test_select_with_order_by_and_offset_at_boundary() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'Alice');
+    INSERT INTO users (id, name) VALUES (2, 'Bob');
+    INSERT INTO users (id, name) VALUES (3, 'Charlie');
+    SELECT * FROM users ORDER BY id LIMIT 10 OFFSET 3;
+    ";
+    let mut result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+
+    // When offset equals the number of rows, should return empty result set
+    let expected = vec![];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
+}
+
+#[test]
+fn test_select_with_order_by_and_partial_offset() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'Alice');
+    INSERT INTO users (id, name) VALUES (2, 'Bob');
+    INSERT INTO users (id, name) VALUES (3, 'Charlie');
+    INSERT INTO users (id, name) VALUES (4, 'David');
+    SELECT * FROM users ORDER BY id LIMIT 10 OFFSET 2;
+    ";
+    let mut result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+
+    // Should return the last 2 rows
+    let expected = vec![
+        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
+        Row(vec![Value::Integer(4), Value::Text("David".to_string())]),
+    ];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
+}
+
+#[test]
 fn test_basic_statements_crud() {
     let mut database = Database::new();
     let sql = "

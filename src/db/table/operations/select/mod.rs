@@ -118,8 +118,17 @@ pub fn select_statement_stack(
     // TODO: if LIMIT without ORDER BY, apply LIMIT at the beginning / after the WHERE
     if let Some(limit_clause) = statement.limit_clause {
         let offset = limit_clause.offset.unwrap_or(0);
-        let end = limit_clause.limit + offset;
-        result = result[offset..end].to_vec();
+        // If offset exceeds the result size, return empty set (SQLite-compatible behavior)
+        if offset >= result.len() {
+            result = vec![];
+        } else {
+            let end = if limit_clause.limit + offset > result.len() {
+                result.len()
+            } else {
+                limit_clause.limit + offset
+            };
+            result = result[offset..end].to_vec();
+        }
     }
     Ok(result)
 }

@@ -79,12 +79,17 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
     if let Some(stmt) = &statement.order_by_clause {
         apply_order_by_from_precomputed(&mut rows, order_by_columns_precomputed, Row(vec![]), stmt);
         if limit != -1 || offset != 0 {
-            let end = if (limit == -1) || (offset + limit as usize > rows.len()) {
-                rows.len()
+            // If offset exceeds the result size, return empty set (SQLite-compatible behavior)
+            if offset >= rows.len() {
+                rows = vec![];
             } else {
-                offset + limit as usize
-            };
-            rows = rows[offset..end].to_vec();
+                let end = if (limit == -1) || (offset + limit as usize > rows.len()) {
+                    rows.len()
+                } else {
+                    offset + limit as usize
+                };
+                rows = rows[offset..end].to_vec();
+            }
         }
     }
 
