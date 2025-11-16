@@ -357,12 +357,17 @@ pub fn get_row_indicies_matching_clauses(
     if let Some(stmt) = order_by_clause {
         apply_order_by_from_precomputed(&mut indices, order_by_columns_precomputed, 0, stmt);
         if limit != -1 || offset != 0 {
-            let end = if limit == -1 {
-                indices.len()
+            // If offset exceeds the result size, return empty set (SQLite-compatible behavior)
+            if offset >= indices.len() {
+                indices = vec![];
             } else {
-                offset + limit as usize
-            };
-            indices = indices[offset..end].to_vec();
+                let end = if (limit == -1) || (offset + limit as usize > indices.len()) {
+                    indices.len()
+                } else {
+                    offset + limit as usize
+                };
+                indices = indices[offset..end].to_vec();
+            }
         }
     }
 

@@ -76,6 +76,58 @@ fn test_select_with_order_by_and_partial_offset() {
 }
 
 #[test]
+fn test_update_with_order_by_and_offset_exceeding_result_size() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'Alice');
+    INSERT INTO users (id, name) VALUES (2, 'Bob');
+    INSERT INTO users (id, name) VALUES (3, 'Charlie');
+    UPDATE users SET name = 'Updated' ORDER BY id LIMIT 1 OFFSET 10;
+    SELECT * FROM users ORDER BY id;
+    ";
+    let mut result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+
+    // When offset exceeds the number of rows, should update 0 rows (SQLite-compatible behavior)
+    let expected = vec![
+        Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
+        Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
+        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
+    ];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
+}
+
+#[test]
+fn test_delete_with_order_by_and_offset_exceeding_result_size() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'Alice');
+    INSERT INTO users (id, name) VALUES (2, 'Bob');
+    INSERT INTO users (id, name) VALUES (3, 'Charlie');
+    DELETE FROM users ORDER BY id LIMIT 1 OFFSET 10;
+    SELECT * FROM users ORDER BY id;
+    ";
+    let mut result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+
+    // When offset exceeds the number of rows, should delete 0 rows (SQLite-compatible behavior)
+    let expected = vec![
+        Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
+        Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
+        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
+    ];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
+}
+
+#[test]
 fn test_basic_statements_crud() {
     let mut database = Database::new();
     let sql = "
