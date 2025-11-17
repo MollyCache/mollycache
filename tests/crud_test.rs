@@ -23,8 +23,8 @@ fn test_select_with_order_by_and_offset_exceeding_result_size() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // When offset exceeds the number of rows, should return empty result set
-    // This is SQLite-compatible behavior
+
+
     let expected = vec![];
     assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
 }
@@ -45,7 +45,6 @@ fn test_select_with_order_by_and_offset_at_boundary() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // When offset equals the number of rows, should return empty result set
     let expected = vec![];
     assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
 }
@@ -67,7 +66,6 @@ fn test_select_with_order_by_and_partial_offset() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // Should return the last 2 rows
     let expected = vec![
         Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
         Row(vec![Value::Integer(4), Value::Text("David".to_string())]),
@@ -92,7 +90,6 @@ fn test_update_with_order_by_and_offset_exceeding_result_size() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // When offset exceeds the number of rows, should update 0 rows (SQLite-compatible behavior)
     let expected = vec![
         Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
         Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
@@ -118,7 +115,6 @@ fn test_delete_with_order_by_and_offset_exceeding_result_size() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // When offset exceeds the number of rows, should delete 0 rows (SQLite-compatible behavior)
     let expected = vec![
         Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
         Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
@@ -417,7 +413,6 @@ fn test_division_by_zero_error() {
     ";
     let result = run_sql(&mut database, sql);
 
-    // All division by zero operations should return errors, not panic
     assert!(
         result[3].is_err(),
         "Division by zero should return an error: {:?}",
@@ -446,7 +441,6 @@ fn test_modulo_by_zero_error() {
     ";
     let result = run_sql(&mut database, sql);
 
-    // All modulo by zero operations should return errors, not panic
     assert!(result[2].is_err(), "Modulo by zero should return an error");
     assert!(result[3].is_err(), "Modulo by zero should return an error");
 }
@@ -472,7 +466,6 @@ fn test_update_with_offset_without_order_by() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // Rows 3 and 4 (Charlie and David) should have been updated
     let expected = vec![
         Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
         Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
@@ -504,7 +497,6 @@ fn test_delete_with_offset_without_order_by() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // Row 4 (David) should have been deleted
     let expected = vec![
         Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
         Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
