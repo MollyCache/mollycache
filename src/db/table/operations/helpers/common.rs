@@ -280,6 +280,9 @@ pub fn get_column(
                     MathOperator::Divide => pop_two_and_operate(
                         |a, b| {
                             if let (Value::Integer(a_i), Value::Integer(b_i)) = (&a, &b) {
+                                if *b_i == 0 {
+                                    return Err("Division by zero".to_string());
+                                }
                                 Ok(Value::Integer(a_i / b_i))
                             } else if let (Some(a_f), Some(b_f)) =
                                 (a.numeric_to_f64(), b.numeric_to_f64())
@@ -295,6 +298,9 @@ pub fn get_column(
                     MathOperator::Modulo => pop_two_and_operate(
                         |a, b| {
                             if let (Value::Integer(a_i), Value::Integer(b_i)) = (&a, &b) {
+                                if *b_i == 0 {
+                                    return Err("Division by zero".to_string());
+                                }
                                 Ok(Value::Integer(a_i % b_i))
                             } else {
                                 Err("Unexpected type(s) for MODULO".to_string())
