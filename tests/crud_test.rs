@@ -23,8 +23,6 @@ fn test_select_with_order_by_and_offset_exceeding_result_size() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-
-
     let expected = vec![];
     assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
 }
