@@ -70,17 +70,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: AI Code Review
-        uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      - name: AI Code Review with Retry
+        uses: Wandalen/wretry.action@v3.5.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          pr_number: ${{ github.event.number }}
-          ai_provider: 'google'
-          google_api_key: ${{ secrets.GEMINI_API_KEY }}
-          google_model: 'gemini-2.5-flash'
-          include_extensions: '.rs,.toml'
-          exclude_paths: 'target/'
-          fail_action_if_review_failed: 'false'
-          review_rules_file: '.github/ai-review-rules.txt'
+          action: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+          with: |
+            token: ${{ secrets.GITHUB_TOKEN }}
+            owner: ${{ github.repository_owner }}
+            repo: ${{ github.event.repository.name }}
+            pr_number: ${{ github.event.number }}
+            ai_provider: google
+            google_api_key: ${{ secrets.GEMINI_API_KEY }}
+            google_model: gemini-2.5-flash
+            include_extensions: .rs,.toml
+            exclude_paths: target/
+            fail_action_if_review_failed: true
+          attempt_limit: 3
+          attempt_delay: 5000

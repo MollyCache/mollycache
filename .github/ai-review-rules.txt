@@ -21,12 +21,36 @@ MEDIUM PRIORITY:
 - Edge cases: handling of empty collections, zero values, boundary conditions
 - Concurrency: potential deadlocks, lock ordering issues
 
-PROVIDE IN YOUR REVIEW:
-- Severity rating (Critical/High/Medium/Low)
-- Specific line numbers or line ranges
-- Clear explanation of WHY this is a bug or potential error
-- Concrete code suggestion to fix the issue
-- Example scenario where the bug would manifest
+MANDATORY FORMAT FOR EVERY ISSUE YOU REPORT:
+
+1. **File Location**: ALWAYS start with the exact file path (e.g., "src/db/table.rs")
+2. **Line Number(s)**: ALWAYS include specific line number(s) (e.g., "Line 42" or "Lines 42-45")
+3. **Severity**: Rate as Critical/High/Medium/Low
+4. **Issue Description**: Clear explanation of WHY this is a bug or potential error
+5. **Code Snippet**: Show the problematic code
+6. **Fix**: Provide concrete code suggestion to fix the issue
+7. **Impact**: Example scenario where the bug would manifest
+
+EXAMPLE FORMAT:
+```
+**File**: src/db/operations/select.rs
+**Lines**: 156-158
+**Severity**: Critical
+
+The code uses `.unwrap()` on a HashMap lookup which will panic if the key doesn't exist:
+```rust
+let value = map.get(&key).unwrap();
+```
+
+**Fix**: Use proper error handling:
+```rust
+let value = map.get(&key).ok_or("Key not found")?;
+```
+
+**Impact**: If a user queries a non-existent column, this will crash the entire database instead of returning a proper SQL error.
+```
+
+IMPORTANT: Every single issue you report MUST include the file path and line number(s) at the very beginning. Issues without file locations will not be useful.
 
 IGNORE:
 - Style issues (formatting is handled by rustfmt separately)
