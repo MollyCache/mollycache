@@ -59,3 +59,50 @@ jobs:
 
       - name: Run tests
         run: cargo test --verbose
+
+  review:
+    name: AI Code Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: AI Code Review
+        uses: legiaquan/code-review-action@v1
+        with:
+          provider: 'gemini'
+          api_key: ${{ secrets.GEMINI_API_KEY }}
+          pr_number: ${{ github.event.pull_request.number }}
+          review_level: 'diff'
+          include_globs: '**/*.rs,Cargo.toml'
+          exclude_globs: '**/target/**,**/Cargo.lock'
+          max_chunk_lines: 500
+          rules: |
+            You are an expert Senior Rust Engineer reviewing code for MollyCache, an in-memory SQL database.
+            Focus on catching bugs and potential runtime errors:
+
+            CRITICAL ISSUES (must flag):
+            - Uncaught panics: unwrap(), expect(), index access that could panic
+            - Memory safety: unsafe blocks without proper justification
+            - Logic errors: off-by-one errors, incorrect bounds checking, infinite loops
+            - Resource leaks: missing Drop implementations, unclosed file handles
+            - Race conditions: unsynchronized shared state access
+
+            HIGH PRIORITY:
+            - Error handling: Result types that should be propagated but aren't
+            - Performance: O(n²) algorithms where O(n) exists, unnecessary clones
+            - Type safety: inappropriate casting, loss of precision in numeric conversions
+            - SQL compatibility: deviations from SQLite behavior
+
+            PROVIDE:
+            - Severity rating (Critical/High/Medium/Low)
+            - Specific line numbers
+            - Clear explanation of the bug
+            - Code suggestion to fix the issue
+
+            IGNORE:
+            - Style issues (formatting is handled by rustfmt)
+            - Suggestions for refactoring unless it prevents a bug
+            - Performance micro-optimizations that don't materially impact functionality
