@@ -287,6 +287,9 @@ pub fn get_column(
                             } else if let (Some(a_f), Some(b_f)) =
                                 (a.numeric_to_f64(), b.numeric_to_f64())
                             {
+                                if b_f == 0.0 {
+                                    return Err("Division by zero".to_string());
+                                }
                                 Ok(Value::Real(a_f / b_f))
                             } else {
                                 Err("Unexpected type(s) for DIVIDE".to_string())

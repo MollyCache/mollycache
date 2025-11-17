@@ -444,6 +444,48 @@ fn test_modulo_by_zero_error() {
 }
 
 #[test]
+fn test_floating_point_division_by_zero_error() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE test_table (id INTEGER, value REAL);
+    INSERT INTO test_table (id, value) VALUES (1, 10.5);
+    INSERT INTO test_table (id, value) VALUES (2, 0.0);
+    SELECT 10.5 / 0.0;
+    SELECT value / 0.0 FROM test_table WHERE id = 1;
+    SELECT 0.0 / 0.0;
+    SELECT value / value FROM test_table WHERE id = 2;
+    SELECT -5.5 / 0.0;
+    ";
+    let result = run_sql(&mut database, sql);
+
+    assert!(
+        result[3].is_err(),
+        "Floating-point division by zero (10.5 / 0.0) should return an error: {:?}",
+        result[3]
+    );
+    assert!(
+        result[4].is_err(),
+        "Floating-point division by zero (value / 0.0) should return an error: {:?}",
+        result[4]
+    );
+    assert!(
+        result[5].is_err(),
+        "Floating-point division by zero (0.0 / 0.0) should return an error: {:?}",
+        result[5]
+    );
+    assert!(
+        result[6].is_err(),
+        "Floating-point division by zero (0.0 / 0.0 from columns) should return an error: {:?}",
+        result[6]
+    );
+    assert!(
+        result[7].is_err(),
+        "Floating-point division by zero (-5.5 / 0.0) should return an error: {:?}",
+        result[7]
+    );
+}
+
+#[test]
 fn test_update_with_offset_without_order_by() {
     let mut database = Database::new();
     let sql = "
