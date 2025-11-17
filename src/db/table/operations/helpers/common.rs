@@ -353,7 +353,10 @@ pub fn get_row_indicies_matching_clauses(
             }
         }
 
-        indices.push(i);
+        // Fix: When skipping rows without ORDER BY, enumerate() resets index to 0
+        // We need to add the offset back to get the actual table index
+        let actual_index = i + if order_by_clause.is_none() { offset } else { 0 };
+        indices.push(actual_index);
         if let Some(stmt) = order_by_clause {
             // UPDATE and DELETE only, so not reading from any alias table
             order_by_columns_precomputed.push(get_columns(table, row, &stmt.columns, None, None)?);

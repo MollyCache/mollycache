@@ -23,8 +23,6 @@ fn test_select_with_order_by_and_offset_exceeding_result_size() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // When offset exceeds the number of rows, should return empty result set
-    // This is SQLite-compatible behavior
     let expected = vec![];
     assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
 }
@@ -45,7 +43,6 @@ fn test_select_with_order_by_and_offset_at_boundary() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // When offset equals the number of rows, should return empty result set
     let expected = vec![];
     assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
 }
@@ -67,7 +64,6 @@ fn test_select_with_order_by_and_partial_offset() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // Should return the last 2 rows
     let expected = vec![
         Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
         Row(vec![Value::Integer(4), Value::Text("David".to_string())]),
@@ -92,7 +88,6 @@ fn test_update_with_order_by_and_offset_exceeding_result_size() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // When offset exceeds the number of rows, should update 0 rows (SQLite-compatible behavior)
     let expected = vec![
         Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
         Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
@@ -118,7 +113,6 @@ fn test_delete_with_order_by_and_offset_exceeding_result_size() {
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    // When offset exceeds the number of rows, should delete 0 rows (SQLite-compatible behavior)
     let expected = vec![
         Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
         Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
@@ -417,7 +411,6 @@ fn test_division_by_zero_error() {
     ";
     let result = run_sql(&mut database, sql);
 
-    // All division by zero operations should return errors, not panic
     assert!(
         result[3].is_err(),
         "Division by zero should return an error: {:?}",
@@ -446,7 +439,67 @@ fn test_modulo_by_zero_error() {
     ";
     let result = run_sql(&mut database, sql);
 
-    // All modulo by zero operations should return errors, not panic
     assert!(result[2].is_err(), "Modulo by zero should return an error");
     assert!(result[3].is_err(), "Modulo by zero should return an error");
+}
+
+#[test]
+fn test_update_with_offset_without_order_by() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'Alice');
+    INSERT INTO users (id, name) VALUES (2, 'Bob');
+    INSERT INTO users (id, name) VALUES (3, 'Charlie');
+    INSERT INTO users (id, name) VALUES (4, 'David');
+    INSERT INTO users (id, name) VALUES (5, 'Eve');
+    -- Update with OFFSET 2, LIMIT 2 (without ORDER BY)
+    -- Should update rows at indices 2 and 3 (Charlie and David)
+    UPDATE users SET name = 'Updated' LIMIT 2 OFFSET 2;
+    SELECT * FROM users ORDER BY id;
+    ";
+    let mut result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+
+    let expected = vec![
+        Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
+        Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
+        Row(vec![Value::Integer(3), Value::Text("Updated".to_string())]),
+        Row(vec![Value::Integer(4), Value::Text("Updated".to_string())]),
+        Row(vec![Value::Integer(5), Value::Text("Eve".to_string())]),
+    ];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
+}
+
+#[test]
+fn test_delete_with_offset_without_order_by() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE users (
+        id INTEGER,
+        name TEXT
+    );
+    INSERT INTO users (id, name) VALUES (1, 'Alice');
+    INSERT INTO users (id, name) VALUES (2, 'Bob');
+    INSERT INTO users (id, name) VALUES (3, 'Charlie');
+    INSERT INTO users (id, name) VALUES (4, 'David');
+    INSERT INTO users (id, name) VALUES (5, 'Eve');
+    -- Delete with OFFSET 3, LIMIT 1 (without ORDER BY)
+    -- Should delete row at index 3 (David)
+    DELETE FROM users LIMIT 1 OFFSET 3;
+    SELECT * FROM users ORDER BY id;
+    ";
+    let mut result = run_sql(&mut database, sql);
+    assert!(result.iter().all(|result| result.is_ok()));
+
+    let expected = vec![
+        Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
+        Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
+        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
+        Row(vec![Value::Integer(5), Value::Text("Eve".to_string())]),
+    ];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
 }
