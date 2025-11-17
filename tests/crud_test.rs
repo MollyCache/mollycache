@@ -403,3 +403,50 @@ fn test_select_clauses_with_literals() {
     ];
     assert_eq_run_sql(expected, result);
 }
+
+#[test]
+fn test_division_by_zero_error() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE test_table (id INTEGER, value INTEGER);
+    INSERT INTO test_table (id, value) VALUES (1, 10);
+    INSERT INTO test_table (id, value) VALUES (2, 1);
+    SELECT value / 0 FROM test_table WHERE id = 1;
+    SELECT id / (value - 1) FROM test_table WHERE id = 2;
+    SELECT value / (id - id) FROM test_table WHERE id = 1;
+    ";
+    let result = run_sql(&mut database, sql);
+
+    // All division by zero operations should return errors, not panic
+    assert!(
+        result[3].is_err(),
+        "Division by zero should return an error: {:?}",
+        result[3]
+    );
+    assert!(
+        result[4].is_err(),
+        "Division by zero (1 - 1 = 0) should return an error: {:?}",
+        result[4]
+    );
+    assert!(
+        result[5].is_err(),
+        "Division by zero (id - id = 0) should return an error: {:?}",
+        result[5]
+    );
+}
+
+#[test]
+fn test_modulo_by_zero_error() {
+    let mut database = Database::new();
+    let sql = "
+    CREATE TABLE test_table (id INTEGER, value INTEGER);
+    INSERT INTO test_table (id, value) VALUES (1, 10);
+    SELECT 10 % 0;
+    SELECT value % 0 FROM test_table WHERE id = 1;
+    ";
+    let result = run_sql(&mut database, sql);
+
+    // All modulo by zero operations should return errors, not panic
+    assert!(result[2].is_err(), "Modulo by zero should return an error");
+    assert!(result[3].is_err(), "Modulo by zero should return an error");
+}
