@@ -67,42 +67,20 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      issues: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: AI Code Review
-        uses: legiaquan/code-review-action@v1
+        uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
         with:
-          provider: 'gemini'
-          api_key: ${{ secrets.GEMINI_API_KEY }}
-          pr_number: ${{ github.event.pull_request.number }}
-          review_level: 'diff'
-          include_globs: '**/*.rs,Cargo.toml'
-          exclude_globs: '**/target/**,**/Cargo.lock'
-          max_chunk_lines: 500
-          rules: |
-            You are an expert Senior Rust Engineer reviewing code for MollyCache, an in-memory SQL database.
-            Focus on catching bugs and potential runtime errors:
-
-            CRITICAL ISSUES (must flag):
-            - Uncaught panics: unwrap(), expect(), index access that could panic
-            - Memory safety: unsafe blocks without proper justification
-            - Logic errors: off-by-one errors, incorrect bounds checking, infinite loops
-            - Resource leaks: missing Drop implementations, unclosed file handles
-            - Race conditions: unsynchronized shared state access
-
-            HIGH PRIORITY:
-            - Error handling: Result types that should be propagated but aren't
-            - Performance: O(n²) algorithms where O(n) exists, unnecessary clones
-            - Type safety: inappropriate casting, loss of precision in numeric conversions
-            - SQL compatibility: deviations from SQLite behavior
-
-            PROVIDE:
-            - Severity rating (Critical/High/Medium/Low)
-            - Specific line numbers
-            - Clear explanation of the bug
-            - Code suggestion to fix the issue
-
-            IGNORE:
-            - Style issues (formatting is handled by rustfmt)
-            - Suggestions for refactoring unless it prevents a bug
-            - Performance micro-optimizations that don't materially impact functionality
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          pr_number: ${{ github.event.number }}
+          ai_provider: 'google'
+          google_api_key: ${{ secrets.GEMINI_API_KEY }}
+          google_model: 'gemini-2.5-flash'
+          include_extensions: '.rs,.toml'
+          exclude_paths: 'target/'
+          fail_action_if_review_failed: 'false'
+          review_rules_file: '.github/ai-review-rules.txt'
