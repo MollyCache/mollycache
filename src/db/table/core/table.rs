@@ -2,8 +2,10 @@ use crate::db::table::core::column::ColumnDefinition;
 use crate::db::table::core::column::ColumnStack;
 use crate::db::table::core::row::Row;
 use crate::db::table::core::row::RowStack;
-use crate::db::table::core::value::Value;
 use std::ops::{Index, IndexMut};
+
+#[cfg(test)]
+use crate::db::table::core::value::Value;
 
 #[derive(Debug)]
 pub struct Table {
@@ -54,14 +56,6 @@ impl Table {
             self.name.stack.push(new_name);
         } else {
             self.name.stack = vec![new_name];
-        }
-    }
-
-    pub fn get(&self, i: usize) -> Option<&Row> {
-        if i < self.length {
-            self.rows.get(i)?.stack.last()
-        } else {
-            None
         }
     }
 
@@ -177,19 +171,6 @@ impl Table {
 
     pub fn rollback_name(&mut self) {
         self.name.stack.pop();
-    }
-
-    pub fn get_column_from_row<'a>(
-        &self,
-        row: &'a Vec<Value>,
-        column: &String,
-    ) -> Result<&'a Value, String> {
-        for (i, value) in row.iter().enumerate() {
-            if self.get_column_names()?[i] == column {
-                return Ok(&value);
-            }
-        }
-        return Ok(&Value::Null);
     }
 
     pub fn has_column(&self, column: &String) -> Result<bool, String> {
