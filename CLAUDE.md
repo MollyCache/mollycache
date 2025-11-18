@@ -40,6 +40,7 @@ When working on MollyCache, these principles are non-negotiable:
 - Prefer explicit error handling with `Result<T, String>`
 - Keep functions focused and modular
 - Use descriptive variable and function names
+- **No code comments**: Write self-documenting code with clear variable/function names instead of explanatory comments
 
 **Architecture Patterns:**
 - **Stack-based state management** for transactions (rows, columns, table names all maintain stacks)

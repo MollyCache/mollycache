@@ -489,28 +489,18 @@ mod tests {
             order_by_clause: None,
             limit_clause: None,
         };
-
-        // Save original row state
         let original_row = table.get_rows_clone()[0].clone();
-
         let result = update(&mut table, statement, true);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), vec![0]);
-
-        // Verify the update happened
         assert_eq!(table[0][1], Value::Text("UpdatedName".to_string()));
         assert_eq!(table[0][2], Value::Integer(99));
-
-        // CRITICAL: Stack depth should be exactly 2 (original + 1 clone)
-        // Bug causes it to be 3 (original + 2 clones for 2 columns)
         assert_eq!(
             table.get_row_stacks_mut()[0].stack.len(),
             2,
             "Stack depth should be 2 (original + 1 transaction copy), not {} - indicates append_clone() called multiple times",
             table.get_row_stacks_mut()[0].stack.len()
         );
-
-        // Verify we can properly rollback by popping once
         table.get_row_stacks_mut()[0].stack.pop();
         let rolled_back_row = table.get_row_stacks_mut()[0].stack.last().unwrap();
         assert!(
