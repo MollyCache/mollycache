@@ -7,7 +7,7 @@ use mollycache::interpreter::run_sql;
 use crate::test_utils::{assert_eq_run_sql, assert_eq_table_rows, assert_eq_table_rows_unordered};
 
 #[test]
-fn test_select_with_order_by_and_offset_exceeding_result_size() {
+fn test_select_with_order_by_and_offset() {
     let mut database = Database::new();
     let sql = "
     CREATE TABLE users (
@@ -19,60 +19,23 @@ fn test_select_with_order_by_and_offset_exceeding_result_size() {
     INSERT INTO users (id, name) VALUES (3, 'Charlie');
     INSERT INTO users (id, name) VALUES (4, 'David');
     SELECT * FROM users ORDER BY id LIMIT 10 OFFSET 10;
-    ";
-    let mut result = run_sql(&mut database, sql);
-    assert!(result.iter().all(|result| result.is_ok()));
-
-    let expected = vec![];
-    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
-}
-
-#[test]
-fn test_select_with_order_by_and_offset_at_boundary() {
-    let mut database = Database::new();
-    let sql = "
-    CREATE TABLE users (
-        id INTEGER,
-        name TEXT
-    );
-    INSERT INTO users (id, name) VALUES (1, 'Alice');
-    INSERT INTO users (id, name) VALUES (2, 'Bob');
-    INSERT INTO users (id, name) VALUES (3, 'Charlie');
     SELECT * FROM users ORDER BY id LIMIT 10 OFFSET 3;
-    ";
-    let mut result = run_sql(&mut database, sql);
-    assert!(result.iter().all(|result| result.is_ok()));
-
-    let expected = vec![];
-    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
-}
-
-#[test]
-fn test_select_with_order_by_and_partial_offset() {
-    let mut database = Database::new();
-    let sql = "
-    CREATE TABLE users (
-        id INTEGER,
-        name TEXT
-    );
-    INSERT INTO users (id, name) VALUES (1, 'Alice');
-    INSERT INTO users (id, name) VALUES (2, 'Bob');
-    INSERT INTO users (id, name) VALUES (3, 'Charlie');
-    INSERT INTO users (id, name) VALUES (4, 'David');
     SELECT * FROM users ORDER BY id LIMIT 10 OFFSET 2;
     ";
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    let expected = vec![
+    let expected_partial = vec![
         Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
         Row(vec![Value::Integer(4), Value::Text("David".to_string())]),
     ];
-    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected_partial);
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), vec![]);
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), vec![]);
 }
 
 #[test]
-fn test_update_with_order_by_and_offset_exceeding_result_size() {
+fn test_update_and_delete_with_order_by_and_offset_exceeding() {
     let mut database = Database::new();
     let sql = "
     CREATE TABLE users (
@@ -84,29 +47,6 @@ fn test_update_with_order_by_and_offset_exceeding_result_size() {
     INSERT INTO users (id, name) VALUES (3, 'Charlie');
     UPDATE users SET name = 'Updated' ORDER BY id LIMIT 1 OFFSET 10;
     SELECT * FROM users ORDER BY id;
-    ";
-    let mut result = run_sql(&mut database, sql);
-    assert!(result.iter().all(|result| result.is_ok()));
-
-    let expected = vec![
-        Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
-        Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
-        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
-    ];
-    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
-}
-
-#[test]
-fn test_delete_with_order_by_and_offset_exceeding_result_size() {
-    let mut database = Database::new();
-    let sql = "
-    CREATE TABLE users (
-        id INTEGER,
-        name TEXT
-    );
-    INSERT INTO users (id, name) VALUES (1, 'Alice');
-    INSERT INTO users (id, name) VALUES (2, 'Bob');
-    INSERT INTO users (id, name) VALUES (3, 'Charlie');
     DELETE FROM users ORDER BY id LIMIT 1 OFFSET 10;
     SELECT * FROM users ORDER BY id;
     ";
@@ -118,6 +58,8 @@ fn test_delete_with_order_by_and_offset_exceeding_result_size() {
         Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
         Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
     ];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected.clone());
+    assert!(result.pop().unwrap().unwrap().is_none());
     assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
 }
 
@@ -334,37 +276,26 @@ fn test_distinct_mode() {
     INSERT INTO users (id, name) VALUES (3, 'Jim');
     INSERT INTO users (id, name) VALUES (4, 'John');
     SELECT DISTINCT name FROM users ORDER BY name ASC;
-    ";
-    let result = run_sql(&mut database, sql);
-    assert!(result.iter().all(|result| result.is_ok()));
-    let expected = vec![
-        Row(vec![Value::Text("Jane".to_string())]),
-        Row(vec![Value::Text("Jim".to_string())]),
-        Row(vec![Value::Text("John".to_string())]),
-    ];
-    let row = result[5].as_ref().unwrap().as_ref().unwrap();
-    assert_eq_table_rows(expected, row.clone());
-}
-
-#[test]
-fn test_distinct_with_limit_and_offset() {
-    let mut database = Database::new();
-    let sql = "
-    CREATE TABLE users (
-        id INTEGER,
-        name TEXT
-    );
-    INSERT INTO users (id, name) VALUES (1, 'John');
-    INSERT INTO users (id, name) VALUES (2, 'Jane');
-    INSERT INTO users (id, name) VALUES (3, 'Jim');
-    INSERT INTO users (id, name) VALUES (4, 'John');
     SELECT DISTINCT name FROM users ORDER BY name DESC LIMIT 1 OFFSET 1;
     ";
     let result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
-    let expected = vec![Row(vec![Value::Text("Jim".to_string())])];
-    let row = result[5].as_ref().unwrap().as_ref().unwrap();
-    assert_eq_table_rows(expected, row.clone());
+
+    let expected_with_offset = vec![Row(vec![Value::Text("Jim".to_string())])];
+    assert_eq_table_rows(
+        expected_with_offset,
+        result[6].as_ref().unwrap().as_ref().unwrap().clone(),
+    );
+
+    let expected_all = vec![
+        Row(vec![Value::Text("Jane".to_string())]),
+        Row(vec![Value::Text("Jim".to_string())]),
+        Row(vec![Value::Text("John".to_string())]),
+    ];
+    assert_eq_table_rows(
+        expected_all,
+        result[5].as_ref().unwrap().as_ref().unwrap().clone(),
+    );
 }
 
 #[test]
@@ -399,89 +330,70 @@ fn test_select_clauses_with_literals() {
 }
 
 #[test]
-fn test_division_by_zero_error() {
+fn test_math_errors() {
     let mut database = Database::new();
     let sql = "
-    CREATE TABLE test_table (id INTEGER, value INTEGER);
-    INSERT INTO test_table (id, value) VALUES (1, 10);
-    INSERT INTO test_table (id, value) VALUES (2, 1);
-    SELECT value / 0 FROM test_table WHERE id = 1;
-    SELECT id / (value - 1) FROM test_table WHERE id = 2;
-    SELECT value / (id - id) FROM test_table WHERE id = 1;
-    ";
-    let result = run_sql(&mut database, sql);
-
-    assert!(
-        result[3].is_err(),
-        "Division by zero should return an error: {:?}",
-        result[3]
-    );
-    assert!(
-        result[4].is_err(),
-        "Division by zero (1 - 1 = 0) should return an error: {:?}",
-        result[4]
-    );
-    assert!(
-        result[5].is_err(),
-        "Division by zero (id - id = 0) should return an error: {:?}",
-        result[5]
-    );
-}
-
-#[test]
-fn test_modulo_by_zero_error() {
-    let mut database = Database::new();
-    let sql = "
-    CREATE TABLE test_table (id INTEGER, value INTEGER);
-    INSERT INTO test_table (id, value) VALUES (1, 10);
+    CREATE TABLE test_table (id INTEGER, int_value INTEGER, real_value REAL);
+    INSERT INTO test_table (id, int_value, real_value) VALUES (1, 10, 10.5);
+    INSERT INTO test_table (id, int_value, real_value) VALUES (2, 1, 0.0);
+    SELECT int_value / 0 FROM test_table WHERE id = 1;
+    SELECT id / (int_value - 1) FROM test_table WHERE id = 2;
+    SELECT int_value / (id - id) FROM test_table WHERE id = 1;
     SELECT 10 % 0;
-    SELECT value % 0 FROM test_table WHERE id = 1;
-    ";
-    let result = run_sql(&mut database, sql);
-
-    assert!(result[2].is_err(), "Modulo by zero should return an error");
-    assert!(result[3].is_err(), "Modulo by zero should return an error");
-}
-
-#[test]
-fn test_floating_point_division_by_zero_error() {
-    let mut database = Database::new();
-    let sql = "
-    CREATE TABLE test_table (id INTEGER, value REAL);
-    INSERT INTO test_table (id, value) VALUES (1, 10.5);
-    INSERT INTO test_table (id, value) VALUES (2, 0.0);
+    SELECT int_value % 0 FROM test_table WHERE id = 1;
     SELECT 10.5 / 0.0;
-    SELECT value / 0.0 FROM test_table WHERE id = 1;
+    SELECT real_value / 0.0 FROM test_table WHERE id = 1;
     SELECT 0.0 / 0.0;
-    SELECT value / value FROM test_table WHERE id = 2;
+    SELECT real_value / real_value FROM test_table WHERE id = 2;
     SELECT -5.5 / 0.0;
     ";
     let result = run_sql(&mut database, sql);
 
     assert!(
         result[3].is_err(),
-        "Floating-point division by zero (10.5 / 0.0) should return an error: {:?}",
+        "Integer division by zero: {:?}",
         result[3]
     );
     assert!(
         result[4].is_err(),
-        "Floating-point division by zero (value / 0.0) should return an error: {:?}",
+        "Integer division by zero (1 - 1 = 0): {:?}",
         result[4]
     );
     assert!(
         result[5].is_err(),
-        "Floating-point division by zero (0.0 / 0.0) should return an error: {:?}",
+        "Integer division by zero (id - id = 0): {:?}",
         result[5]
     );
-    assert!(
-        result[6].is_err(),
-        "Floating-point division by zero (0.0 / 0.0 from columns) should return an error: {:?}",
-        result[6]
-    );
+    assert!(result[6].is_err(), "Modulo by zero: {:?}", result[6]);
     assert!(
         result[7].is_err(),
-        "Floating-point division by zero (-5.5 / 0.0) should return an error: {:?}",
+        "Modulo by zero from column: {:?}",
         result[7]
+    );
+    assert!(
+        result[8].is_err(),
+        "Floating-point division by zero (10.5 / 0.0): {:?}",
+        result[8]
+    );
+    assert!(
+        result[9].is_err(),
+        "Floating-point division by zero (value / 0.0): {:?}",
+        result[9]
+    );
+    assert!(
+        result[10].is_err(),
+        "Floating-point division by zero (0.0 / 0.0): {:?}",
+        result[10]
+    );
+    assert!(
+        result[11].is_err(),
+        "Floating-point division by zero (0.0 / 0.0 from columns): {:?}",
+        result[11]
+    );
+    assert!(
+        result[12].is_err(),
+        "Floating-point division by zero (-5.5 / 0.0): {:?}",
+        result[12]
     );
 }
 
@@ -538,14 +450,38 @@ fn test_offset_and_limit_without_order_by() {
     assert!(result.iter().all(|result| result.is_ok()));
 
     let expected_first = vec![
-        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string()), Value::Integer(35)]),
-        Row(vec![Value::Integer(4), Value::Text("David".to_string()), Value::Integer(40)]),
+        Row(vec![
+            Value::Integer(3),
+            Value::Text("Charlie".to_string()),
+            Value::Integer(35),
+        ]),
+        Row(vec![
+            Value::Integer(4),
+            Value::Text("David".to_string()),
+            Value::Integer(40),
+        ]),
     ];
     let expected_second = vec![
-        Row(vec![Value::Integer(1), Value::Text("Alice".to_string()), Value::Integer(20)]),
-        Row(vec![Value::Integer(2), Value::Text("Bob".to_string()), Value::Integer(30)]),
-        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string()), Value::Integer(35)]),
-        Row(vec![Value::Integer(5), Value::Text("Eve".to_string()), Value::Integer(45)]),
+        Row(vec![
+            Value::Integer(1),
+            Value::Text("Alice".to_string()),
+            Value::Integer(20),
+        ]),
+        Row(vec![
+            Value::Integer(2),
+            Value::Text("Bob".to_string()),
+            Value::Integer(30),
+        ]),
+        Row(vec![
+            Value::Integer(3),
+            Value::Text("Charlie".to_string()),
+            Value::Integer(35),
+        ]),
+        Row(vec![
+            Value::Integer(5),
+            Value::Text("Eve".to_string()),
+            Value::Integer(45),
+        ]),
     ];
     assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected_second);
     assert!(result.pop().unwrap().unwrap().is_none());
