@@ -136,6 +136,9 @@ impl Table {
     }
 
     pub fn pop(&mut self) -> Option<Row> {
+        if self.length == 0 {
+            return None;
+        }
         self.length -= 1;
         self.rows.pop().and_then(|mut value| value.stack.pop())
     }
@@ -245,5 +248,32 @@ impl Table {
     #[cfg(test)]
     pub fn get_columns_clone(&self) -> Result<Vec<ColumnDefinition>, String> {
         Ok(self.get_columns()?.iter().map(|c| (*c).clone()).collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::table::core::value::DataType;
+
+    #[test]
+    fn pop_on_empty_table_does_not_underflow() {
+        let columns = vec![ColumnDefinition {
+            name: "id".to_string(),
+            data_type: DataType::Integer,
+            constraints: vec![],
+        }];
+        let mut table = Table::new("test".to_string(), columns);
+        let row = Row(vec![Value::Integer(42)]);
+        table.push(row.clone());
+        assert_eq!(table.len(), 1);
+
+        let popped = table.pop();
+        assert_eq!(popped, Some(row));
+        assert_eq!(table.len(), 0);
+
+        let result = table.pop();
+        assert_eq!(result, None);
+        assert_eq!(table.len(), 0);
     }
 }
