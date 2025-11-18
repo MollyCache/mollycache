@@ -29,6 +29,9 @@ fn update_rows_from_indicies(
     is_transaction: bool,
 ) -> Result<(), String> {
     for row_index in row_indicies {
+        if is_transaction {
+            table.get_row_stacks_mut()[*row_index].append_clone();
+        }
         for update_value in &update_values {
             let column_index = table.get_index_of_column(&update_value.column)?;
             if table.get_columns()?[column_index].data_type != update_value.value.get_type()
@@ -39,9 +42,6 @@ fn update_rows_from_indicies(
                     update_value.column,
                     update_value.value.get_type()
                 ));
-            }
-            if is_transaction {
-                table.get_row_stacks_mut()[*row_index].append_clone();
             }
             table[*row_index][column_index] = update_value.value.clone();
         }
@@ -459,6 +459,63 @@ mod tests {
                 .get_row_stacks_mut()
                 .iter()
                 .all(|row_stack| row_stack.stack.len() == 2)
+        );
+    }
+
+    #[test]
+    fn update_multiple_columns_with_transaction_maintains_correct_stack_depth() {
+        let mut table = default_table();
+        let statement = UpdateStatement {
+            table_name: "users".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
+            update_values: vec![
+                ColumnValue {
+                    column: "name".to_string(),
+                    value: Value::Text("UpdatedName".to_string()),
+                },
+                ColumnValue {
+                    column: "age".to_string(),
+                    value: Value::Integer(99),
+                },
+            ],
+            where_clause: Some(SelectableColumn {
+                selectables: vec![
+                    SelectableStackElement::Column("id".to_string()),
+                    SelectableStackElement::Value(Value::Integer(1)),
+                    SelectableStackElement::Operator(Operator::Equals),
+                ],
+                column_name: "id = 1".to_string(),
+            }),
+            order_by_clause: None,
+            limit_clause: None,
+        };
+
+        // Save original row state
+        let original_row = table.get_rows_clone()[0].clone();
+
+        let result = update(&mut table, statement, true);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec![0]);
+
+        // Verify the update happened
+        assert_eq!(table[0][1], Value::Text("UpdatedName".to_string()));
+        assert_eq!(table[0][2], Value::Integer(99));
+
+        // CRITICAL: Stack depth should be exactly 2 (original + 1 clone)
+        // Bug causes it to be 3 (original + 2 clones for 2 columns)
+        assert_eq!(
+            table.get_row_stacks_mut()[0].stack.len(),
+            2,
+            "Stack depth should be 2 (original + 1 transaction copy), not {} - indicates append_clone() called multiple times",
+            table.get_row_stacks_mut()[0].stack.len()
+        );
+
+        // Verify we can properly rollback by popping once
+        table.get_row_stacks_mut()[0].stack.pop();
+        let rolled_back_row = table.get_row_stacks_mut()[0].stack.last().unwrap();
+        assert!(
+            original_row.exactly_equal(rolled_back_row),
+            "After popping once from stack, should get back original row. This fails if stack was corrupted with multiple clones."
         );
     }
 }
