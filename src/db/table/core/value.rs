@@ -30,13 +30,6 @@ impl Value {
         }
     }
 
-    pub fn numeric_to_i64(&self) -> Option<i64> {
-        match self {
-            Value::Integer(_) | Value::Real(_) => self.cast_to_int(),
-            _ => None,
-        }
-    }
-
     pub fn numeric_to_f64(&self) -> Option<f64> {
         match self {
             Value::Integer(_) | Value::Real(_) => self.cast_to_real(),
