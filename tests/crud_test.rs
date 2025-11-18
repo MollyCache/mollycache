@@ -517,31 +517,37 @@ fn test_update_with_offset_without_order_by() {
 }
 
 #[test]
-fn test_delete_with_offset_without_order_by() {
+fn test_offset_and_limit_without_order_by() {
     let mut database = Database::new();
     let sql = "
     CREATE TABLE users (
         id INTEGER,
-        name TEXT
+        name TEXT,
+        age INTEGER
     );
-    INSERT INTO users (id, name) VALUES (1, 'Alice');
-    INSERT INTO users (id, name) VALUES (2, 'Bob');
-    INSERT INTO users (id, name) VALUES (3, 'Charlie');
-    INSERT INTO users (id, name) VALUES (4, 'David');
-    INSERT INTO users (id, name) VALUES (5, 'Eve');
-    -- Delete with OFFSET 3, LIMIT 1 (without ORDER BY)
-    -- Should delete row at index 3 (David)
-    DELETE FROM users LIMIT 1 OFFSET 3;
+    INSERT INTO users (id, name, age) VALUES (1, 'Alice', 20);
+    INSERT INTO users (id, name, age) VALUES (2, 'Bob', 30);
+    INSERT INTO users (id, name, age) VALUES (3, 'Charlie', 35);
+    INSERT INTO users (id, name, age) VALUES (4, 'David', 40);
+    INSERT INTO users (id, name, age) VALUES (5, 'Eve', 45);
+    SELECT * FROM users WHERE age > 25 LIMIT 2 OFFSET 1;
+    DELETE FROM users WHERE id >= 4 LIMIT 1 OFFSET 0;
     SELECT * FROM users ORDER BY id;
     ";
     let mut result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_ok()));
 
-    let expected = vec![
-        Row(vec![Value::Integer(1), Value::Text("Alice".to_string())]),
-        Row(vec![Value::Integer(2), Value::Text("Bob".to_string())]),
-        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string())]),
-        Row(vec![Value::Integer(5), Value::Text("Eve".to_string())]),
+    let expected_first = vec![
+        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string()), Value::Integer(35)]),
+        Row(vec![Value::Integer(4), Value::Text("David".to_string()), Value::Integer(40)]),
     ];
-    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected);
+    let expected_second = vec![
+        Row(vec![Value::Integer(1), Value::Text("Alice".to_string()), Value::Integer(20)]),
+        Row(vec![Value::Integer(2), Value::Text("Bob".to_string()), Value::Integer(30)]),
+        Row(vec![Value::Integer(3), Value::Text("Charlie".to_string()), Value::Integer(35)]),
+        Row(vec![Value::Integer(5), Value::Text("Eve".to_string()), Value::Integer(45)]),
+    ];
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected_second);
+    assert!(result.pop().unwrap().unwrap().is_none());
+    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected_first);
 }

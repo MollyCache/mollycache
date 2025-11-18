@@ -24,14 +24,7 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
         .map(|(i, column)| (column.column_name.clone(), i))
         .collect::<HashMap<String, usize>>();
 
-    for row in table.iter().skip(if statement.order_by_clause.is_none() {
-        offset
-    } else {
-        0
-    }) {
-        if limit != -1 && rows.len() as i64 >= limit && statement.order_by_clause.is_none() {
-            break;
-        }
+    for row in table.iter() {
         let columns = get_columns(table, row, &statement.columns, None, None)?;
         if let Some(stmt) = &statement.where_clause {
             if let Value::Integer(val) = get_column(
@@ -78,18 +71,18 @@ pub fn select_statement(table: &Table, statement: &SelectStatement) -> Result<Ve
 
     if let Some(stmt) = &statement.order_by_clause {
         apply_order_by_from_precomputed(&mut rows, order_by_columns_precomputed, Row(vec![]), stmt);
-        if limit != -1 || offset != 0 {
-            // If offset exceeds the result size, return empty set (SQLite-compatible behavior)
-            if offset >= rows.len() {
-                rows = vec![];
+    }
+
+    if limit != -1 || offset != 0 {
+        if offset >= rows.len() {
+            rows = vec![];
+        } else {
+            let end = if (limit == -1) || (offset + limit as usize > rows.len()) {
+                rows.len()
             } else {
-                let end = if (limit == -1) || (offset + limit as usize > rows.len()) {
-                    rows.len()
-                } else {
-                    offset + limit as usize
-                };
-                rows = rows[offset..end].to_vec();
-            }
+                offset + limit as usize
+            };
+            rows = rows[offset..end].to_vec();
         }
     }
 
