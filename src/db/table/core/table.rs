@@ -258,41 +258,20 @@ mod tests {
 
     #[test]
     fn pop_on_empty_table_does_not_underflow() {
-        // Create an empty table
-        let mut table = Table::new("test".to_string(), vec![]);
-
-        // Verify table is empty
-        assert_eq!(table.len(), 0);
-
-        // Pop from empty table should return None
-        let result = table.pop();
-        assert_eq!(result, None);
-
-        // Length should remain 0, not underflow to usize::MAX
-        assert_eq!(table.len(), 0);
-    }
-
-    #[test]
-    fn pop_removes_last_row_and_decrements_length() {
-        // Create a table with one column
         let columns = vec![ColumnDefinition {
             name: "id".to_string(),
             data_type: DataType::Integer,
             constraints: vec![],
         }];
         let mut table = Table::new("test".to_string(), columns);
-
-        // Push a row
         let row = Row(vec![Value::Integer(42)]);
         table.push(row.clone());
         assert_eq!(table.len(), 1);
 
-        // Pop the row
         let popped = table.pop();
         assert_eq!(popped, Some(row));
         assert_eq!(table.len(), 0);
 
-        // Pop from empty table should not underflow
         let result = table.pop();
         assert_eq!(result, None);
         assert_eq!(table.len(), 0);
