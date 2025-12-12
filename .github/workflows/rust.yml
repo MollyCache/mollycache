@@ -81,7 +81,7 @@ jobs:
             pr_number: ${{ github.event.number }}
             ai_provider: google
             google_api_key: ${{ secrets.GEMINI_API_KEY }}
-            google_model: gemini-2.5-flash
+            google_model: gemini-2.5-flash-lite
             include_extensions: .rs,.toml
             exclude_paths: target/
             fail_action_if_review_failed: true
