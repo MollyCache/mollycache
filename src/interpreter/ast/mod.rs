@@ -228,15 +228,25 @@ pub enum SelectMode {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct FunctionSignature {
+pub struct FunctionCall {
     pub name: FunctionName,
-    pub input_count: i32,
-    pub has_parentheses: bool,
+    pub arguments: Vec<SelectableColumn>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum FunctionName {
-    CountFunction,
+    Count,
+    Sum,
+    Avg,
+    Min,
+    Max,
+    Date,
+    Time,
+    DateTime,
+    JulianDay,
+    UnixEpoch,
+    // TODO: Support Strftime
+    TimeDiff,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -260,7 +270,7 @@ pub enum SelectableStackElement {
     Column(String),
     Value(Value),
     ValueList(Vec<Value>), // TODO: add column as data type in Value
-    Function(FunctionSignature),
+    Function(FunctionCall),
     Operator(Operator),
     LogicalOperator(LogicalOperator),
     MathOperator(MathOperator),

@@ -88,6 +88,13 @@ pub enum TokenTypes {
     Avg,
     Min,
     Max,
+    // Time and Date Functions
+    Date,
+    Time,
+    DateTime,
+    JulianDay,
+    UnixEpoch,
+    TimeDiff,
     // Single Character Tokens
     Asterisk,
     SemiColon,

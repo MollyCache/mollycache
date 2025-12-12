@@ -54,13 +54,8 @@ fn get_columns_and_names(parser: &mut Parser) -> Result<Vec<SelectableColumn>, S
 mod tests {
     use super::*;
     use crate::db::table::core::value::Value;
-    use crate::interpreter::ast::LimitClause;
-    use crate::interpreter::ast::LogicalOperator;
-    use crate::interpreter::ast::MathOperator;
-    use crate::interpreter::ast::Operator;
-    use crate::interpreter::ast::OrderByClause;
-    use crate::interpreter::ast::OrderByDirection;
-    use crate::interpreter::ast::SelectableStackElement;
+    use crate::interpreter::ast::{FunctionCall, FunctionName, LimitClause, LogicalOperator, MathOperator, Operator};
+    use crate::interpreter::ast::{OrderByClause, OrderByDirection, SelectableStackElement};
     use crate::interpreter::ast::test_utils::token;
 
     #[test]
@@ -558,6 +553,95 @@ mod tests {
                 }],
                 directions: vec![OrderByDirection::Desc],
             }),
+            limit_clause: None,
+        };
+        assert_eq!(expected, statement);
+    }
+
+    #[test]
+    fn select_statement_with_function_calls_is_generated_correctly() {
+        // SELECT COUNT(*), SUM(salary), Date('now'), UnixEpoch('now', '-1 month'), FROM employees;
+        let tokens = vec![
+            token(TokenTypes::Select, "SELECT"),
+            token(TokenTypes::Count, "COUNT"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Asterisk, "*"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Sum, "SUM"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::Identifier, "salary"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::Date, "Date"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::StringLiteral, "now"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::UnixEpoch, "UnixEpoch"),
+            token(TokenTypes::LeftParen, "("),
+            token(TokenTypes::StringLiteral, "now"),
+            token(TokenTypes::Comma, ","),
+            token(TokenTypes::StringLiteral, "-1 month"),
+            token(TokenTypes::RightParen, ")"),
+            token(TokenTypes::From, "FROM"),
+            token(TokenTypes::Identifier, "employees"),
+            token(TokenTypes::SemiColon, ";"),
+        ];
+        let mut parser = Parser::new(tokens);
+        let result = get_statement(&mut parser);
+        assert!(result.is_ok());
+        let statement = result.unwrap();
+        let expected = SelectStatement {
+            table_name: "employees".to_string(),
+            table_aliases: TableAliases(HashMap::new()),
+            mode: SelectMode::All,
+            columns: vec![
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Function(FunctionCall {
+                        name: FunctionName::Count,
+                        arguments: vec![SelectableColumn {
+                            selectables: vec![SelectableStackElement::All],
+                            column_name: "*".to_string(),
+                        }],
+                    })],
+                    column_name: "COUNT(*)".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Function(FunctionCall {
+                        name: FunctionName::Sum,
+                        arguments: vec![SelectableColumn {
+                            selectables: vec![SelectableStackElement::Column("salary".to_string())],
+                            column_name: "salary".to_string(),
+                        }],
+                    })],
+                    column_name: "SUM(salary)".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Function(FunctionCall {
+                        name: FunctionName::Date,
+                        arguments: vec![SelectableColumn {
+                            selectables: vec![SelectableStackElement::Value(Value::Text("now".to_string()))],
+                            column_name: "'now'".to_string(),
+                        }],
+                    })],
+                    column_name: "Date('now')".to_string(),
+                },
+                SelectableColumn {
+                    selectables: vec![SelectableStackElement::Function(FunctionCall {
+                        name: FunctionName::UnixEpoch,
+                        arguments: vec![SelectableColumn {
+                            selectables: vec![SelectableStackElement::Value(Value::Text("now".to_string()))],
+                            column_name: "'now'".to_string(),
+                        }, SelectableColumn {
+                            selectables: vec![SelectableStackElement::Value(Value::Text("-1 month".to_string()))],
+                            column_name: "'-1 month'".to_string(),
+                        }],
+                    })],
+                    column_name: "UnixEpoch('now', '-1 month')".to_string(),
+                }],
+            where_clause: None,
+            order_by_clause: None,
             limit_clause: None,
         };
         assert_eq!(expected, statement);
