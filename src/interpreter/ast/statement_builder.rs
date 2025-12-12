@@ -93,6 +93,7 @@ impl StatementBuilder for MockStatementBuilder {
             columns: vec![],
         }));
     }
+    
 
     fn build_insert(&self, parser: &mut Parser) -> Result<SqlStatement, String> {
         parser.advance()?;
