@@ -173,5 +173,4 @@ mod tests {
             Ok(("some_table_name".to_string(), "".to_string()))
         );
     }
-
 }

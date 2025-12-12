@@ -1,8 +1,7 @@
 use crate::interpreter::{
     ast::{
-        FunctionCall, FunctionName, LogicalOperator, MathOperator, Operator,
-        OrderByDirection, SelectableColumn, SelectableStackElement,
-        helpers::token::token_to_value, parser::Parser,
+        FunctionCall, FunctionName, LogicalOperator, MathOperator, Operator, OrderByDirection,
+        SelectableColumn, SelectableStackElement, helpers::token::token_to_value, parser::Parser,
     },
     tokenizer::token::TokenTypes,
 };
@@ -39,34 +38,31 @@ fn parse_function_arguments(parser: &mut Parser) -> Result<Vec<SelectableColumn>
         let token = parser.current_token()?;
 
         let arg = match token.token_type {
-            TokenTypes::Asterisk => {
-                SelectableColumn {
-                    selectables: vec![SelectableStackElement::All],
-                    column_name: "*".to_string(),
-                }
-            }
-            TokenTypes::Identifier => {
-                SelectableColumn {
-                    selectables: vec![SelectableStackElement::Column(token.value.to_string())],
-                    column_name: token.value.to_string(),
-                }
-            }
+            TokenTypes::Asterisk => SelectableColumn {
+                selectables: vec![SelectableStackElement::All],
+                column_name: "*".to_string(),
+            },
+            TokenTypes::Identifier => SelectableColumn {
+                selectables: vec![SelectableStackElement::Column(token.value.to_string())],
+                column_name: token.value.to_string(),
+            },
             TokenTypes::IntLiteral
             | TokenTypes::RealLiteral
             | TokenTypes::HexLiteral
-            | TokenTypes::Null => {
-                SelectableColumn {
-                    selectables: vec![SelectableStackElement::Value(token_to_value(parser)?)],
-                    column_name: token.value.to_string(),
-                }
+            | TokenTypes::Null => SelectableColumn {
+                selectables: vec![SelectableStackElement::Value(token_to_value(parser)?)],
+                column_name: token.value.to_string(),
+            },
+            TokenTypes::StringLiteral => SelectableColumn {
+                selectables: vec![SelectableStackElement::Value(token_to_value(parser)?)],
+                column_name: format!("'{}'", token.value),
+            },
+            _ => {
+                return Err(format!(
+                    "Unexpected token in function arguments: {:?}",
+                    token.token_type
+                ));
             }
-            TokenTypes::StringLiteral => {
-                SelectableColumn {
-                    selectables: vec![SelectableStackElement::Value(token_to_value(parser)?)],
-                    column_name: format!("'{}'", token.value),
-                }
-            }
-            _ => return Err(format!("Unexpected token in function arguments: {:?}", token.token_type)),
         };
 
         arguments.push(arg);
@@ -80,7 +76,12 @@ fn parse_function_arguments(parser: &mut Parser) -> Result<Vec<SelectableColumn>
             TokenTypes::RightParen => {
                 break;
             }
-            _ => return Err(format!("Expected comma or closing parenthesis in function arguments, got: {:?}", next_token.token_type)),
+            _ => {
+                return Err(format!(
+                    "Expected comma or closing parenthesis in function arguments, got: {:?}",
+                    next_token.token_type
+                ));
+            }
         }
     }
 
@@ -258,7 +259,10 @@ pub fn get_selectables(
             parser.advance()?;
             let next_token = parser.current_token()?;
             if next_token.token_type != TokenTypes::LeftParen {
-                return Err(format!("Expected '(' after function name, got: {:?}", next_token.token_type));
+                return Err(format!(
+                    "Expected '(' after function name, got: {:?}",
+                    next_token.token_type
+                ));
             }
             current_name += next_token.value;
 
@@ -275,7 +279,10 @@ pub fn get_selectables(
 
             let close_paren = parser.current_token()?;
             if close_paren.token_type != TokenTypes::RightParen {
-                return Err(format!("Expected ')' after function arguments, got: {:?}", close_paren.token_type));
+                return Err(format!(
+                    "Expected ')' after function arguments, got: {:?}",
+                    close_paren.token_type
+                ));
             }
             current_name += close_paren.value;
             current_name += " ";
@@ -446,9 +453,11 @@ fn get_precedence(operator: &SelectableStackElement) -> Result<i32, String> {
 mod tests {
     use super::*;
     use crate::db::table::core::value::Value;
-    use crate::interpreter::ast::{FunctionName, LogicalOperator, MathOperator, SelectableStackElement};
     use crate::interpreter::ast::parser::Parser;
     use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::{
+        FunctionName, LogicalOperator, MathOperator, SelectableStackElement,
+    };
     use crate::interpreter::tokenizer::token::TokenTypes;
 
     #[test]
@@ -506,10 +515,13 @@ mod tests {
             SelectableStackElement::Function(f) => {
                 assert_eq!(f.name, FunctionName::Count);
                 assert_eq!(f.arguments.len(), 1);
-                assert_eq!(f.arguments[0], SelectableColumn {
-                    selectables: vec![SelectableStackElement::All],
-                    column_name: "*".to_string(),
-                });
+                assert_eq!(
+                    f.arguments[0],
+                    SelectableColumn {
+                        selectables: vec![SelectableStackElement::All],
+                        column_name: "*".to_string(),
+                    }
+                );
             }
             _ => panic!("Expected Count function"),
         }
@@ -520,10 +532,13 @@ mod tests {
             SelectableStackElement::Function(f) => {
                 assert_eq!(f.name, FunctionName::Sum);
                 assert_eq!(f.arguments.len(), 1);
-                assert_eq!(f.arguments[0], SelectableColumn {
-                    selectables: vec![SelectableStackElement::Column("salary".to_string())],
-                    column_name: "salary".to_string(),
-                });
+                assert_eq!(
+                    f.arguments[0],
+                    SelectableColumn {
+                        selectables: vec![SelectableStackElement::Column("salary".to_string())],
+                        column_name: "salary".to_string(),
+                    }
+                );
             }
             _ => panic!("Expected Sum function"),
         }
@@ -574,18 +589,28 @@ mod tests {
             SelectableStackElement::Function(f) => {
                 assert_eq!(f.name, FunctionName::Date);
                 assert_eq!(f.arguments.len(), 2);
-                assert_eq!(f.arguments[0], SelectableColumn {
-                    selectables: vec![SelectableStackElement::Value(Value::Text("now".to_string()))],
-                    column_name: "'now'".to_string(),
-                });
-                assert_eq!(f.arguments[1], SelectableColumn {
-                    selectables: vec![SelectableStackElement::Value(Value::Text("-7 days".to_string()))],
-                    column_name: "'-7 days'".to_string(),
-                });
+                assert_eq!(
+                    f.arguments[0],
+                    SelectableColumn {
+                        selectables: vec![SelectableStackElement::Value(Value::Text(
+                            "now".to_string()
+                        ))],
+                        column_name: "'now'".to_string(),
+                    }
+                );
+                assert_eq!(
+                    f.arguments[1],
+                    SelectableColumn {
+                        selectables: vec![SelectableStackElement::Value(Value::Text(
+                            "-7 days".to_string()
+                        ))],
+                        column_name: "'-7 days'".to_string(),
+                    }
+                );
             }
             _ => panic!("Expected Date function"),
         }
-        
+
         assert_eq!(columns[1].selectables.len(), 1);
         match &columns[1].selectables[0] {
             SelectableStackElement::Function(f) => {

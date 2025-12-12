@@ -54,9 +54,11 @@ fn get_columns_and_names(parser: &mut Parser) -> Result<Vec<SelectableColumn>, S
 mod tests {
     use super::*;
     use crate::db::table::core::value::Value;
-    use crate::interpreter::ast::{FunctionCall, FunctionName, LimitClause, LogicalOperator, MathOperator, Operator};
-    use crate::interpreter::ast::{OrderByClause, OrderByDirection, SelectableStackElement};
     use crate::interpreter::ast::test_utils::token;
+    use crate::interpreter::ast::{
+        FunctionCall, FunctionName, LimitClause, LogicalOperator, MathOperator, Operator,
+    };
+    use crate::interpreter::ast::{OrderByClause, OrderByDirection, SelectableStackElement};
 
     #[test]
     fn select_statement_with_all_tokens_is_generated_correctly() {
@@ -621,7 +623,9 @@ mod tests {
                     selectables: vec![SelectableStackElement::Function(FunctionCall {
                         name: FunctionName::Date,
                         arguments: vec![SelectableColumn {
-                            selectables: vec![SelectableStackElement::Value(Value::Text("now".to_string()))],
+                            selectables: vec![SelectableStackElement::Value(Value::Text(
+                                "now".to_string(),
+                            ))],
                             column_name: "'now'".to_string(),
                         }],
                     })],
@@ -630,16 +634,24 @@ mod tests {
                 SelectableColumn {
                     selectables: vec![SelectableStackElement::Function(FunctionCall {
                         name: FunctionName::UnixEpoch,
-                        arguments: vec![SelectableColumn {
-                            selectables: vec![SelectableStackElement::Value(Value::Text("now".to_string()))],
-                            column_name: "'now'".to_string(),
-                        }, SelectableColumn {
-                            selectables: vec![SelectableStackElement::Value(Value::Text("-1 month".to_string()))],
-                            column_name: "'-1 month'".to_string(),
-                        }],
+                        arguments: vec![
+                            SelectableColumn {
+                                selectables: vec![SelectableStackElement::Value(Value::Text(
+                                    "now".to_string(),
+                                ))],
+                                column_name: "'now'".to_string(),
+                            },
+                            SelectableColumn {
+                                selectables: vec![SelectableStackElement::Value(Value::Text(
+                                    "-1 month".to_string(),
+                                ))],
+                                column_name: "'-1 month'".to_string(),
+                            },
+                        ],
                     })],
                     column_name: "UnixEpoch('now', '-1 month')".to_string(),
-                }],
+                },
+            ],
             where_clause: None,
             order_by_clause: None,
             limit_clause: None,
