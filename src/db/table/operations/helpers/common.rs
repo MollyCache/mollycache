@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use crate::db::table::core::{row::Row, table::Table, value::DataType, value::Value};
+use crate::db::table::operations::helpers::datetime_functions::date::get_date;
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
 use crate::interpreter::ast::{
-    LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause, SelectableColumn,
-    SelectableStackElement,
+    FunctionName, LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause,
+    SelectableColumn, SelectableStackElement,
 };
 
 pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
@@ -114,8 +115,15 @@ pub fn get_column(
             SelectableStackElement::ValueList(_) => {
                 // TODO: handle ValueList
             }
-            SelectableStackElement::Function(_) => {
-                // TODO: handle functions
+
+            // THIS IS SPECIFIC TO SCALAR FUNCTIONS i.e. (date, time)
+            SelectableStackElement::Function(func) => {
+                let args = &func.arguments;
+                let res = match func.name {
+                    FunctionName::Date => get_date(args)?,
+                    _ => return Err(format!("Unsupported function: {:?}", func.name)),
+                };
+                row_values.push(res);
             }
             SelectableStackElement::Operator(op) => {
                 let res = match op {

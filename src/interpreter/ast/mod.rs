@@ -249,6 +249,24 @@ pub enum FunctionName {
     TimeDiff,
 }
 
+impl FunctionName {
+    pub fn is_aggregate(&self) -> bool {
+        match self {
+            FunctionName::Count
+            | FunctionName::Sum
+            | FunctionName::Avg
+            | FunctionName::Min
+            | FunctionName::Max => true,
+            FunctionName::Date
+            | FunctionName::Time
+            | FunctionName::DateTime
+            | FunctionName::JulianDay
+            | FunctionName::UnixEpoch
+            | FunctionName::TimeDiff => false,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum MathOperator {
     Add,
