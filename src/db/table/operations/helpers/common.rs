@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use crate::db::table::core::{row::Row, table::Table, value::DataType, value::Value};
+use crate::db::table::operations::helpers::datetime_functions::date::get_date;
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
 use crate::interpreter::ast::{
-    LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause, SelectableColumn,
-    SelectableStackElement, FunctionName,
+    FunctionName, LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause,
+    SelectableColumn, SelectableStackElement,
 };
-use crate::db::table::operations::helpers::datetime_functions::date::get_date;
 
 pub fn validate_and_clone_row(table: &Table, row: &Row) -> Result<Row, String> {
     if row.len() != table.width()? {
