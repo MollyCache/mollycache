@@ -20,7 +20,6 @@ fn token_to_function_name(token_type: &TokenTypes) -> Option<FunctionName> {
         TokenTypes::DateTime => Some(FunctionName::DateTime),
         TokenTypes::JulianDay => Some(FunctionName::JulianDay),
         TokenTypes::UnixEpoch => Some(FunctionName::UnixEpoch),
-        TokenTypes::TimeDiff => Some(FunctionName::TimeDiff),
         _ => None,
     }
 }

@@ -1,65 +1,13 @@
 use crate::db::table::core::value::Value;
+use crate::db::table::operations::helpers::datetime_functions::JulianDay;
 
 const UNIX_EPOCH_JULIAN_DAY: f64 = 2440587.5;
 const MILLISECONDS_PER_DAY: f64 = 86400000.0;
-const JULIAN_DAY_EPOCH_OFFSET: i64 = 32045;
-const JULIAN_DAY_NOON_OFFSET: f64 = 0.5;
-const YEAR_OFFSET: i64 = 4800;
-
-fn days_in_month(year: i64, month: i64) -> i64 {
-    match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        2 => {
-            if is_leap_year(year) {
-                29
-            } else {
-                28
-            }
-        }
-        _ => 0,
-    }
-}
-
-fn is_leap_year(year: i64) -> bool {
-    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
-}
-
-// Parses a string to an i64 within a given range, i.e. parse hour and validate within 0-23.
-fn parse_in_range(s: &str, name: &str, min: i64, max: i64, default: i64) -> Result<i64, String> {
-    if s.is_empty() {
-        return Ok(default);
-    }
-    let value = s
-        .parse::<i64>()
-        .map_err(|_| format!("Invalid {}: {:?}", name, s))?;
-    if !(min..=max).contains(&value) {
-        return Err(format!(
-            "{} out of range ({}-{}): {}",
-            name, min, max, value
-        ));
-    }
-    Ok(value)
-}
-
-// https://en.wikipedia.org/wiki/Julian_day
-fn calculate_julian_day(y: i64, m: i64, d: i64, h: i64, mi: i64, s: i64, fs: f64) -> f64 {
-    let a = (14 - m) / 12;
-    let y = y + YEAR_OFFSET - a;
-    let m = m + 12 * a - 3;
-
-    let jdn_int =
-        d + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - JULIAN_DAY_EPOCH_OFFSET;
-
-    let time_fraction = (h as f64) / 24.0 + (mi as f64) / 1440.0 + (s as f64 + fs) / 86400.0;
-
-    (jdn_int as f64) + time_fraction - JULIAN_DAY_NOON_OFFSET
-}
 
 // This is parsed according to the SQLite documentation for Time Values
 // https://sqlite.org/lang_datefunc.html
-// This function takes a time value and returns the corresponding f64 julian day number
-pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
+// This function takes a time value and returns the corresponding JDN (Julian Day Number)
+pub fn parse_timevalue(time_value: &Value) -> Result<JulianDay, String> {
     match time_value {
         Value::Text(text) if text == "now" => {
             let duration = std::time::SystemTime::now()
@@ -68,7 +16,7 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
             let unix_ms = duration.as_secs() as i64 * 1000 + duration.subsec_millis() as i64;
             // Convert to Julian Day Number
             let jdn = (unix_ms as f64 / MILLISECONDS_PER_DAY) + UNIX_EPOCH_JULIAN_DAY;
-            Ok(jdn)
+            Ok(JulianDay::new(jdn))
         }
         Value::Text(txt) => {
             // Look at formats 1-10 in the SQLite documentation for Time Values
@@ -152,8 +100,15 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
                 0.0
             };
 
-            let mut jdn =
-                calculate_julian_day(year, month, day, hour, minute, second, frac_seconds);
+            let mut jdn = JulianDay::new_from_datetime_vals(
+                year as f64,
+                month as f64,
+                day as f64,
+                hour as f64,
+                minute as f64,
+                second as f64,
+                frac_seconds,
+            );
 
             // timezone adjustment
             let (timezone_hour, timezone_minute) = if timezone_part.len() == 6 {
@@ -169,18 +124,54 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
                 let tz_offset = tz_hour / 24.0 + tz_minute / 1440.0;
 
                 if timezone_part.starts_with('-') {
-                    jdn += tz_offset;
+                    *jdn.value_mut() += tz_offset;
                 } else if timezone_part.starts_with('+') {
-                    jdn -= tz_offset;
+                    *jdn.value_mut() -= tz_offset;
                 }
             }
 
             Ok(jdn)
         }
-        Value::Integer(jdn_int) => Ok(*jdn_int as f64),
-        Value::Real(jdn_float) => Ok(*jdn_float),
+        Value::Integer(jdn_int) => Ok(JulianDay::new(*jdn_int as f64)),
+        Value::Real(jdn_float) => Ok(JulianDay::new(*jdn_float)),
         _ => Err(format!("Invalid time value: {:?}", time_value)),
     }
+}
+
+fn days_in_month(year: i64, month: i64) -> i64 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => {
+            if is_leap_year(year) {
+                29
+            } else {
+                28
+            }
+        }
+        _ => 0,
+    }
+}
+
+fn is_leap_year(year: i64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
+// Parses a string to an i64 within a given range, i.e. parse hour and validate within 0-23.
+fn parse_in_range(s: &str, name: &str, min: i64, max: i64, default: i64) -> Result<i64, String> {
+    if s.is_empty() {
+        return Ok(default);
+    }
+    let value = s
+        .parse::<i64>()
+        .map_err(|_| format!("Invalid {}: {:?}", name, s))?;
+    if !(min..=max).contains(&value) {
+        return Err(format!(
+            "{} out of range ({}-{}): {}",
+            name, min, max, value
+        ));
+    }
+    Ok(value)
 }
 
 #[cfg(test)]
@@ -191,86 +182,98 @@ mod tests {
     fn test_parse_timevalue() {
         assert_eq!(
             parse_timevalue(&Value::Text("2025-12-12 12:00:00".to_string())),
-            Ok(2461022.0)
+            Ok(JulianDay::new(2461022.0))
         );
 
-        assert_eq!(parse_timevalue(&Value::Real(2461021.5)), Ok(2461021.5));
-        assert_eq!(parse_timevalue(&Value::Integer(2461021)), Ok(2461021.0));
+        assert_eq!(
+            parse_timevalue(&Value::Real(2461021.5)),
+            Ok(JulianDay::new(2461021.5))
+        );
+        assert_eq!(
+            parse_timevalue(&Value::Integer(2461021)),
+            Ok(JulianDay::new(2461021.0))
+        );
         assert_eq!(
             parse_timevalue(&Value::Text("2025-12-12".to_string())),
-            Ok(2461021.5)
+            Ok(JulianDay::new(2461021.5))
         );
         let result = parse_timevalue(&Value::Text("2025-12-12 12:30".to_string())).unwrap();
-        assert!((result - 2461022.020833333).abs() < 0.000001);
+        assert!((result.value() - 2461022.020833333).abs() < 0.000001);
         let result = parse_timevalue(&Value::Text("2025-12-12 12:00:00.123".to_string())).unwrap();
-        assert!((result - 2461022.0000014235).abs() < 0.0000001);
+        assert!((result.value() - 2461022.0000014235).abs() < 0.0000001);
         let result = parse_timevalue(&Value::Text("2025-12-12T12:30".to_string())).unwrap();
-        assert!((result - 2461022.020833333).abs() < 0.000001);
+        assert!((result.value() - 2461022.020833333).abs() < 0.000001);
         assert_eq!(
             parse_timevalue(&Value::Text("2025-12-12T12:00:00".to_string())),
-            Ok(2461022.0)
+            Ok(JulianDay::new(2461022.0))
         );
         assert_eq!(
             parse_timevalue(&Value::Text("12:00:00".to_string())),
-            Ok(2451545.0)
+            Ok(JulianDay::new(2451545.0))
         );
         let result = parse_timevalue(&Value::Text("12:30".to_string())).unwrap();
-        assert!((result - 2451545.020833333).abs() < 0.000001);
+        assert!((result.value() - 2451545.020833333).abs() < 0.000001);
         assert_eq!(
             parse_timevalue(&Value::Text("0000-01-01".to_string())),
-            Ok(1721059.5)
+            Ok(JulianDay::new(1721059.5))
         );
         assert_eq!(
             parse_timevalue(&Value::Text("2025-12-12 12:00:00.1234567890".to_string())),
-            Ok(2461022.0000014235)
+            Ok(JulianDay::new(2461022.0000014235))
         );
 
         // Timezone tests
         assert_eq!(
             parse_timevalue(&Value::Text("2025-12-12T12:00:00Z".to_string())),
-            Ok(2461022.0)
+            Ok(JulianDay::new(2461022.0))
         );
         assert_eq!(
             parse_timevalue(&Value::Text("2025-12-12 12:00:00Z".to_string())),
-            Ok(2461022.0)
+            Ok(JulianDay::new(2461022.0))
         );
         let result =
             parse_timevalue(&Value::Text("2025-12-12T12:00:00-04:00".to_string())).unwrap();
-        assert!((result - 2461022.1666666665).abs() < 0.0000001);
+        assert!((result.value() - 2461022.1666666665).abs() < 0.0000001);
         let result =
             parse_timevalue(&Value::Text("2025-12-12T12:00:00+04:00".to_string())).unwrap();
-        assert!((result - 2461021.8333333335).abs() < 0.0000001);
+        assert!((result.value() - 2461021.8333333335).abs() < 0.0000001);
         assert_eq!(
             parse_timevalue(&Value::Text("12:00:00Z".to_string())),
-            Ok(2451545.0)
+            Ok(JulianDay::new(2451545.0))
         );
         let result = parse_timevalue(&Value::Text("08:00:00-04:00".to_string())).unwrap();
-        assert!((result - 2451545.0).abs() < 0.0000001);
+        assert!((result.value() - 2451545.0).abs() < 0.0000001);
         let result = parse_timevalue(&Value::Text("16:00:00+04:00".to_string())).unwrap();
-        assert!((result - 2451545.0).abs() < 0.0000001);
+        assert!((result.value() - 2451545.0).abs() < 0.0000001);
 
         let now_result = parse_timevalue(&Value::Text("now".to_string())).unwrap();
-        assert!(now_result > 2460000.0 && now_result < 2470000.0);
+        assert!(now_result.value() > 2460000.0 && now_result.value() < 2470000.0);
 
         // Trailing whitespace is ignored
         assert_eq!(
             parse_timevalue(&Value::Text("2025-12-12 12:00:00    ".to_string())),
-            Ok(2461022.0)
+            Ok(JulianDay::new(2461022.0))
         );
         // Leading whitespace should fail
         assert!(parse_timevalue(&Value::Text("   2025-12-12 12:00:00".to_string())).is_err());
 
         let result = parse_timevalue(&Value::Text("12:00:00.500".to_string())).unwrap();
-        assert!((result - 2451545.0000057870).abs() < 0.0000001);
+        assert!((result.value() - 2451545.0000057870).abs() < 0.0000001);
 
         let result = parse_timevalue(&Value::Text("2025-12-12 12:00:00.1".to_string())).unwrap();
-        assert!((result - 2461022.0000011574).abs() < 0.0000001);
+        assert!((result.value() - 2461022.0000011574).abs() < 0.0000001);
         let result = parse_timevalue(&Value::Text("2025-12-12 12:00:00.12".to_string())).unwrap();
-        assert!((result - 2461022.0000013889).abs() < 0.0000001);
+        assert!((result.value() - 2461022.0000013889).abs() < 0.0000001);
 
         // Negative Julian day numbers
-        assert_eq!(parse_timevalue(&Value::Integer(-1)), Ok(-1.0));
-        assert_eq!(parse_timevalue(&Value::Real(-100.5)), Ok(-100.5));
+        assert_eq!(
+            parse_timevalue(&Value::Integer(-1)),
+            Ok(JulianDay::new(-1.0))
+        );
+        assert_eq!(
+            parse_timevalue(&Value::Real(-100.5)),
+            Ok(JulianDay::new(-100.5))
+        );
     }
 
     #[test]

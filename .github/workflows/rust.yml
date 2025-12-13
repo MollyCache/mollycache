@@ -88,7 +88,7 @@ jobs:
             exclude_paths: target/
             fail_action_if_review_failed: true
 
-      - name: AI Code Review Fallback (gemini-1.5-flash)
+      - name: AI Code Review Fallback (gemini-2.5-flash-lite)
         if: steps.review_primary.outcome == 'failure'
         uses: Wandalen/wretry.action@v3.5.0
         with:
@@ -100,7 +100,7 @@ jobs:
             pr_number: ${{ github.event.number }}
             ai_provider: google
             google_api_key: ${{ secrets.GEMINI_API_KEY }}
-            google_model: gemini-1.5-flash
+            google_model: gemini-2.5-flash-lite
             include_extensions: .rs,.toml
             exclude_paths: target/
             fail_action_if_review_failed: true

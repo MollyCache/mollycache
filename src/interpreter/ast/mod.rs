@@ -246,7 +246,7 @@ pub enum FunctionName {
     JulianDay,
     UnixEpoch,
     // TODO: Support Strftime
-    TimeDiff,
+    // TODO: Support TimeDiff
 }
 
 impl FunctionName {
@@ -261,8 +261,7 @@ impl FunctionName {
             | FunctionName::Time
             | FunctionName::DateTime
             | FunctionName::JulianDay
-            | FunctionName::UnixEpoch
-            | FunctionName::TimeDiff => false,
+            | FunctionName::UnixEpoch => false,
         }
     }
 }
