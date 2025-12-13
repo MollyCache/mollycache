@@ -1,9 +1,9 @@
 # MollyCache
 
-[![Fletcher](https://wakatime.com/badge/user/9641004b-568b-4c27-99c5-a34ace36b886/project/2668a03d-d729-4e59-8fc8-bafe3d194ee1.svg)](https://wakatime.com/badge/user/9641004b-568b-4c27-99c5-a34ace36b886/project/2668a03d-d729-4e59-8fc8-bafe3d194ee1)
-[![Fletcher Pt. 2](https://wakatime.com/badge/user/9641004b-568b-4c27-99c5-a34ace36b886/project/b3cd9856-dee7-41a0-a31c-b3b8b68a0e80.svg)](https://wakatime.com/badge/user/9641004b-568b-4c27-99c5-a34ace36b886/project/b3cd9856-dee7-41a0-a31c-b3b8b68a0e80)
 ![GitHub last commit](https://img.shields.io/github/last-commit/MollyCache/mollycache)
 ![GitHub stars](https://img.shields.io/github/stars/MollyCache/mollycache?style=social)
+[![Fletcher](https://wakatime.com/badge/user/9641004b-568b-4c27-99c5-a34ace36b886/project/b3cd9856-dee7-41a0-a31c-b3b8b68a0e80.svg)](https://wakatime.com/badge/user/9641004b-568b-4c27-99c5-a34ace36b886/project/b3cd9856-dee7-41a0-a31c-b3b8b68a0e80) 
+\+ 86h41m before name change.
 
 MollyCache is a high-performance, in-memory SQL database with row-based caching capabilities, designed for SQLite compatibility.
 
