@@ -6,6 +6,19 @@ const JULIAN_DAY_EPOCH_OFFSET: i64 = 32045;
 const JULIAN_DAY_NOON_OFFSET: f64 = 0.5;
 const YEAR_OFFSET: i64 = 4800;
 
+fn days_in_month(year: i64, month: i64) -> i64 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => if is_leap_year(year) { 29 } else { 28 },
+        _ => 0,
+    }
+}
+
+fn is_leap_year(year: i64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
 // Parses a string to an i64 within a given range, i.e. parse hour and validate within 0-23.
 fn parse_in_range(s: &str, name: &str, min: i64, max: i64, default: i64) -> Result<i64, String> {
     if s.is_empty() {
@@ -49,7 +62,7 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
             let unix_ms = duration.as_secs() as i64 * 1000 + duration.subsec_millis() as i64;
             // Convert to Julian Day Number
             let jdn = (unix_ms as f64 / MILLISECONDS_PER_DAY) + UNIX_EPOCH_JULIAN_DAY;
-            return Ok(jdn);
+            Ok(jdn)
         }
         Value::Text(txt) => {
             // Look at formats 1-10 in the SQLite documentation for Time Values
@@ -103,6 +116,15 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
             let year = parse_in_range(year, "year", 0, 9999, 2000)?;
             let month = parse_in_range(month, "month", 1, 12, 1)?;
             let day = parse_in_range(day, "day", 1, 31, 1)?;
+            
+            let max_days = days_in_month(year, month);
+            if day > max_days {
+                return Err(format!(
+                    "day out of range for {}-{:02}: {} (max: {})",
+                    year, month, day, max_days
+                ));
+            }
+            
             let hour = parse_in_range(hour, "hour", 0, 23, 0)?;
             let minute = parse_in_range(minute, "minute", 0, 59, 0)?;
             let second = parse_in_range(second, "second", 0, 59, 0)?;
@@ -135,7 +157,7 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
             };
 
             if !timezone_part.is_empty() {
-                let tz_hour = parse_in_range(timezone_hour, "timezone hour", 0, 23, 0)? as f64;
+                let tz_hour = parse_in_range(timezone_hour, "timezone hour", 0, 14, 0)? as f64; // Timezone hours are lmtd to 0-14
                 let tz_minute =
                     parse_in_range(timezone_minute, "timezone minute", 0, 59, 0)? as f64;
                 let tz_offset = tz_hour / 24.0 + tz_minute / 1440.0;
@@ -149,13 +171,9 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
 
             Ok(jdn)
         }
-        Value::Integer(jdn_int) => {
-            return Ok(*jdn_int as f64);
-        }
-        Value::Real(jdn_float) => {
-            return Ok(*jdn_float);
-        }
-        _ => return Err(format!("Invalid time value: {:?}", time_value)),
+        Value::Integer(jdn_int) => Ok(*jdn_int as f64),
+        Value::Real(jdn_float) => Ok(*jdn_float),
+        _ => Err(format!("Invalid time value: {:?}", time_value)),
     }
 }
 
