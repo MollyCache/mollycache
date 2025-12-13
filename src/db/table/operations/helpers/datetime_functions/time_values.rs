@@ -10,7 +10,13 @@ fn days_in_month(year: i64, month: i64) -> i64 {
     match month {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
-        2 => if is_leap_year(year) { 29 } else { 28 },
+        2 => {
+            if is_leap_year(year) {
+                29
+            } else {
+                28
+            }
+        }
         _ => 0,
     }
 }
@@ -116,7 +122,7 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
             let year = parse_in_range(year, "year", 0, 9999, 2000)?;
             let month = parse_in_range(month, "month", 1, 12, 1)?;
             let day = parse_in_range(day, "day", 1, 31, 1)?;
-            
+
             let max_days = days_in_month(year, month);
             if day > max_days {
                 return Err(format!(
@@ -124,7 +130,7 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
                     year, month, day, max_days
                 ));
             }
-            
+
             let hour = parse_in_range(hour, "hour", 0, 23, 0)?;
             let minute = parse_in_range(minute, "minute", 0, 59, 0)?;
             let second = parse_in_range(second, "second", 0, 59, 0)?;
