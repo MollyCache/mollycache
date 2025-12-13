@@ -61,81 +61,51 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
     // Handle modifiers 1-6
     match modifier.split_once(' ').unwrap_or((modifier, "")) {
         (value, "days") => {
+            let days = value
+                .parse::<f64>()
+                .map_err(|_| format!("Invalid days value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(
-                    0.0,
-                    0.0,
-                    value.parse::<f64>().unwrap() * sign,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ),
+                JulianDay::new_relative_from_datetime_vals(0.0, 0.0, days * sign, 0.0, 0.0, 0.0, 0.0),
             ));
         }
         (value, "hours") => {
+            let hours = value
+                .parse::<f64>()
+                .map_err(|_| format!("Invalid hours value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(
-                    0.0,
-                    0.0,
-                    0.0,
-                    value.parse::<f64>().unwrap() * sign,
-                    0.0,
-                    0.0,
-                    0.0,
-                ),
+                JulianDay::new_relative_from_datetime_vals(0.0, 0.0, 0.0, hours * sign, 0.0, 0.0, 0.0),
             ));
         }
         (value, "minutes") => {
+            let minutes = value
+                .parse::<f64>()
+                .map_err(|_| format!("Invalid minutes value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    value.parse::<f64>().unwrap() * sign,
-                    0.0,
-                    0.0,
-                ),
+                JulianDay::new_relative_from_datetime_vals(0.0, 0.0, 0.0, 0.0, minutes * sign, 0.0, 0.0),
             ));
         }
         (value, "seconds") => {
+            let seconds = value
+                .parse::<f64>()
+                .map_err(|_| format!("Invalid seconds value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    value.parse::<f64>().unwrap() * sign,
-                    0.0,
-                ),
+                JulianDay::new_relative_from_datetime_vals(0.0, 0.0, 0.0, 0.0, 0.0, seconds * sign, 0.0),
             ));
         }
         (value, "months") => {
+            let months = value
+                .parse::<f64>()
+                .map_err(|_| format!("Invalid months value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(
-                    0.0,
-                    value.parse::<f64>().unwrap() * sign,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ),
+                JulianDay::new_relative_from_datetime_vals(0.0, months * sign, 0.0, 0.0, 0.0, 0.0, 0.0),
             ));
         }
         (value, "years") => {
+            let years = value
+                .parse::<f64>()
+                .map_err(|_| format!("Invalid years value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(
-                    value.parse::<f64>().unwrap() * sign,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ),
+                JulianDay::new_relative_from_datetime_vals(years * sign, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
             ));
         }
         // At this point all of the numeric modifiers have been parsed. The only remaining ones are 7-13

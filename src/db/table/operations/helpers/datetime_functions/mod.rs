@@ -40,7 +40,7 @@ pub fn build_julian_day(args: &Vec<SelectableColumn>) -> Result<JulianDay, Strin
         let modifier = parse_modifier(&arg)?;
         match modifier {
             DateTimeModifier::JDNOffset(jd) => {
-                *init_jdn.value_mut() += jd.value();
+                init_jdn = JulianDay::new(init_jdn.value() + jd.value());
             }
             _ => {
                 return Err(format!("NOT SUPPORTED YET: '{}'", arg));

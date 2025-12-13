@@ -29,13 +29,13 @@ fn test_datetime_functions() {
     assert!((jdn - 2461022.0).abs() < 0.0001);
 
     let expected_datetime = vec![Row(vec![Value::Text("2025-12-12 12:00:00".to_string())])];
-    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected_datetime);
+    assert_eq_table_rows(expected_datetime, result.pop().unwrap().unwrap().unwrap());
 
     let expected_time = vec![Row(vec![Value::Text("12:00:00".to_string())])];
-    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected_time);
+    assert_eq_table_rows(expected_time, result.pop().unwrap().unwrap().unwrap());
 
     let expected_date = vec![Row(vec![Value::Text("2025-12-12".to_string())])];
-    assert_eq_table_rows(result.pop().unwrap().unwrap().unwrap(), expected_date);
+    assert_eq_table_rows(expected_date, result.pop().unwrap().unwrap().unwrap());
 }
 
 #[test]
@@ -60,12 +60,12 @@ fn test_datetime_functions_with_modifiers() {
     ); // month is invalid
     let expected_date = vec![Row(vec![Value::Text("2025-12-13".to_string())])];
     assert_eq_table_rows(
-        result[2].as_ref().unwrap().as_ref().unwrap().clone(),
         expected_date,
+        result[2].as_ref().unwrap().as_ref().unwrap().clone(),
     );
     let expected_datetime = vec![Row(vec![Value::Text("2035-12-13 12:00:00".to_string())])]; // TECHNICALLY THIS BEHAVIOUR IS INCORRECT, SQLite does really funny stuff with years...
     assert_eq_table_rows(
-        result[3].as_ref().unwrap().as_ref().unwrap().clone(),
         expected_datetime,
+        result[3].as_ref().unwrap().as_ref().unwrap().clone(),
     );
 }
