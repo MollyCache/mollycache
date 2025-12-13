@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use crate::db::table::core::{row::Row, table::Table, value::DataType, value::Value};
-use crate::db::table::operations::helpers::datetime_functions::date::get_date;
+use crate::db::table::operations::helpers::datetime_functions::build_julian_day;
 use crate::db::table::operations::helpers::order_by_clause::apply_order_by_from_precomputed;
 use crate::interpreter::ast::{
     FunctionName, LimitClause, LogicalOperator, MathOperator, Operator, OrderByClause,
@@ -120,7 +120,11 @@ pub fn get_column(
             SelectableStackElement::Function(func) => {
                 let args = &func.arguments;
                 let res = match func.name {
-                    FunctionName::Date => get_date(args)?,
+                    FunctionName::DateTime => Value::Text(build_julian_day(args)?.as_datetime()),
+                    FunctionName::Date => Value::Text(build_julian_day(args)?.as_date()),
+                    FunctionName::Time => Value::Text(build_julian_day(args)?.as_time()),
+                    FunctionName::JulianDay => Value::Real(build_julian_day(args)?.value()),
+                    FunctionName::UnixEpoch => Value::Real(build_julian_day(args)?.as_unix_epoch()),
                     _ => return Err(format!("Unsupported function: {:?}", func.name)),
                 };
                 row_values.push(res);
