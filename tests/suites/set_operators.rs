@@ -1,10 +1,8 @@
-mod test_utils;
-
 use mollycache::db::database::Database;
 use mollycache::db::table::core::{row::Row, value::Value};
 use mollycache::interpreter::run_sql;
 
-use crate::test_utils::assert_eq_table_rows;
+use crate::common::{assert_eq_table_rows, assert_eq_table_rows_unordered};
 
 #[test]
 fn test_set_operators() {
@@ -24,7 +22,7 @@ fn test_set_operators() {
         Row(vec![Value::Text("Jack".to_string())]),
     ];
     let row = result.pop().unwrap().unwrap().unwrap();
-    test_utils::assert_eq_table_rows_unordered(expected, row);
+    assert_eq_table_rows_unordered(expected, row);
     assert!(
         result
             .into_iter()
@@ -99,7 +97,7 @@ fn test_set_operators_with_different_tables_and_clause() {
         Row(vec![Value::Text("Jim".to_string())]),
         Row(vec![Value::Text("Jack".to_string())]),
     ];
-    test_utils::assert_eq_table_rows_unordered(
+    assert_eq_table_rows_unordered(
         expected_first,
         result.pop().unwrap().unwrap().unwrap(),
     );
