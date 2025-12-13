@@ -65,7 +65,15 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
                 .parse::<f64>()
                 .map_err(|_| format!("Invalid days value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(0.0, 0.0, days * sign, 0.0, 0.0, 0.0, 0.0),
+                JulianDay::new_relative_from_datetime_vals(
+                    0.0,
+                    0.0,
+                    days * sign,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ),
             ));
         }
         (value, "hours") => {
@@ -73,7 +81,15 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
                 .parse::<f64>()
                 .map_err(|_| format!("Invalid hours value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(0.0, 0.0, 0.0, hours * sign, 0.0, 0.0, 0.0),
+                JulianDay::new_relative_from_datetime_vals(
+                    0.0,
+                    0.0,
+                    0.0,
+                    hours * sign,
+                    0.0,
+                    0.0,
+                    0.0,
+                ),
             ));
         }
         (value, "minutes") => {
@@ -81,7 +97,15 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
                 .parse::<f64>()
                 .map_err(|_| format!("Invalid minutes value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(0.0, 0.0, 0.0, 0.0, minutes * sign, 0.0, 0.0),
+                JulianDay::new_relative_from_datetime_vals(
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    minutes * sign,
+                    0.0,
+                    0.0,
+                ),
             ));
         }
         (value, "seconds") => {
@@ -89,7 +113,15 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
                 .parse::<f64>()
                 .map_err(|_| format!("Invalid seconds value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(0.0, 0.0, 0.0, 0.0, 0.0, seconds * sign, 0.0),
+                JulianDay::new_relative_from_datetime_vals(
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    seconds * sign,
+                    0.0,
+                ),
             ));
         }
         (value, "months") => {
@@ -97,7 +129,15 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
                 .parse::<f64>()
                 .map_err(|_| format!("Invalid months value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(0.0, months * sign, 0.0, 0.0, 0.0, 0.0, 0.0),
+                JulianDay::new_relative_from_datetime_vals(
+                    0.0,
+                    months * sign,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ),
             ));
         }
         (value, "years") => {
@@ -105,7 +145,15 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
                 .parse::<f64>()
                 .map_err(|_| format!("Invalid years value: '{}'", value))?;
             return Ok(DateTimeModifier::JDNOffset(
-                JulianDay::new_relative_from_datetime_vals(years * sign, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                JulianDay::new_relative_from_datetime_vals(
+                    years * sign,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ),
             ));
         }
         // At this point all of the numeric modifiers have been parsed. The only remaining ones are 7-13
