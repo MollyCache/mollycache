@@ -1,10 +1,8 @@
-mod test_utils;
-
 use mollycache::db::database::Database;
 use mollycache::db::table::core::{row::Row, value::Value};
 use mollycache::interpreter::run_sql;
 
-use crate::test_utils::assert_eq_run_sql_unordered;
+use crate::common::assert_eq_run_sql_unordered;
 
 #[test]
 fn test_transaction() {
