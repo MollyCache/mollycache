@@ -73,16 +73,18 @@ pub fn parse_timevalue(time_value: &Value) -> Result<f64, String> {
                 rest.split_once('.').unwrap_or((rest, "0"))
             };
             
-            let year = parse_in_range(year, "year", 1, 9999, 2000)?;
+            let year = parse_in_range(year, "year", 0, 9999, 2000)?;
             let month = parse_in_range(month, "month", 1, 12, 1)?;
             let day = parse_in_range(day, "day", 1, 31, 1)?;
             let hour = parse_in_range(hour, "hour", 0, 23, 0)?;
             let minute = parse_in_range(minute, "minute", 0, 59, 0)?;
             let second = parse_in_range(second, "second", 0, 59, 0)?;
             
-            if millisecond.len() > 3 {
-                return Err(format!("Invalid millisecond: {:?}", millisecond));
-            }
+            let millisecond = if millisecond.len() > 3 {
+                &millisecond[..3]
+            } else {
+                millisecond
+            };
             let frac_seconds = if !millisecond.is_empty() {
                 let frac_str = if millisecond.len() > 9 { &millisecond[..9] } else { millisecond };
                 let frac_val = frac_str.parse::<f64>().unwrap_or(0.0);
@@ -157,12 +159,19 @@ mod tests {
         assert_eq!(parse_timevalue(&Value::Text("12:00:00".to_string())), Ok(2451545.0));
         let result = parse_timevalue(&Value::Text("12:30".to_string())).unwrap();
         assert!((result - 2451545.020833333).abs() < 0.000001);
+        assert_eq!(parse_timevalue(&Value::Text("0000-01-01".to_string())), Ok(1721059.5));
+        assert_eq!(parse_timevalue(&Value::Text("2025-12-12 12:00:00.1234567890".to_string())), Ok(2461022.0000014235));
         
         // Timezone tests
         assert_eq!(parse_timevalue(&Value::Text("2025-12-12T12:00:00Z".to_string())), Ok(2461022.0));
         assert_eq!(parse_timevalue(&Value::Text("2025-12-12 12:00:00Z".to_string())), Ok(2461022.0));
         assert_eq!(parse_timevalue(&Value::Text("2025-12-12T08:00:00-04:00".to_string())), Ok(2461022.0));
         assert_eq!(parse_timevalue(&Value::Text("2025-12-12T16:00:00+04:00".to_string())), Ok(2461022.0));
+        assert_eq!(parse_timevalue(&Value::Text("12:00:00Z".to_string())), Ok(2451545.0));
+        let result = parse_timevalue(&Value::Text("08:00:00-04:00".to_string())).unwrap();
+        assert!((result - 2451545.0).abs() < 0.0000001);
+        let result = parse_timevalue(&Value::Text("16:00:00+04:00".to_string())).unwrap();
+        assert!((result - 2451545.0).abs() < 0.0000001);
 
         let now_result = parse_timevalue(&Value::Text("now".to_string())).unwrap();
         assert!(now_result > 2460000.0 && now_result < 2470000.0);
@@ -171,10 +180,25 @@ mod tests {
         assert_eq!(parse_timevalue(&Value::Text("2025-12-12 12:00:00    ".to_string())), Ok(2461022.0));
         // Leading whitespace should fail
         assert!(parse_timevalue(&Value::Text("   2025-12-12 12:00:00".to_string())).is_err());
+
+        let result = parse_timevalue(&Value::Text("12:00:00.500".to_string())).unwrap();
+        assert!((result - 2451545.0000057870).abs() < 0.0000001);
+
+        let result = parse_timevalue(&Value::Text("2025-12-12 12:00:00.1".to_string())).unwrap();
+        assert!((result - 2461022.0000011574).abs() < 0.0000001);
+        let result = parse_timevalue(&Value::Text("2025-12-12 12:00:00.12".to_string())).unwrap();
+        assert!((result - 2461022.0000013889).abs() < 0.0000001);
+
+        // Negative Julian day numbers
+        assert_eq!(parse_timevalue(&Value::Integer(-1)), Ok(-1.0));
+        assert_eq!(parse_timevalue(&Value::Real(-100.5)), Ok(-100.5));
     }
 
     #[test]
     fn test_parse_timevalue_invalid_values() {
+        assert!(parse_timevalue(&Value::Null).is_err());
+        assert!(parse_timevalue(&Value::Blob(vec![1, 2, 3])).is_err());
+
         assert!(parse_timevalue(&Value::Text("".to_string())).is_err());
         assert!(parse_timevalue(&Value::Text("2025-99-12 12:00:00Z".to_string())).is_err());
         assert!(parse_timevalue(&Value::Text("2025-12-99 12:00:00".to_string())).is_err());
@@ -183,5 +207,12 @@ mod tests {
         assert!(parse_timevalue(&Value::Text("2025-12-12 12:00:99".to_string())).is_err());
         assert!(parse_timevalue(&Value::Text("2025-12-12 12:00:00-99:00".to_string())).is_err());
         assert!(parse_timevalue(&Value::Text("2025-12-12 12:00:00+00:99".to_string())).is_err());
+
+        assert!(parse_timevalue(&Value::Text("10000-01-01".to_string())).is_err());
+
+        assert!(parse_timevalue(&Value::Text("not a date".to_string())).is_err());
+        assert!(parse_timevalue(&Value::Text("hello world".to_string())).is_err());
+        assert!(parse_timevalue(&Value::Text("2025/12/12".to_string())).is_err()); // wrong separator
+        assert!(parse_timevalue(&Value::Text("   ".to_string())).is_err());
     }
 }
