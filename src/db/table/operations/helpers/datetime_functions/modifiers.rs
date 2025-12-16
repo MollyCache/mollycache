@@ -365,4 +365,26 @@ mod tests {
             1.0
         );
     }
+
+    #[test]
+    fn test_parse_modifier_error_cases() {
+        assert!(parse_modifier("weekday").is_err());
+        assert!(parse_modifier("weekday -1").is_err());
+        assert!(parse_modifier("weekday 7").is_err());
+
+        assert!(parse_modifier("+2025-13-25").is_err());
+        assert!(parse_modifier("+2025-12-32").is_err());
+        assert!(parse_modifier("+2025-02-30").is_err());
+        assert!(parse_modifier("+2025-02-29").is_err()); // Not a leap year
+        assert!(parse_modifier("+2024-02-29").is_ok()); // Leap year
+
+        assert!(parse_modifier("+24:00").is_err());
+        assert!(parse_modifier("+23:60").is_err());
+        assert!(parse_modifier("+12:30:45.1234").is_err());
+
+        assert!(parse_modifier("invalid").is_err());
+        assert!(parse_modifier("5 invalid").is_err());
+
+        assert!(parse_modifier("weekday 0").is_ok());
+    }
 }
