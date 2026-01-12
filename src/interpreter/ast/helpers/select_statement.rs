@@ -5,7 +5,6 @@ use crate::interpreter::{
             common::{get_selectables, get_table_name},
             limit_clause::get_limit,
             order_by_clause::get_order_by,
-            token::expect_token_type,
             where_clause::get_where_clause,
         },
         parser::Parser,
@@ -24,14 +23,21 @@ pub fn get_statement(parser: &mut Parser) -> Result<SelectStatement, String> {
         _ => SelectMode::All,
     };
     let columns = get_columns_and_names(parser)?;
-    expect_token_type(parser, TokenTypes::From)?; // TODO: this is not true, you can do SELECT 1;
-    parser.advance()?;
-    let (table_name, table_alias) = get_table_name(parser)?;
+
+    let mut table_name = "".to_string();
     let mut aliases = HashMap::new();
-    if table_alias != "" {
-        aliases.insert(table_alias, table_name.clone());
+    let mut where_clause = None;
+
+    if parser.current_token()?.token_type == TokenTypes::From {
+        parser.advance()?;
+        let (name, alias) = get_table_name(parser)?;
+        table_name = name;
+        if alias != "" {
+            aliases.insert(alias, table_name.clone());
+        }
+        where_clause = get_where_clause(parser)?;
     }
-    let where_clause = get_where_clause(parser)?;
+
     let order_by_clause = get_order_by(parser)?;
     let limit_clause = get_limit(parser)?;
 

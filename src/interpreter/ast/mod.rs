@@ -566,7 +566,7 @@ mod tests {
     fn ast_handles_invalid_statement_then_valid_statement() {
         let tokens = vec![
             token(TokenTypes::Select, "SELECT"),
-            token(TokenTypes::Identifier, "users"),
+            token(TokenTypes::Comma, ","),
             token(TokenTypes::SemiColon, ";"),
             token(TokenTypes::Insert, "INSERT"),
             token(TokenTypes::Into, "INTO"),
@@ -584,7 +584,7 @@ mod tests {
         assert!(result[0].is_err());
         assert!(result[1].is_ok());
         let expected = vec![
-            Err("Error at line 1, column 0: Unexpected value: ;".to_string()),
+            Err("Unexpected token: COMMA".to_string()),
             Ok(DatabaseSqlStatement {
                 sql_statement: SqlStatement::InsertInto(InsertIntoStatement {
                     table_name: "users".to_string(),
