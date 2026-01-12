@@ -4,10 +4,10 @@ pub mod time_values;
 
 use crate::db::table::core::value::Value;
 use crate::db::table::operations::helpers::datetime_functions::julian_day::{
-    days_in_month, JulianDay,
+    JulianDay, days_in_month,
 };
 use crate::db::table::operations::helpers::datetime_functions::modifiers::{
-    parse_modifier, DateTimeModifier,
+    DateTimeModifier, parse_modifier,
 };
 use crate::db::table::operations::helpers::datetime_functions::time_values::parse_timevalue;
 use crate::interpreter::ast::SelectableColumn;
@@ -141,7 +141,7 @@ fn apply_modifier(jd: JulianDay, modifier: DateTimeModifier) -> Result<JulianDay
 
 fn add_months(jd: JulianDay, months: i64) -> Result<JulianDay, String> {
     let (mut year, mut month, day, hour, minute, second, subsecond) = jd.to_calendar_components();
-    
+
     // Normalize months
     month += months;
     while month > 12 {
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_modifiers_start_of() {
-         let args = vec![
+        let args = vec![
             SelectableColumn {
                 selectables: vec![SelectableStackElement::Value(Value::Text(
                     "2025-12-12 15:30:45".to_string(),
@@ -261,8 +261,8 @@ mod tests {
 
     #[test]
     fn test_weekday_modifier() {
-         // 2025-01-12 is Sunday
-         let args = vec![
+        // 2025-01-12 is Sunday
+        let args = vec![
             SelectableColumn {
                 selectables: vec![SelectableStackElement::Value(Value::Text(
                     "2025-01-12".to_string(),

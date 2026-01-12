@@ -240,11 +240,7 @@ fn parse_time_shift(time: &str, sign: f64) -> Result<(f64, f64, f64), String> {
         (0.0, 0.0)
     };
 
-    Ok((
-        hour * sign,
-        minute * sign,
-        (second + subsecond) * sign,
-    ))
+    Ok((hour * sign, minute * sign, (second + subsecond) * sign))
 }
 
 impl DateTimeModifier {
