@@ -111,29 +111,20 @@ fn apply_modifier(jd: JulianDay, modifier: DateTimeModifier) -> Result<JulianDay
             Ok(JulianDay::new(jd.value() + days_to_add as f64))
         }
         DateTimeModifier::UnixEpoch => {
-            // Treat the CURRENT value as a unix timestamp (seconds since 1970)
             let unix_seconds = jd.value();
             let jdn = (unix_seconds / 86400.0) + 2440587.5;
             Ok(JulianDay::new(jdn))
         }
         DateTimeModifier::JulianDay => {
-            // No-op? Or assume current is JDN?
-            // "The julianday modifier interprets the ... argument as a Julian day number."
-            // Since we already parse as JDN, this is usually a no-op unless we parsed it as something else?
-            // "julianday" usually forces the input to be treated as JDN.
-            // But parse_timevalue parses numbers as JDN by default if they are numbers.
-            // If the user did `datetime('2461022.5', 'julianday')` -> it's redundant but safe.
+            //  parse_timevalue parses numbers as JDN by default if they are numbers.
             Ok(jd)
         }
         DateTimeModifier::Auto => Ok(jd), // Default behavior
         DateTimeModifier::Localtime => {
-            // Not supported in pure std without crates, doing no-op for now.
-            // Could implement a rudimentary offset if we knew env TZ but we don't.
-            Ok(jd)
+            todo!()
         }
         DateTimeModifier::Utc => {
-            // Assuming we are already UTC or no-op.
-            Ok(jd)
+            todo!()
         }
         _ => Err("Modifier not implemented".to_string()),
     }

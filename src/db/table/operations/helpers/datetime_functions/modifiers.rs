@@ -117,7 +117,6 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
                 .map_err(|_| format!("Invalid years value: '{}'", value))?;
             return Ok(DateTimeModifier::AddYears(years * sign));
         }
-        // At this point all of the numeric modifiers have been parsed. The only remaining ones are 7-13
         (value, "") => {
             if value.contains('-') {
                 if !has_sign {
@@ -142,32 +141,9 @@ pub fn parse_modifier(modifier: &str) -> Result<DateTimeModifier, String> {
             if !has_sign {
                 return Err(format!("Invalid modifier: '{}'", original_modifier));
             }
-            // For composite "+YYYY-MM-DD HH:MM:SS", we need to return something that applies both.
-            // But our structure is one modifier.
-            // We can return a ShiftDate, but we need to signal that there is also time.
-            // Wait, SQLite treats these as separate modifiers effectively?
-            // "The modifier can also be of the form ±YYYY-MM-DD HH:MM:SS"
-            // Let's verify if we can split this.
-            // Actually, we can just error out here or handle it.
-            // If we split it, we'd need to return multiple modifiers, but signature is single.
-            // Let's make ShiftDate also capable of shifting time? Or just use a composite struct?
-            // Actually, let's just make `ShiftDate` have optional time?
-            // Or `ShiftDateTime`.
-            // Let's check `parse_modifier` usage. It's called in a loop.
-            // If we encounter this, we can't return two.
-            // But wait, the loop in `mod.rs` splits by arguments.
-            // `date('...', '+1 year')`. `+1 year` is one arg.
-            // `date('...', '+1 year 2 months')` -> this is not valid in SQLite as one string?
-            // SQLite modifiers are separate arguments usually?
-            // `date('now', '+1 year', '+1 month')`.
-            // BUT `date('now', '+1 year +1 month')` is NOT valid.
-            // However, `+YYYY-MM-DD HH:MM:SS` IS valid as a SINGLE modifier string.
-            // So we need a `ShiftDateTime` variant.
 
             let (years, months, days) = parse_date_shift(date, sign)?;
             let (hours, minutes, seconds) = parse_time_shift(time, sign)?;
-            // For simplicity, let's just use ShiftDate and ShiftTime if we could, but we can't return list.
-            // Let's add ShiftDateTime.
             return Ok(DateTimeModifier::ShiftDateTime {
                 years,
                 months,
@@ -242,12 +218,3 @@ fn parse_time_shift(time: &str, sign: f64) -> Result<(f64, f64, f64), String> {
 
     Ok((hour * sign, minute * sign, (second + subsecond) * sign))
 }
-
-impl DateTimeModifier {
-    // Helper to allow extending the enum in `mod.rs` without large changes if we had used ShiftDateTime
-    // We added ShiftDateTime to the enum above so we are good.
-    // We need to update the enum definition in the code block above to include ShiftDateTime
-}
-
-// Re-defining enum to include ShiftDateTime properly
-// (This is just for my own thought process, the file write will be correct)

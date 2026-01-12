@@ -14,6 +14,7 @@ impl JulianDay {
         let jd_int = ((jdn_value + JULIAN_DAY_NOON_OFFSET).floor()) as i64;
         let jd_fractional = (jdn_value + JULIAN_DAY_NOON_OFFSET) - (jd_int as f64);
 
+        // Converts Julian Day Number to Gregorian calendar components using inverse calendar-to-JDN formula (see https://en.wikipedia.org/wiki/Julian_day#Converting_Julian_or_Gregorian_calendar_date_to_Julian_Day_Number)
         let day = ((5
             * (((4 * (jd_int + 1401 + (((4 * jd_int + 274277) / 146097) * 3) / 4 - 38) + 3)
                 % 1461)
@@ -36,7 +37,6 @@ impl JulianDay {
             - 4716
             + (12 + 2 - month) / 12;
 
-        // Round to nearest millisecond to handle floating point precision
         let total_seconds = (jd_fractional * 86400.0 * 1000.0).round() / 1000.0;
         let hour = (total_seconds / 3600.0).floor() as i64;
         let minute = ((total_seconds % 3600.0) / 60.0).floor() as i64;
@@ -91,11 +91,6 @@ impl JulianDay {
         let year_int = year.floor() as i64;
         let month_int = month.floor() as i64;
         let day_int = day.floor() as i64;
-        // Handle month/year arithmetic for when month is out of 1-12 range
-        // This algorithm handles standard date conversion but we might need to be careful with "0 month" etc if not careful.
-        // But for standard conversion it works.
-        // For general arithmetic, we usually normalize inputs before calling this, but the formula might handle some overflow.
-        // Let's rely on standard JDN conversion.
 
         let a = (14 - month_int) / 12;
         let y = year_int + YEAR_OFFSET - a;
@@ -128,7 +123,7 @@ pub fn days_in_month(year: i64, month: i64) -> i64 {
                 28
             }
         }
-        _ => 30, // Fallback, though should not happen with normalized months
+        _ => unreachable!(),
     }
 }
 
