@@ -11,6 +11,26 @@ MollyCache is a high-performance, in-memory SQL database with row-based caching 
 - [Rust](https://rust-lang.org/tools/install/) v1.88.0 or higher
 - Optionally, for testing, the [`tarpaulin`](https://crates.io/crates/cargo-tarpaulin) crate (install with `cargo install tarpaulin`)
 
+## Development Setup
+
+To set up your environment (Git hooks, `molly` CLI shortcut):
+
+**Windows (PowerShell):**
+```powershell
+.\scripts\setup.ps1
+```
+
+**Linux / macOS:**
+```bash
+./scripts/setup.sh
+```
+
+This will:
+1. Enable `cargo fmt` checks before commits.
+2. Add the `molly` command to your shell:
+   - `molly`: Jump to project root.
+   - `molly -t feature-name`: Create or switch to a worktree in `worktrees/feature-name`.
+
 ## Running
 
 To run the MollyCache interactive CLI:

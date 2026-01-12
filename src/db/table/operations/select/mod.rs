@@ -17,15 +17,24 @@ pub fn select_statement_stack(
     let mut column_names: Option<Vec<String>> = None;
 
     // TODO: so ugly and also just false. Needed in some sort of way for now. See later TODO about dealing with 2+ tables
-    let mut first_table = None;
+    let mut has_first_table = false;
+    let mut temp_tables = Vec::new();
 
     for element in statement.elements {
         match element {
             SelectStatementStackElement::SelectStatement(select_statement) => {
-                let table = database.get_table_with_aliases(
-                    &select_statement.table_name,
-                    &select_statement.table_aliases,
-                )?;
+                let table = if select_statement.table_name.is_empty() {
+                    let mut t = Table::new("".to_string(), vec![]);
+                    t.set_rows(vec![Row(vec![])]);
+                    temp_tables.push(t);
+                    temp_tables.last().unwrap()
+                } else {
+                    database.get_table_with_aliases(
+                        &select_statement.table_name,
+                        &select_statement.table_aliases,
+                    )?
+                };
+
                 let expanded_column_names =
                     expand_all_column_names(table, &select_statement.columns)?;
                 match &column_names {
@@ -54,9 +63,7 @@ pub fn select_statement_stack(
                 let rows = select_statement::select_statement(table, &select_statement)?;
                 evaluator.push(rows);
 
-                if first_table.is_none() {
-                    first_table = Some(table);
-                }
+                has_first_table = true;
             }
             SelectStatementStackElement::SetOperator(set_operator) => match set_operator {
                 SetOperator::UnionAll => {
@@ -76,7 +83,7 @@ pub fn select_statement_stack(
     }
     let mut result = evaluator.result()?;
     if let Some(order_by_clause) = statement.order_by_clause {
-        if let Some(_) = first_table {
+        if has_first_table {
             // TODO: this is just plain false when working with 2+ tables
             // When using ORDER BY at the end of set operations on SELECTs, the ordering columns are guaranteed (?) to be present in the selected columns
             // TODO: this ^ is not quite accurate

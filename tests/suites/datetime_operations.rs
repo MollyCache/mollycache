@@ -55,17 +55,23 @@ fn test_datetime_functions_with_modifiers() {
     assert!(result[2].is_ok());
     assert!(result[3].is_ok());
     assert!(
-        result[4].is_err(),
-        "Expected error for invalid modifier '+0000-00-01 00:00:01'"
-    ); // month is invalid
+        result[4].is_ok(),
+        "Expected success for valid modifier '+0000-00-01 00:00:01'"
+    );
+
     let expected_date = vec![Row(vec![Value::Text("2025-12-13".to_string())])];
     assert_eq_table_rows(
         expected_date,
         result[2].as_ref().unwrap().as_ref().unwrap().clone(),
     );
-    let expected_datetime = vec![Row(vec![Value::Text("2035-12-13 12:00:00".to_string())])]; // TECHNICALLY THIS BEHAVIOUR IS INCORRECT, SQLite does really funny stuff with years...
+    let expected_datetime = vec![Row(vec![Value::Text("2035-12-12 12:00:00".to_string())])]; // Corrected behavior
     assert_eq_table_rows(
         expected_datetime,
         result[3].as_ref().unwrap().as_ref().unwrap().clone(),
+    );
+    let expected_mod_result = vec![Row(vec![Value::Text("2025-12-13 12:00:01".to_string())])];
+    assert_eq_table_rows(
+        expected_mod_result,
+        result[4].as_ref().unwrap().as_ref().unwrap().clone(),
     );
 }

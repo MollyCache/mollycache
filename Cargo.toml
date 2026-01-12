@@ -2,3 +2,6 @@
 name = "mollycache"
 version = "0.1.0"
 edition = "2024"
+
+[dev-dependencies]
+rusqlite = { version = "0.38.0", features = ["bundled"] }

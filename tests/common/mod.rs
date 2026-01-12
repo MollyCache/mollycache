@@ -1,6 +1,8 @@
 use mollycache::db::table::core::row::Row;
 use std::cmp::Ordering;
 
+pub mod parity;
+
 #[allow(dead_code)]
 pub fn assert_eq_run_sql(
     expected: Vec<Result<Option<Vec<Row>>, String>>,
@@ -10,7 +12,7 @@ pub fn assert_eq_run_sql(
     for (first, second) in expected.iter().zip(actual.iter()) {
         match (first, second) {
             (Ok(Some(a)), Ok(Some(b))) => assert_eq_table_rows(a.clone(), b.clone()),
-            (a, b) => assert!(a == b),
+            (a, b) => assert_eq!(a, b),
         }
     }
 }
@@ -24,7 +26,7 @@ pub fn assert_eq_run_sql_unordered(
     for (first, second) in expected.iter().zip(actual.iter()) {
         match (first, second) {
             (Ok(Some(a)), Ok(Some(b))) => assert_eq_table_rows_unordered(a.clone(), b.clone()),
-            (a, b) => assert!(a == b),
+            (a, b) => assert_eq!(a, b),
         }
     }
 }

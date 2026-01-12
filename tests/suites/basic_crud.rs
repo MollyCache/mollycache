@@ -152,14 +152,14 @@ fn test_parsing_errors() {
         money REAL
     );
     SELECT * FROM users wherea; 
-    SELECT * users;
+    SELECT * FROM;
     ";
     let result = run_sql(&mut database, sql);
     assert!(result.iter().all(|result| result.is_err()));
     let expected = vec![
         Err("Parsing Error: Error at line 3, column 11: Unexpected value: hello".to_string()),
         Err("Parsing Error: Error at line 8, column 24: Unexpected value: wherea".to_string()),
-        Err("Parsing Error: Error at line 9, column 18: Unexpected value: ;".to_string()),
+        Err("Parsing Error: Error at line 9, column 17: Unexpected value: ;".to_string()),
     ];
     assert_eq_run_sql(expected, result);
 }
